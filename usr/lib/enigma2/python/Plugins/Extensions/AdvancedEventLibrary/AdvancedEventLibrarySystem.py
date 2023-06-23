@@ -2,12 +2,7 @@
 # -*- coding: utf-8 -*-
 #################################################################################
 #																				#
-#								AdvancedEventLibrary 							#
-#																				#
-#																				#
-#						License: this is closed source!							#
-#	you are not allowed to use this or parts of it on any other image than VTi	#
-#		you are not allowed to use this or parts of it on NON VU Hardware		#
+#								AdvancedEventLibrary							#
 #																				#
 #							Copyright: tsiegel 2019								#
 #																				#

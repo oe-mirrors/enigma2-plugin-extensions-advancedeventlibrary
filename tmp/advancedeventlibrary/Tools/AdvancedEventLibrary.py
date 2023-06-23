@@ -4,11 +4,6 @@
 #																				#
 #								AdvancedEventLibrary							#
 #																				#
-#																				#
-#						License: this is closed source!							#
-#	you are not allowed to use this or parts of it on any other image than VTi	#
-#		you are not allowed to use this or parts of it on NON VU Hardware		#
-#																				#
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
@@ -55,8 +50,9 @@ from twisted.internet._sslverify import ClientTLSOptions
 
 isInstalled = False
 try:
-	from Plugins.Extensions.AdvancedEventLibrary import tvdbsimple as tvdb
 	from Plugins.Extensions.AdvancedEventLibrary import tmdbsimple as tmdb
+	from Plugins.Extensions.AdvancedEventLibrary import tvdbsimple as tvdb
+	from Plugins.Extensions.AdvancedEventLibrary import tvdb_api_v4
 	isInstalled = True
 except:
 	pass
@@ -72,6 +68,7 @@ if not "AdvancedEventLibrary/" in dir:
 config.plugins.AdvancedEventLibrary.Backup = ConfigText(default = "/media/hdd/AdvancedEventLibraryBackup/")
 backuppath = config.plugins.AdvancedEventLibrary.Backup.value
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default = False)
+createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default = False)
 useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default = True)
 usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = True)
 previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
@@ -89,8 +86,10 @@ maxCompression = config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInte
 seriesStartType = config.plugins.AdvancedEventLibrary.SeriesType = ConfigSelection(default = "Staffelstart", choices = [ "Staffelstart", "Serienstart" ])
 tmdbKey = config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default = 'intern')
 tvdbKey = config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default = 'intern')
+tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default = 'unbenutzt')
 omdbKey = config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default = 'intern')
 aelDISKey = config.plugins.AdvancedEventLibrary.aelKey = ConfigText(default = 'kein')
+updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default = True)
 
 sPDict = {}
 if searchPlaces.value != '':
@@ -109,6 +108,8 @@ SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]
 tmdb_genres = {10759 : "Action-Abenteuer", 16 : "Animation", 10762 : "Kinder", 10763 : "News", 10764 : "Reality", 10765 : "Sci-Fi-Fantasy", 10766 : "Soap", 10767 : "Talk", 10768 : "War & Politics", 28 : "Action", 12 : "Abenteuer", 16 : "Animation", 35 : "Comedy", 80 : "Crime", 99 : "Dokumentation", 18 : "Drama", 10751 : "Familie", 14 : "Fantasy", 36 : "History", 27 : "Horror", 10402 : "Music", 9648 : "Mystery", 10749 : "Romance", 878 : "Science-Fiction", 10770 : "TV-Movie", 53 : "Thriller", 10752 : "War", 37 : "Western"}
 convNames = ['Polizeiruf','Tatort','Die Bergpolizei','Axte X','ANIXE auf Reisen','Close Up','Der Zürich-Krimi','Buffy','Das Traumschiff','Die Land','Faszination Berge','Hyperraum','Kreuzfahrt ins Gl','Lost Places','Mit offenen Karten','Newton','Planet Schule','Punkt 12','Regular Show','News Reportage','News Spezial','S.W.A.T','Xenius','Der Barcelona-Krimi','Die ganze Wahrheit','Firmen am Abgrund','GEO Reportage','Kommissar Wallander','Rockpalast','SR Memories','Wildes Deutschland','Wilder Planet','Die rbb Reporter','Flugzeug-Katastrophen','Heute im Osten','Kalkofes Mattscheibe','Neue Nationalparks','Auf Entdeckungsreise']
 excludeNames = ['RTL UHD', '--', 'Sendeschluss', 'Dokumentation', 'EaZzzy', 'MediaShop', 'Dauerwerbesendung', 'Impressum']
+coverIDs = [3,8,11,15]
+posterIDs = [2,7,14]
 
 ApiKeys = {"tmdb": ["ZTQ3YzNmYzJkYzRlMWMwN2UxNGE4OTc1YjI5MTE1NWI=","MDA2ZTU5NGYzMzFiZDc1Nzk5NGQwOTRmM2E0ZmMyYWM=","NTRkMzg1ZjBlYjczZDE0NWZhMjNkNTgyNGNiYWExYzM="], "tvdb": ["NTRLVFNFNzFZWUlYM1Q3WA==","MzRkM2ZjOGZkNzQ0ODA5YjZjYzgwOTMyNjI3ZmE4MTM=","Zjc0NWRiMDIxZDY3MDQ4OGU2MTFmNjY2NDZhMWY4MDQ="], "omdb": ["ZmQwYjkyMTY=","YmY5MTFiZmM=","OWZkNzFjMzI="]}
 
@@ -1089,6 +1090,13 @@ def get_keys(forwhat):
 	else:
 		return base64.b64decode(ApiKeys[forwhat][randbelow(3)])
 
+def get_TVDb():
+	if tvdbV4Key.value != "unbenutzt1":
+		tvdbV4 = tvdb_api_v4.TVDB(tvdbV4Key.value)
+		if tvdbV4.get_login_state():
+			return tvdbV4
+	return None
+
 def convert2base64(title):
 	if title.find('(') > 1:
 		return base64.b64encode(title.decode('utf-8').lower().split('(')[0].strip()).replace('/','')
@@ -1357,7 +1365,6 @@ def createMovieInfo(db):
 												jahr = str(titleNyear[1])
 												if title and title != '' and title != ' ':
 													tmdb.API_KEY = get_keys('tmdb')
-													tvdb.KEYS.API_KEY = get_keys('tvdb')
 													titleinfo = {
 														"title" : mtitle,
 														"genre" : "",
@@ -1479,6 +1486,7 @@ def createMovieInfo(db):
 
 													try:
 														if not foundAsMovie and not foundOnTMDbTV:
+															tvdb.KEYS.API_KEY = get_keys('tvdb')
 															search = tvdb.Search()
 															seriesid = None
 															ctitle = title
@@ -1563,7 +1571,6 @@ def createMovieInfo(db):
 																			titleinfo['overview'] = response['overview']
 													except Exception as ex:
 														write_log('Fehler in createMovieInfo TVDb : ' + str(ex))
-
 
 													if titleinfo['overview'] != "":
 														txt = open(os.path.join(root, removeExtension(filename) + ".txt"),"w")
@@ -2032,7 +2039,10 @@ def getTVSpielfilm(db,tvsref):
 												image = ""
 											success = founded
 
-											founded += db.updateliveTVS(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,sRef,airtime)
+											db.updateliveTVS(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,sRef,airtime)
+											founded = tcount - db.getUpdateCount()
+											if founded == success:
+												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', addlog.value)
 											if founded > success and imdb != "":
 												trailers += 1
 											if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and previewImages and str(image) != str(lastImage):
@@ -2059,6 +2069,7 @@ def getTVSpielfilm(db,tvsref):
 		db.parameter(PARAMETER_SET, 'lastpreviewImageCount', str(imgcount))
 	except Exception as ex:
 		write_log('Fehler in getTVSpielfilm: ' + str(ex))
+
 
 def getTVMovie(db, secondRun = False):
 	global STATUS
@@ -2200,7 +2211,8 @@ def getTVMovie(db, secondRun = False):
 											image = ""
 										success = founded
 
-										founded += db.updateliveTV(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,title[0],airtime)
+										db.updateliveTV(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,title[0],airtime)
+										founded = tcount - db.getUpdateCount()
 										if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and previewImages and str(image) != str(lastImage):
 											if len(convert2base64(image)) < 255:
 												imgpath = coverDir + convert2base64(image) + '.jpg'
@@ -2364,10 +2376,8 @@ def findEpisode(title):
 
 def convertSearchName(eventName):
 	try:
-		eventName = removeExtension(eventName)
 		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'').encode('utf-8', 'ignore')
 	except:
-		eventName = removeExtension(eventName)
 		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'')
 	return text
 
@@ -2754,6 +2764,9 @@ def createSingleThumbnail(src, dest):
 def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[],tvsref=None):
 	global STATUS
 	if isconnected() == 0 and isInstalled:
+		tvdbV4 = get_TVDb()
+		if not tvdbV4:
+			write_log('TVDb API-V4 is not in use!')
 		posterDir = getPictureDir()+'poster/'
 		coverDir = getPictureDir()+'cover/'
 		previewDir = getPictureDir()+'preview/'
@@ -2764,9 +2777,9 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		position = 0
 		for title in titles:
 			try:
-				if title and title != '' and title != ' ':
-					tvdb.KEYS.API_KEY = get_keys('tvdb')
+				if title and title != '' and title != ' ' and not 'BL:' in title:
 					tmdb.API_KEY = get_keys('tmdb')
+					tvdb.KEYS.API_KEY = get_keys('tvdb')
 					titleinfo = {
 						"title" : "",
 						"genre" : "",
@@ -2786,6 +2799,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					imdb_id = None
 					omdb_image = None
 					foundAsMovie = False
+					foundAsSeries = False
 		#			write_log('################################################### themoviedb movie ##############################################')
 					try:
 						STATUS = str(position) + '/' + str(len(titles)) + ' : themoviedb movie -' + str(title)  + '  (' + str(posters)  + '|' + str(covers)  + '|' + str(entrys)  + '|' + str(blentrys)  + ')'
@@ -2886,6 +2900,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											bestmatch = [title.lower()]
 									for item in res['results']:
 										if item['name'].lower() == bestmatch[0]:
+											foundAsSeries = True
 											write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', addlog.value)
 											if searchName:
 												try:
@@ -2957,8 +2972,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						write_log('Fehler in get_titleInfo themoviedb tv : ' + str(ex))
 
 		#			write_log('################################################### thetvdb ##############################################')
-					if not foundAsMovie:
-						if titleinfo['genre'] == "" or titleinfo['year'] == "" or titleinfo['country'] == "" or titleinfo['rating'] == "" or titleinfo['fsk'] == "" or titleinfo['poster_url'] == "" or titleinfo['backdrop_url'] == "":
+					if not foundAsMovie and not foundAsSeries:
+						if True:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : thetvdb -' + str(title)  + '  (' + str(posters)  + '|' + str(covers)  + '|' + str(entrys)  + '|' + str(blentrys)  + ')'
 							write_log('looking for ' + str(title) + ' on thetvdb', addlog.value)
 							seriesid = None
@@ -3111,7 +3126,6 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							except Exception as ex:
 								write_log('Fehler in get_titleInfo thetvdb : ' + str(ex) + ' ' + str(title))
 
-
 		#			write_log('################################################### maze.tv ##############################################')
 					if not foundAsMovie:
 						if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
@@ -3155,7 +3169,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								write_log('Fehler in get_titleInfo maze.tv : ' + str(ex))
 
 		#			write_log('################################################### omdb ##############################################')
-					if titleinfo['genre'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['fsk'] == "" or titleinfo['poster_url'] == "":
+					if not foundAsMovie and not foundAsSeries:
 						try:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : omdb -' + str(title)  + '  (' + str(posters)  + '|' + str(covers)  + '|' + str(entrys)  + '|' + str(blentrys)  + ')'
 							write_log('looking for ' + str(title) + ' on omdb', addlog.value)
@@ -3325,22 +3339,24 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		reduceImageSize(coverDir, db)
 		reduceImageSize(previewDir, db)
 		reduceImageSize(posterDir, db)
-		write_log("looking for missing meta-Info")
-		createMovieInfo(db)
+		if createMetaData.value:
+			write_log("looking for missing meta-Info")
+			createMovieInfo(db)
 		createStatistics(db)
-		write_log("create MovieWall data")
-		try:
-			itype = None
-			if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
-				with open('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data', 'r') as f:
-					itype = f.read()
-					f.close()
-			if itype:
-				from Plugins.Extensions.AdvancedEventLibrary.AdvancedEventLibrarySimpleMovieWall import saveList
-				saveList(itype)
-				write_log("MovieWall data saved with " + str(itype))
-		except Exception as ex:
-			write_log('save moviewall data : ' + str(ex))
+		if updateAELMovieWall.value:
+			write_log("create MovieWall data")
+			try:
+				itype = None
+				if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
+					with open('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data', 'r') as f:
+						itype = f.read()
+						f.close()
+				if itype:
+					from Plugins.Extensions.AdvancedEventLibrary.AdvancedEventLibrarySimpleMovieWall import saveList
+					saveList(itype)
+					write_log("MovieWall data saved with " + str(itype))
+			except Exception as ex:
+				write_log('save moviewall data : ' + str(ex))
 		if addlog.value:
 			writeTVStatistic(db)
 		db.parameter(PARAMETER_SET, 'laststop', str(time()))
@@ -3363,7 +3379,6 @@ def get_Picture(title, what='Cover', lang='de'):
 			cq = 'original'
 		posterDir = getPictureDir()+'poster/'
 		coverDir = getPictureDir()+'cover/'
-		tvdb.KEYS.API_KEY = get_keys('tvdb')
 		tmdb.API_KEY = get_keys('tmdb')
 		picture = None
 		try:
@@ -3486,6 +3501,7 @@ def get_Picture(title, what='Cover', lang='de'):
 
 #			write_log('################################################### thetvdb ##############################################')
 			if picture is None:
+				tvdb.KEYS.API_KEY = get_keys('tvdb')
 				seriesid = None
 				search = tvdb.Search()
 				searchTitle = convertTitle2(title)
@@ -3564,6 +3580,7 @@ def get_Picture(title, what='Cover', lang='de'):
 								write_log('Fehler in get Poster : ' + str(ex))
 				except Exception as ex:
 					write_log('Fehler in get tvdb images : ' + str(ex))
+
 			if picture:
 				write_log('researching picture result ' + str(picture) + ' for ' + str(title))
 			return picture
@@ -3704,7 +3721,6 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			cq = 'original'
 		posterDir = getPictureDir()+'poster/'
 		coverDir = getPictureDir()+'cover/'
-		tvdb.KEYS.API_KEY = get_keys('tvdb')
 		tmdb.API_KEY = get_keys('tmdb')
 		pictureList = []
 		try:
@@ -3767,6 +3783,95 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 								pictureList.append((itm,))
 				except Exception as ex:
 					write_log('Fehler in get_PictureList AEL-Image-Server : ' + str(ex))
+
+
+#			write_log('################################################### thetvdb ##############################################')
+			if True:
+				tvdb.KEYS.API_KEY = get_keys('tvdb')
+				seriesid = None
+				search = tvdb.Search()
+				searchTitle = convertTitle2(title)
+				try:
+					try:
+						response = search.series(searchTitle, language=str(lang)) 
+						if response:
+							reslist = []
+							for result in response:
+								reslist.append(result['seriesName'].lower())
+							bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
+							if not bestmatch:
+								bestmatch = [searchTitle.lower()]
+							for result in response:
+								if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
+									seriesid = result['id']
+									break
+					except Exception as ex:
+						try:
+							response = search.series(searchTitle)
+							if response:
+								reslist = []
+								for result in response:
+									reslist.append(result['seriesName'].lower())
+								bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
+								if not bestmatch:
+									bestmatch = [searchTitle.lower()]
+								for result in response:
+									if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
+										seriesid = result['id']
+										break
+						except:
+							pass
+
+					if seriesid:
+						epis = tvdb.Series_Episodes(seriesid)
+						episoden = None
+						try:
+							episoden = epis.all()
+						except:
+							pass
+						epiname = ''
+						epilist = []
+						if episoden:
+							if episoden != 'None':
+								for episode in episoden:
+									epilist.append(str(episode['episodeName']).lower())
+								bestmatch = get_close_matches(title.lower(), epilist, 1, 0.7)
+								if not bestmatch:
+									bestmatch = [title.lower()]
+								for episode in episoden:
+									if str(episode['episodeName']).lower() in bestmatch[0]:
+										if 'seriesId' in episode:
+											seriesid = episode['seriesId']
+											epiname = ' - ' + str(episode['episodeName'])
+										break
+						showimgs = tvdb.Series_Images(seriesid)
+						if showimgs:
+							try:
+								if what == 'Cover':
+									try:
+										response = showimgs.fanart(language=str(lang))
+									except:
+										response = showimgs.fanart()
+									if response and str(response) != 'None':
+										for img in response:
+											itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], os.path.join(coverDir, b64title +'.jpg'), convert2base64(img['fileName']) +'.jpg']
+											pictureList.append((itm,))
+							except Exception as ex:
+								write_log('Fehler in get Cover : ' + str(ex))
+							try:
+								if what == 'Poster':
+									try:
+										response = showimgs.poster(language=str(lang))
+									except:
+										response = showimgs.poster()
+									if response and str(response) != 'None':
+										for img in response:
+											itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], os.path.join(posterDir, b64title +'.jpg'), convert2base64(img['fileName']) +'.jpg']
+											pictureList.append((itm,))
+							except Exception as ex:
+								write_log('Fehler in get Poster : ' + str(ex))
+				except Exception as ex:
+					write_log('Fehler in get tvdb images : ' + str(ex))
 
 #			write_log('################################################### themoviedb tv ##############################################')
 			try:
@@ -3909,92 +4014,6 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			except:
 				pass
 
-#			write_log('################################################### thetvdb ##############################################')
-			seriesid = None
-			search = tvdb.Search()
-			searchTitle = convertTitle2(title)
-			try:
-				try:
-					response = search.series(searchTitle, language=str(lang)) 
-					if response:
-						reslist = []
-						for result in response:
-							reslist.append(result['seriesName'].lower())
-						bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
-						if not bestmatch:
-							bestmatch = [searchTitle.lower()]
-						for result in response:
-							if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
-								seriesid = result['id']
-								break
-				except Exception as ex:
-					try:
-						response = search.series(searchTitle)
-						if response:
-							reslist = []
-							for result in response:
-								reslist.append(result['seriesName'].lower())
-							bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
-							if not bestmatch:
-								bestmatch = [searchTitle.lower()]
-							for result in response:
-								if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
-									seriesid = result['id']
-									break
-					except:
-						pass
-
-				if seriesid:
-					epis = tvdb.Series_Episodes(seriesid)
-					episoden = None
-					try:
-						episoden = epis.all()
-					except:
-						pass
-					epiname = ''
-					epilist = []
-					if episoden:
-						if episoden != 'None':
-							for episode in episoden:
-								epilist.append(str(episode['episodeName']).lower())
-							bestmatch = get_close_matches(title.lower(), epilist, 1, 0.7)
-							if not bestmatch:
-								bestmatch = [title.lower()]
-							for episode in episoden:
-								if str(episode['episodeName']).lower() in bestmatch[0]:
-									if 'seriesId' in episode:
-										seriesid = episode['seriesId']
-										epiname = ' - ' + str(episode['episodeName'])
-									break
-					showimgs = tvdb.Series_Images(seriesid)
-					if showimgs:
-						try:
-							if what == 'Cover':
-								try:
-									response = showimgs.fanart(language=str(lang))
-								except:
-									response = showimgs.fanart()
-								if response and str(response) != 'None':
-									for img in response:
-										itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], os.path.join(coverDir, b64title +'.jpg'), convert2base64(img['fileName']) +'.jpg']
-										pictureList.append((itm,))
-						except Exception as ex:
-							write_log('Fehler in get Cover : ' + str(ex))
-						try:
-							if what == 'Poster':
-								try:
-									response = showimgs.poster(language=str(lang))
-								except:
-									response = showimgs.poster()
-								if response and str(response) != 'None':
-									for img in response:
-										itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], os.path.join(posterDir, b64title +'.jpg'), convert2base64(img['fileName']) +'.jpg']
-										pictureList.append((itm,))
-						except Exception as ex:
-							write_log('Fehler in get Poster : ' + str(ex))
-			except Exception as ex:
-				write_log('Fehler in get tvdb images : ' + str(ex))
-
 			if not pictureList and what == 'Poster':
 				try:
 					url = "http://www.omdbapi.com/?apikey=%s&t=%s" % (get_keys('omdb'), title)
@@ -4025,8 +4044,8 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 				except:
 					pass
 
-			if len(pictureList) < int(count):
-				BingSearch = BingImageSearch(title+bingOption, int(count)-len(pictureList), what)
+			if not pictureList:
+				BingSearch = BingImageSearch(title+bingOption, int(count), what)
 				res = BingSearch.search()
 				i = 0
 				for image in res:
@@ -4060,7 +4079,6 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 
 def get_searchResults(title, lang='de'):
 	if isconnected() == 0 and isInstalled:
-		tvdb.KEYS.API_KEY = get_keys('tvdb')
 		tmdb.API_KEY = get_keys('tmdb')
 		resultList = []
 		try:
@@ -4205,112 +4223,14 @@ def get_searchResults(title, lang='de'):
 			except:
 				pass
 
-			search = tvdb.Search()
-			searchTitle = convertTitle2(title)
-			searchName = findEpisode(title)
-			try:
+			if True:
+				tvdb.KEYS.API_KEY = get_keys('tvdb')
+				search = tvdb.Search()
+				searchTitle = convertTitle2(title)
+				searchName = findEpisode(title)
 				try:
-					response = search.series(searchTitle, language=lang)
-					if response:
-						reslist = []
-						for result in response:
-							reslist.append(result['seriesName'].lower())
-						bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-						if not bestmatch:
-							bestmatch = [title.lower()]
-						for result in response:
-							if result['seriesName'].lower() in bestmatch:
-								foundEpisode = False
-								seriesid = None
-								countries = ""
-								year = ""
-								genres = ""
-								rating = ""
-								fsk = ""
-								desc = ""
-								epiname = ""
-								seriesid = result['id']
-								if seriesid:
-									foundEpisode = False
-									show = tvdb.Series(seriesid)
-									response = show.info()
-									epis = tvdb.Series_Episodes(seriesid)
-									episoden = None
-									try:
-										episoden = epis.all()
-									except:
-										pass
-									epilist = []
-									if episoden:
-										if episoden != 'None':
-											for episode in episoden:
-												epilist.append(episode['episodeName'].lower())
-											bestmatch = get_close_matches(title.lower(), epilist, 1, 0.6)
-											if not bestmatch:
-												bestmatch = [title.lower()]
-											for episode in episoden:
-												try:
-													if episode['episodeName'].lower() == bestmatch[0]:
-														foundEpisode = True
-														if 'episodeName' in episode:
-															if searchName:
-																epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName']
-															else:
-																epiname = ' - ' + episode['episodeName']
-														if 'overview' in episode:
-															desc = episode['overview']
-														if 'firstAired' in episode:
-															year = episode['firstAired'][:4]
-														if 'siteRating' in episode:
-															if episode['siteRating'] != '0' and episode['siteRating'] != 'None':
-																rating = episode['siteRating']
-														if 'contentRating' in episode:
-															if "TV-MA" in str(episode['contentRating']):
-																fsk = "18"
-															elif "TV-PG" in str(episode['contentRating']):
-																fsk = "16"
-															elif "TV-14" in str(episode['contentRating']):
-																fsk = "12"
-															elif "TV-Y7" in str(episode['contentRating']):
-																fsk = "6"
-														if response:
-															if 'genre' in response:
-																if response['genre']:
-																	for genre in response['genre']:
-																		genres = genres + genre + '-Serie '
-															genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-															if response['network'] in networks:
-																countries = networks[response['network']]
-														itm = [str(result['seriesName']+epiname), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
-														resultList.append((itm,))
-														break
-												except Exception as ex:
-													continue
-
-									if response and not foundEpisode:
-										if 'overview' in response:
-											desc = response['overview']
-										if response['network'] in networks:
-											countries = networks[response['network']]
-										year = response['firstAired'][:4]
-										for genre in response['genre']:
-											genres = genres + genre + '-Serie '
-										genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-										if response['siteRating'] != "0":
-											rating = response['siteRating']
-										if "TV-MA" in str(response['rating']):
-											fsk = "18"
-										elif "TV-PG" in str(response['rating']):
-											fsk = "16"
-										elif "TV-14" in str(response['rating']):
-											fsk = "12"
-										elif "TV-Y7" in str(response['rating']):
-											fsk = "6"
-										itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
-										resultList.append((itm,))
-				except Exception as ex:
 					try:
-						response = search.series(title) 
+						response = search.series(searchTitle, language=lang)
 						if response:
 							reslist = []
 							for result in response:
@@ -4320,6 +4240,7 @@ def get_searchResults(title, lang='de'):
 								bestmatch = [title.lower()]
 							for result in response:
 								if result['seriesName'].lower() in bestmatch:
+									foundEpisode = False
 									seriesid = None
 									countries = ""
 									year = ""
@@ -4327,11 +4248,66 @@ def get_searchResults(title, lang='de'):
 									rating = ""
 									fsk = ""
 									desc = ""
+									epiname = ""
 									seriesid = result['id']
 									if seriesid:
+										foundEpisode = False
 										show = tvdb.Series(seriesid)
 										response = show.info()
-										if response:
+										epis = tvdb.Series_Episodes(seriesid)
+										episoden = None
+										try:
+											episoden = epis.all()
+										except:
+											pass
+										epilist = []
+										if episoden:
+											if episoden != 'None':
+												for episode in episoden:
+													epilist.append(episode['episodeName'].lower())
+												bestmatch = get_close_matches(title.lower(), epilist, 1, 0.6)
+												if not bestmatch:
+													bestmatch = [title.lower()]
+												for episode in episoden:
+													try:
+														if episode['episodeName'].lower() == bestmatch[0]:
+															foundEpisode = True
+															if 'episodeName' in episode:
+																if searchName:
+																	epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName']
+																else:
+																	epiname = ' - ' + episode['episodeName']
+															if 'overview' in episode:
+																desc = episode['overview']
+															if 'firstAired' in episode:
+																year = episode['firstAired'][:4]
+															if 'siteRating' in episode:
+																if episode['siteRating'] != '0' and episode['siteRating'] != 'None':
+																	rating = episode['siteRating']
+															if 'contentRating' in episode:
+																if "TV-MA" in str(episode['contentRating']):
+																	fsk = "18"
+																elif "TV-PG" in str(episode['contentRating']):
+																	fsk = "16"
+																elif "TV-14" in str(episode['contentRating']):
+																	fsk = "12"
+																elif "TV-Y7" in str(episode['contentRating']):
+																	fsk = "6"
+															if response:
+																if 'genre' in response:
+																	if response['genre']:
+																		for genre in response['genre']:
+																			genres = genres + genre + '-Serie '
+																genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+																if response['network'] in networks:
+																	countries = networks[response['network']]
+															itm = [str(result['seriesName']+epiname), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
+															resultList.append((itm,))
+															break
+													except Exception as ex:
+														continue
+
+										if response and not foundEpisode:
 											if 'overview' in response:
 												desc = response['overview']
 											if response['network'] in networks:
@@ -4352,10 +4328,56 @@ def get_searchResults(title, lang='de'):
 												fsk = "6"
 											itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
 											resultList.append((itm,))
-					except:
-						pass
-			except:
-				pass
+					except Exception as ex:
+						try:
+							response = search.series(title) 
+							if response:
+								reslist = []
+								for result in response:
+									reslist.append(result['seriesName'].lower())
+								bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+								if not bestmatch:
+									bestmatch = [title.lower()]
+								for result in response:
+									if result['seriesName'].lower() in bestmatch:
+										seriesid = None
+										countries = ""
+										year = ""
+										genres = ""
+										rating = ""
+										fsk = ""
+										desc = ""
+										seriesid = result['id']
+										if seriesid:
+											show = tvdb.Series(seriesid)
+											response = show.info()
+											if response:
+												if 'overview' in response:
+													desc = response['overview']
+												if response['network'] in networks:
+													countries = networks[response['network']]
+												year = response['firstAired'][:4]
+												for genre in response['genre']:
+													genres = genres + genre + '-Serie '
+												genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+												if response['siteRating'] != "0":
+													rating = response['siteRating']
+												if "TV-MA" in str(response['rating']):
+													fsk = "18"
+												elif "TV-PG" in str(response['rating']):
+													fsk = "16"
+												elif "TV-14" in str(response['rating']):
+													fsk = "12"
+												elif "TV-Y7" in str(response['rating']):
+													fsk = "6"
+												itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
+												resultList.append((itm,))
+						except:
+							pass
+				except:
+					pass
+
+
 
 			try:
 				url = "http://api.tvmaze.com/search/shows?q=%s" % (title)
@@ -4775,7 +4797,6 @@ class DB_Functions(object):
 			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where title = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
 			cur.execute(query,(id, str(subtitle).decode('utf8'), image.decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, imdb, str(title).decode('utf8'), low, high))
 			self.conn.commit()
-			return cur.rowcount
 		except Error as ex:
 			write_log("Fehler in updateliveTV : " + str(ex))
 
@@ -4787,7 +4808,6 @@ class DB_Functions(object):
 			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
 			cur.execute(query,(id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(sref).decode('utf8'), low, high))
 			self.conn.commit()
-			return cur.rowcount
 		except Error as ex:
 			write_log("Fehler in updateliveTVS : " + str(ex))
 
