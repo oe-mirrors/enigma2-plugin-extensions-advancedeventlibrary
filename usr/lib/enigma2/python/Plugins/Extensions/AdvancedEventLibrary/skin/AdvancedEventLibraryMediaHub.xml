@@ -1,0 +1,39 @@
+<screen name="AdvancedEventLibraryMediaHub" position="center,center" size="1920,1080" title="AEL-MediaHub" flags="wfNoBorder" backgroundColor="transparent">
+	<eLabel backgroundColor="#00101010" position="0,0" size="1920,1080" zPosition="-20" />
+	<widget source="Title" render="Label" position="0,10" size="1920,50" font="Normal; 35" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+	<widget backgroundColor="background" font="Normal; 35" foregroundColor="foreground" halign="center" position="1680,10" render="Label" size="300,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+		<convert type="ClockToText">Format: %H:%M</convert>
+	</widget>
+	<widget source="Service" position="40,65" size="1400,40" font="Normal;28" backgroundColor="background" foregroundColor="foreground" halign="left" valign="top" render="Label" transparent="1" zPosition="3">
+		<convert type="AdvancedEventLibraryInfo">Title, EpisodeNum(Staffel [s] - Episode [e])</convert>
+	</widget>
+	<widget source="Service" render="Label" position="40,100" size="1840,40" font="Normal; 26" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+		<convert type="AdvancedEventLibraryInfo">SubtitleClean(8),Genre,Country,Year,ParentalRating(FSK: ),Conclusion</convert>
+	</widget>
+	<widget alphatest="blend" path="AELImages/stars" position="1590,110" render="Picon" size="320,22" source="Service" zPosition="10" scale="1">
+		<convert type="AdvancedEventLibraryInfo">RatingStars</convert>
+	</widget>
+	<widget name="channelList" position="40,180" size="1840,410" itemSize="290,180" control="{'left' : 'left', 'right' : 'right', 'up' : 'up', 'down' : 'down', 'pageUp' : 'pageUp', 'pageDown' : 'pageDown', 'switchControl' : True}" substituteImage="replaceWithPicon" progressPos="0,97,100,2" firstLinePos="17,0,83,20,0,0" secondLinePos="0,80,100,18,0,1" font="Normal; 24" secondFont="Small; 24" fontOrientation="RT_HALIGN_CENTER,RT_VALIGN_CENTER" maxTextLength="27" progressForegroundColor="#00dddddd" progressForegroundColorSelected="#001663ec" progressBackgroundColor="#00222222" progressBackgroundColorSelected="#00222222" progressBorderWidth="1" fontColor="#00dddddd" fontColorSelected="#001663ec" imageType="cover/thumbnails" imagePos="8,20,84,60" recIconPos="89,7,9,9" piconPos="2,2,14,13" borderColor="#00dddddd" borderWidth="2" zPosition="10" itemSpace="10" itemScale="110" viewMode="wall" useShadow="0" transparent="0" backgroundColor="#00202020" backgroundColorSelected="#00363636" foregroundColorSelected="#00ffffff" foregroundColor="#00ffffff" backgroundColorGlobal="#00303030" />
+	<widget name="movieList" position="40,650" size="1840,340" itemSize="290,150" control="{'left' : 'left', 'right' : 'right', 'up' : 'up', 'down' : 'down', 'pageUp' : 'pageUp', 'pageDown' : 'pageDown', 'switchControl' : True}" substituteImage="/usr/share/enigma2/AELImages/substituteImage.jpg" progressPos="0,97,100,2" firstLinePos="0,65,100,32,0,1" font="Normal; 24" fontOrientation="RT_WRAP,RT_HALIGN_CENTER,RT_VALIGN_CENTER" maxTextLength="50" progressForegroundColor="#00dddddd" progressForegroundColorSelected="#001663ec" progressBackgroundColor="#00222222" progressBackgroundColorSelected="#00222222" progressBorderWidth="1" fontColor="#00dddddd" fontColorSelected="#001663ec" imageType="cover/thumbnails" imagePos="8,0,84,65" borderColor="#00dddddd" borderWidth="2" zPosition="10" itemSpace="10" itemScale="110" viewMode="wall" useShadow="0" transparent="0" backgroundColor="#00202020" backgroundColorSelected="#00363636" foregroundColorSelected="#00ffffff" foregroundColor="#00ffffff" backgroundColorGlobal="#00303030" />
+	<widget name="channelsText" position="40,145" size="1840,50" font="Normal; 30" text=" Jetzt im TV, Als nächstes läuft, Gerade begonnen oder startet in Kürze, Prime-Time-Programm, Meine Empfehlungen" halign="left" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00303030,#00303030" transparent="0" zPosition="20"/>
+	<widget name="moviesText" position="40,605" size="1840,50" font="Normal; 30" text=" Neueste Aufnahmen, Alle Aufnahmen" halign="left" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00303030,#00303030" transparent="0" zPosition="20"/>
+	<widget name="channelsInfo" position="1640,145" size="200,40" font="Normal; 30" halign="right" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00303030,#00303030" transparent="0" zPosition="21"/>
+	<widget name="moviesInfo" position="1640,610" size="200,40" font="Normal; 30" halign="right" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00303030,#00303030" transparent="0" zPosition="21"/>
+	<widget name="timeInfo" position="1330,65" size="550,40" positions="[(1330,65),(1330,65)]" font="Normal; 28" halign="right" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="22"/>
+	<widget name="trailer" position="1700,50" size="60,60" transparent="1" alphatest="blend" zPosition="4" scale="1" />
+	<!-- Button Bar -->
+	<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_blue" render="Label" position="1440,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<eLabel backgroundColor="#00050505" position="0,1000" size="1920,80" zPosition="-10" />
+	<eLabel backgroundColor="#00b81c46" position="0,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#00009f3c" position="480,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#009ca81b" position="960,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#002673ec" position="1440,1075" size="480,5" zPosition="2" />
+	<eLabel position="1475,990" size="80,30" text="TXT" font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1555,990" size="80,30" text="Menu" font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1635,990" size="80,30" text="PVR" font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1715,990" size="80,30" text="OK " font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1795,990" size="80,30" text="Exit " font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+</screen>

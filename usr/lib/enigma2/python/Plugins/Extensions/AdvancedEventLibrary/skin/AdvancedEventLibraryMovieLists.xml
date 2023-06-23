@@ -1,0 +1,112 @@
+<skin>
+	<screen name="Advanced-Event-Library-MovieWall" position="center,center" size="1920,1080" title="Simple-Movie-Wall" flags="wfNoBorder" backgroundColor="transparent">
+		<widget source="Title" render="Label" position="240,10" size="1480,80" font="Normal; 55" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+		<widget backgroundColor="background" font="Normal; 55" foregroundColor="foreground" halign="center" position="1680,10" render="Label" size="300,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+			<convert type="ClockToText">Format: %H:%M</convert>
+		</widget>
+		<widget backgroundColor="background" foregroundColor="foreground" position="0,0" size="1980,1000" scale="3" render="AdvancedEventLibraryImage" imageType="Image,,/usr/share/enigma2/AELImages/backdrop.jpg" source="Service" transparent="0" zPosition="-3" />
+		<ePixmap pixmap="/usr/share/enigma2/AELImages/shaper.png" position="0,0" size="1980,1000" zPosition="-2" scale="1" alphatest="blend" />
+		<widget backgroundColor="background" foregroundColor="foreground" position="1585,110" size="300,420" scale="3" render="AdvancedEventLibraryImage" imageType="Poster" source="Service" transparent="0" zPosition="3" />
+		<widget alphatest="blend" path="AELImages/parentalrating" position="1815,460" render="Picon" size="60,60" source="Service" zPosition="6">
+			<convert type="AdvancedEventLibraryInfo">ParentalRating</convert>
+		</widget>
+		<widget alphatest="blend" path="AELImages/stars" position="1570,535" render="Picon" size="320,22" source="Service" zPosition="10" scale="1">
+			<convert type="AdvancedEventLibraryInfo">RatingStars</convert>
+		</widget>
+		<widget source="Service" position="40,105" size="1260,50" font="Normal;36" backgroundColor="background" foregroundColor="foreground" halign="left" valign="top" render="Label" transparent="1">
+			<convert type="AdvancedEventLibraryInfo">Title, EpisodeNum(Staffel [s] - Episode [e])</convert>
+		</widget>
+		<widget source="Service" render="Label" position="40,165" size="1260,45" font="Normal; 28" foregroundColor="foreground" backgroundColor="background" transparent="1">
+			<convert type="AdvancedEventLibraryInfo">Genre,Year,Country</convert>
+		</widget>
+		<widget source="Service" position="40,220" size="1520,250" font="Normal;28" render="VRunningText" options="movetype=running,startpoint=0,direction=top,steptime=100,repeat=2,startdelay=5000,wrap,always=0" foregroundColor="foreground" backgroundColor="transparent" alphatest="blend" zPosition="2" >
+			<convert type="AdvancedEventLibraryInfo">ExtendedDescription</convert>
+		</widget>  
+		<widget source="Service" render="Label" position="40,480" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="ServiceTime">StartTime</convert>
+			<convert type="ClockToText">Format:%d.%m.%Y</convert>
+		</widget>
+		<widget source="Service" render="Label" position="190,480" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="ServiceTime">Duration</convert>
+			<convert type="ClockToText">InMinutes</convert>
+			<convert type="AdvancedEventLibraryShowHideText">0 min</convert>
+		</widget>
+		<widget source="Service" render="Label" position="300,480" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="MovieInfo">FileSize</convert>
+			<convert type="AdvancedEventLibraryShowHideText">0 B</convert>
+		</widget>
+		<widget name="moviewall" position="20,550" size="1880,450" itemSize="300,200" progressForegroundColor="#00dddddd" progressForegroundColorSelected="#001663ec" progressBackgroundColor="#00222222" progressBackgroundColorSelected="#00222222" progressBorderWidth="1" font="Normal; 24" maxTextLength="45" textHeightPercent="34" fontColor="#00dddddd" fontColorSelected="#001663ec" imageType="cover" folderImage="/usr/share/enigma2/AELImages/folder.jpg" substituteImage="/usr/share/enigma2/AELImages/substituteImage.jpg" scrambledImage="/usr/share/enigma2/AELImages/scrambled.png" borderColor="#001663ec" borderWidth="1" zPosition="10" itemSpace="10" itemScale="106" viewMode="wall" useShadow="0" transparent="1" backgroundColor="#00161616" backgroundColorSelected="#00767676" foregroundColorSelected="#00ffffff" foregroundColor="#00ffffff" backgroundColorGlobal="#00161616" />
+		<widget name="PageInfo" position="40,515" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3"/>
+		<widget name="NaviInfo" position="340,520" size="1200,35" halign="left" font="Normal;22" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3"/>
+		<widget name="trailer" position="1600,125" size="60,60" transparent="1" alphatest="blend" zPosition="4" scale="1" />
+		<!-- Button Bar -->
+		<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_blue" render="Label" position="1440,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<eLabel backgroundColor="#00050505" position="0,1000" size="1920,80" zPosition="-10" />
+		<eLabel backgroundColor="#00b81c46" position="0,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#00009f3c" position="480,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#009ca81b" position="960,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#002673ec" position="1440,1075" size="480,5" zPosition="2" />
+		<eLabel position="1510,990" size="80,30" text="Menu" font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1590,990" size="80,30" text="PVR" font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1670,990" size="80,30" text="OK " font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1750,990" size="80,30" text="Exit " font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	</screen>
+	<screen name="Advanced-Event-Library-MovieList" position="center,center" size="1920,1080" title="Simple-Movie-Wall" flags="wfNoBorder" backgroundColor="transparent">
+		<widget source="Title" render="Label" position="240,10" size="1480,80" font="Normal; 55" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+		<widget backgroundColor="background" font="Normal; 55" foregroundColor="foreground" halign="center" position="1680,10" render="Label" size="300,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+			<convert type="ClockToText">Format: %H:%M</convert>
+		</widget>
+		<widget backgroundColor="background" foregroundColor="foreground" position="0,0" size="1980,1000" scale="3" render="AdvancedEventLibraryImage" imageType="Image,,/usr/share/enigma2/AELImages/backdrop.jpg" source="Service" transparent="0" zPosition="-3" />
+		<ePixmap pixmap="/usr/share/enigma2/AELImages/shaper.png" position="0,0" size="1980,1000" zPosition="-2" scale="1" alphatest="blend" />
+		<widget source="Service" position="40,105" size="1260,50" font="Normal;36" backgroundColor="background" foregroundColor="foreground" halign="left" valign="top" render="Label" transparent="1">
+			<convert type="AdvancedEventLibraryInfo">Title, EpisodeNum(Staffel [s] - Episode [e])</convert>
+		</widget>
+		<widget source="Service" render="Label" position="40,165" size="1260,45" font="Normal; 28" foregroundColor="foreground" backgroundColor="background" transparent="1">
+			<convert type="AdvancedEventLibraryInfo">Genre,Year,Country</convert>
+		</widget>
+		<widget source="Service" position="40,220" size="1840,310" font="Normal;28" render="VRunningText" options="movetype=running,startpoint=0,direction=top,steptime=100,repeat=2,startdelay=5000,wrap,always=0" foregroundColor="foreground" backgroundColor="transparent" alphatest="blend" zPosition="2" >
+			<convert type="AdvancedEventLibraryInfo">ExtendedDescription</convert>
+		</widget>  
+		<widget source="Service" render="Label" position="40,540" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="ServiceTime">StartTime</convert>
+			<convert type="ClockToText">Format:%d.%m.%Y</convert>
+		</widget>
+		<widget source="Service" render="Label" position="190,540" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="ServiceTime">Duration</convert>
+			<convert type="ClockToText">InMinutes</convert>
+			<convert type="AdvancedEventLibraryShowHideText">0 min</convert>
+		</widget>
+		<widget source="Service" render="Label" position="300,540" size="300,35" halign="left" font="Normal;28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+			<convert type="MovieInfo">FileSize</convert>
+			<convert type="AdvancedEventLibraryShowHideText">0 B</convert>
+		</widget>
+		<widget alphatest="blend" path="AELImages/stars" position="1585,545" render="Picon" size="320,22" source="Service" zPosition="10" scale="1">
+			<convert type="AdvancedEventLibraryInfo">RatingStars</convert>
+		</widget>
+		<widget backgroundColor="background" foregroundColor="foreground" position="1600,590" size="290,390" scale="3" render="AdvancedEventLibraryImage" imageType="Poster" source="Service" transparent="0" zPosition="3" />
+		<widget alphatest="blend" path="AELImages/parentalrating" position="1815,910" render="Picon" size="60,60" source="Service" zPosition="6">
+			<convert type="AdvancedEventLibraryInfo">ParentalRating</convert>
+		</widget>
+		<ePixmap pixmap="/usr/share/enigma2/AELImages/shaper.png" position="40,640" size="1520,340" zPosition="-1" scale="1" alphatest="blend" />
+		<widget name="movielist" position="40,640" size="1520,340" itemHeight="85" firstFont="Normal;31" secondFont="Small;30" backgroundColor="background" backgroundColorSelected="#00666666" foregroundColorSelected="#002673ec" foregroundColor="foreground" firstLineColor="foreground" secondLineColor="#00dddddd" dateColor="#00dddddd" firstLineColorSelected="#002673ec" secondLineColorSelected="#00aaaaaa" dateColorSelected="#00aaaaaa" imagePos="4,4,100,66" recIconPos="120,2,50,40" firstLinePos="120,0,1200,42,60,0" secondLinePos="120,42,1200,42,0,1" datePos="1260,0,240,80,0,1" dateFormat="%a, %d.%m.%Y" progressPos="4,72,100,9,0" progressForegroundColor="#00dddddd" progressForegroundColorSelected="#001663ec" progressBackgroundColor="#00222222" progressBackgroundColorSelected="#00222222" progressBorderWidth="1" maxTextLength="80" imageType="cover" folderImage="/usr/share/enigma2/AELImages/folder.jpg" substituteImage="/usr/share/enigma2/AELImages/substituteImage.jpg" scrambledImage="/usr/share/enigma2/AELImages/scrambled.png" zPosition="2"  transparent="1" scrollbarMode="showOnDemand" scrollbarWidth="4" scrollbarSliderForegroundColor="#00dddddd" scrollbarSliderBorderColor="#00FFFFFF" enableWrapAround="1" />
+		<widget name="NaviInfo" position="40,590" size="1200,35" halign="left" font="Normal;22" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3"/>
+		<widget name="trailer" position="1615,605" size="60,60" transparent="1" alphatest="blend" zPosition="4" scale="1" />
+		<!-- Button Bar -->
+		<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<widget source="key_blue" render="Label" position="1440,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+		<eLabel backgroundColor="#00050505" position="0,1000" size="1920,80" zPosition="-10" />
+		<eLabel backgroundColor="#00b81c46" position="0,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#00009f3c" position="480,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#009ca81b" position="960,1075" size="480,5" zPosition="2" />
+		<eLabel backgroundColor="#002673ec" position="1440,1075" size="480,5" zPosition="2" />
+		<eLabel position="1510,990" size="80,30" text="Menu" font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1590,990" size="80,30" text="PVR" font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1670,990" size="80,30" text="OK " font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+		<eLabel position="1750,990" size="80,30" text="Exit " font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	</screen>
+</skin>

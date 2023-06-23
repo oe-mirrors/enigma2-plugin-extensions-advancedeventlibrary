@@ -1,0 +1,39 @@
+<screen name="AdvancedEventLibraryChannelSelection" position="center,center" size="1920,1080" title="AEL-ChannelSelection" flags="wfNoBorder" backgroundColor="transparent">
+	<eLabel backgroundColor="#00101010" position="0,0" size="1920,1080" zPosition="-20" />
+	<widget source="Title" render="Label" position="0,10" size="1920,50" font="Normal; 35" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+	<widget backgroundColor="background" font="Normal; 35" foregroundColor="foreground" halign="center" position="1680,10" render="Label" size="300,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+		<convert type="ClockToText">Format: %H:%M</convert>
+	</widget>
+	<widget source="Event" backgroundColor="background" foregroundColor="foreground" position="1630,70" size="255,330" scale="3" render="AdvancedEventLibraryImage" imageType="Poster" transparent="0" zPosition="-3" />
+	<widget source="Service" render="Picon" position="20,100" size="150,70" transparent="1" zPosition="3" alphatest="blend" >
+		<convert type="ServiceName">Reference</convert>
+	</widget>
+	<widget source="Event" position="180,90" size="1500,40" font="Normal;30" backgroundColor="background" foregroundColor="foreground" halign="left" valign="top" render="Label" transparent="1" zPosition="3">
+		<convert type="AdvancedEventLibraryInfo">Title, EpisodeNum(Staffel [s] - Episode [e])</convert>
+	</widget>
+	<widget source="Event" render="Label" position="180,130" size="1500,40" font="Normal; 28" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="3">
+		<convert type="AdvancedEventLibraryInfo">SubtitleClean(8),Genre,Country,Year,ParentalRating(FSK: ),Rating,Conclusion</convert>
+	</widget>
+	<widget source="Event" position="40,180" size="1550,240" font="Small;30" render="VRunningText" options="movetype=running,startpoint=0,direction=top,steptime=100,repeat=2,startdelay=5000,wrap,always=0" foregroundColor="foreground" backgroundColor="transparent" alphatest="blend" zPosition="3">
+		<convert type="AdvancedEventLibraryInfo">ExtendedDescriptionClean()</convert>
+	</widget>
+	<widget name="channelList" position="20,430" size="1880,280" itemSize="255,250" control="{'left' : 'left', 'right' : 'right', 'up' : 'up', 'down' : 'down', 'pageUp' : 'pageUp', 'pageDown' : 'pageDown', 'switchControl' : True}" maxTextLength="50" progressPos="0,96,100,3" firstLinePos="14,0,86,20,0,0" secondLinePos="0,70,100,27,0,1" font="Normal; 20" secondFont="Small; 22" progressForegroundColor="#00dddddd" progressForegroundColorSelected="#001663ec" progressBackgroundColor="#00222222" progressBackgroundColorSelected="#00222222" progressBorderWidth="1" fontColor="#00dddddd" fontColorSelected="#001663ec" substituteImage="replaceWithPicon" imageType="cover/thumbnails" imagePos="10,20,80,50" recIconPos="89,7,9,9" piconPos="2,2,14,11" borderColor="#00dddddd" borderWidth="1" zPosition="10" itemSpace="10" itemScale="105" viewMode="wall" useShadow="0" transparent="0" backgroundColor="#00272727" backgroundColorSelected="#00373737" foregroundColorSelected="#00ffffff" foregroundColor="#00ffffff" backgroundColorGlobal="#00101010" />
+	<widget name="eventList" position="20,720" size="1880,280" itemSize="255,250" timeFormat="start,end,duration" control="{'left' : 'left', 'right' : 'right', 'up' : 'up', 'down' : 'down', 'pageUp' : 'pageUp', 'pageDown' : 'pageDown', 'switchControl' : True}" maxTextLength="50" firstLinePos="0,70,100,30,0,0" secondLinePos="0,0,100,20,0,1" font="Normal; 22" secondFont="Small; 24" fontColor="#00dddddd" fontColorSelected="#001663ec" substituteImage="replaceWithPicon" imageType="cover/thumbnails" imagePos="10,20,80,50" recIconPos="89,7,9,9" piconPos="2,2,14,11" borderColor="#00dddddd" borderWidth="1" zPosition="10" itemSpace="10" itemScale="105" viewMode="wall" useShadow="0" transparent="0" backgroundColor="#00272727" backgroundColorSelected="#00373737" foregroundColorSelected="#00ffffff" foregroundColor="#00ffffff" backgroundColorGlobal="#00101010" />
+	<widget name="channelsInfo" position="1680,405" size="200,30" font="Normal; 25" halign="right" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00101010,#00101010" transparent="1" zPosition="21"/>
+	<widget name="eventsInfo" position="1680,700" size="200,30" font="Normal; 25" halign="right" valign="top" foregroundColor="#00aaaaaa" foregroundColors="#00aaaaaa,#002673ec" backgroundColor="background" backgroundColors="#00101010,#00101010" transparent="1" zPosition="21"/>
+	<widget name="trailer" position="1645,85" size="60,60" transparent="1" alphatest="blend" zPosition="4" scale="1" />
+	<!-- Button Bar -->
+	<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_blue" render="Label" position="1440,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<eLabel backgroundColor="#00050505" position="0,1000" size="1920,80" zPosition="-10" />
+	<eLabel backgroundColor="#00b81c46" position="0,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#00009f3c" position="480,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#009ca81b" position="960,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#002673ec" position="1440,1075" size="480,5" zPosition="2" />
+	<eLabel position="1525,990" size="80,30" text="Menu" font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1615,990" size="80,30" text="PVR" font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1695,990" size="80,30" text="OK " font="Normal; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1775,990" size="80,30" text="Exit " font="Normal;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+</screen>

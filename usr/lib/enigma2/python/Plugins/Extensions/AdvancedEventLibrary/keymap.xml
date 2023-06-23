@@ -1,0 +1,21 @@
+<keymap>
+	<map context="AdvancedEventLibraryActions">
+		<key id="KEY_RED" mapto="key_red" flags="m" />
+		<key id="KEY_GREEN" mapto="key_green" flags="m" />
+		<key id="KEY_YELLOW" mapto="key_yellow" flags="m" />
+		<key id="KEY_BLUE" mapto="key_blue" flags="m" />
+		<key id="KEY_EXIT" mapto="key_cancel" flags="m" />
+		<key id="KEY_HOME" mapto="key_cancel" flags="m" />
+		<key id="KEY_UP" mapto="key_up" flags="mr" />
+		<key id="KEY_DOWN" mapto="key_down" flags="mr" />
+		<key id="KEY_LEFT" mapto="key_left" flags="mr" />
+		<key id="KEY_RIGHT" mapto="key_right" flags="mr" />
+		<key id="KEY_MENU" mapto="key_menu" flags="b" />
+		<key id="KEY_OK" mapto="key_ok" flags="m" />
+		<key id="KEY_CHANNELUP" mapto="key_channel_up" flags="m" />
+		<key id="KEY_CHANNELDOWN" mapto="key_channel_down" flags="m" />
+		<key id="KEY_VIDEO" mapto="key_pvr" flags="m" />
+		<key id="KEY_INFO" mapto="key_info" flags="m" />
+		<key id="KEY_PLAY" mapto="key_play" flags="m" />
+	</map>
+</keymap>

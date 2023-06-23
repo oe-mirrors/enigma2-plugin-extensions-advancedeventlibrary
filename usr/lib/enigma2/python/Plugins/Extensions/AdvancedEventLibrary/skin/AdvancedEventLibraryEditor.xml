@@ -1,0 +1,28 @@
+<screen name="Advanced-Event-Library-Editor" size="1920,1080" position="0,0" title="Advanced-Event-Library-Editor" backgroundColor="#FF000000">
+	<eLabel backgroundColor="#00101010" position="0,0" size="1920,1080" zPosition="-20" />
+	<eLabel backgroundColor="#00050505" position="0,0" size="1920,130" zPosition="-10" />
+	<widget source="Title" render="Label" position="95,50" size="1730,100" font="Normal;50" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+	<ePixmap pixmap="AELImages/keyboard.png" scale="40" position="40,20" size="100,100" zPosition="2" alphatest="blend" />
+	<widget backgroundColor="background" font="Normal; 50" foregroundColor="foreground" halign="center" position="1540,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+		<convert type="ClockToText">Format: %H:%M</convert>
+	</widget>
+	<widget name="config" position="20,140" size="1200,300" itemHeight="42" font="Normal;32" valign="center" scrollbarMode="showOnDemand" transparent="0" backgroundColor="background" scrollbarSliderBorderWidth="0" scrollbarWidth="4" enableWrapAround="1" backgroundColorSelected="#00484848" foregroundColorSelected="#00FFFFFF" backgroundColorRows="#00272727" />
+	<widget name="cover" position="1300,140" size="550,290" zPosition="5" alphatest="blend" transparent="1" scale="1"/>
+	<widget name="poster" position="1500,140" size="200,290" zPosition="5" alphatest="blend" transparent="1" scale="1"/>
+	<widget name="pList" position="20,440" size="920,540" zPosition="4" font="Normal;32" scrollbarMode="showOnDemand" scrollbarSliderForegroundColor="#002673ec" scrollbarSliderBorderColor="#00dddddd" scrollbarSliderBorderWidth="1" scrollbarWidth="4" enableWrapAround="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="#002673ec" transparent="1" />
+	<widget name="cList" position="980,440" size="920,540" zPosition="4" font="Normal;32" scrollbarMode="showOnDemand" scrollbarSliderForegroundColor="#002673ec" scrollbarSliderBorderColor="#00dddddd" scrollbarSliderBorderWidth="1" scrollbarWidth="4" enableWrapAround="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="#002673ec" transparent="1" />
+	<widget name="sList" position="20,140" size="1200,300" zPosition="6" itemHeight="75" font="Normal;32" scrollbarMode="showOnDemand" scrollbarSliderForegroundColor="#002673ec" scrollbarSliderBorderColor="#00dddddd" scrollbarSliderBorderWidth="1" scrollbarWidth="4" enableWrapAround="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="#002673ec" transparent="0" />
+	<!-- Button Bar -->
+	<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<widget source="key_blue" render="Label" position="1440,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
+	<eLabel backgroundColor="#00050505" position="0,1000" size="1920,80" zPosition="-10" />
+	<eLabel backgroundColor="#00b81c46" position="0,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#00009f3c" position="480,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#009ca81b" position="960,1075" size="480,5" zPosition="2" />
+	<eLabel backgroundColor="#002673ec" position="1440,1075" size="480,5" zPosition="2" />
+	<eLabel position="1633,990" size="100,30" text="OK" font="Small; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel position="1733,990" size="100,30" text="Exit " font="Small; 25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+	<eLabel text="Menu" position="1533,990" size="100,30" font="Small;25" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" zPosition="2" />
+</screen>
