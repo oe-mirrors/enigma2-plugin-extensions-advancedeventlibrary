@@ -7,6 +7,8 @@
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
+from __future__ import absolute_import
+from __future__ import print_function
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.EventView import EventViewSimple, EventViewBase, EventViewMovieEvent
@@ -19,13 +21,15 @@ from Screens.InfoBar import InfoBar, MoviePlayer
 from Screens.InfoBarGenerics import InfoBarSimpleEventView
 from Screens.MovieSelection import MovieSelection
 from Screens.HelpMenu import HelpableScreen
-from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_EPGBAR
+from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_INFOBAR
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.ExtEvent import ExtEvent
 from Components.Sources.StaticText import StaticText
-from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger, fileExists
+from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger
+from Tools.Directories import fileExists
 from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.FunctionTimer import functionTimer
+#missing
+#from Components.FunctionTimer import functionTimer
 from Components.Label import Label
 from Components.ScrollLabel import ScrollLabel
 from Components.Button import Button
@@ -36,8 +40,9 @@ from Plugins.Plugin import PluginDescriptor
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, eTimer, eServiceReference, addFont, eServiceCenter
 from threading import Timer
-from thread import start_new_thread
-from Tools.SystemEvents import systemevents
+import threading
+#missing
+#from Tools.SystemEvents import systemevents
 from Tools.LoadPixmap import LoadPixmap
 from ServiceReference import ServiceReference
 from time import time, localtime
@@ -45,17 +50,17 @@ import Tools.AutoTimerHook as AutoTimerHook
 from Tools.MovieInfoParser import getExtendedMovieDescription
 import os
 import re
-import skin
-import cPickle as pickle
+from . import skin
+import pickle
 import Screens.Standby
 
-import .AdvancedEventLibrarySystem
-import .AdvancedEventLibrarySimpleMovieWall
-import .AdvancedEventLibrarySerienStarts
-import .AdvancedEventLibraryPrimeTime
-import .AdvancedEventLibraryChannelSelection
-import .AdvancedEventLibraryMediaHub
-import .AdvancedEventLibraryRecommendations
+from . import AdvancedEventLibrarySystem
+from . import AdvancedEventLibrarySimpleMovieWall
+from . import AdvancedEventLibrarySerienStarts
+from . import AdvancedEventLibraryPrimeTime
+from . import AdvancedEventLibraryChannelSelection
+from . import AdvancedEventLibraryMediaHub
+from . import AdvancedEventLibraryRecommendations
 from Tools.AdvancedEventLibrary import getDB, convertTitle, convert2base64
 
 global leavePlayerfromTrailer
@@ -104,23 +109,23 @@ def write_log(svalue):
 
 def sessionstart(reason, **kwargs):
 	try:
-		if kwargs.has_key('session') and reason == 0:
+		if 'session' in kwargs and reason == 0:
 			global ServiceTrack
 			ServiceTrack = Recommendations()
 			global gSession
 			gSession = kwargs["session"]
 			foundTimer = False
 			foundBackup = False
-			fTimers = functionTimer.get()
-			for fTimer in fTimers:
-				if 'AdvancedEventLibraryUpdate' in fTimer:
-					foundTimer = True
-				if 'AdvancedEventLibraryBackup' in fTimer:
-					foundBackup = True
-			if not foundTimer:
-				functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "imports": "Tools.AdvancedEventLibrary", "fnc": "getallEventsfromEPG"}))
-			if not foundBackup:
-				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
+			#fTimers = functionTimer.get()
+			#for fTimer in fTimers:
+			#	if 'AdvancedEventLibraryUpdate' in fTimer:
+			#		foundTimer = True
+			#	if 'AdvancedEventLibraryBackup' in fTimer:
+			#		foundBackup = True
+			#if not foundTimer:
+			#	functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "imports": "Tools.AdvancedEventLibrary", "fnc": "getallEventsfromEPG"}))
+			#if not foundBackup:
+			#	functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
 			InfoBarSimpleEventViewInit()
 			EPGSelectionInit()
@@ -133,13 +138,14 @@ def sessionstart(reason, **kwargs):
 			MoviePlayer.setPlayMode = setPlayModeNew
 			MovieSelection.showEventInformation = showEventInformationNew
 			getExtendedMovieDescription = getExtendedMovieDescriptionNew
-			for evt in systemevents.getSystemEvents():
+			#missing
+			##for evt in systemevents.getSystemEvents():
 #				write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
-				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-					if refreshMovieData and refreshMovieWall:
-						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
-				if evt == systemevents.SERVICE_START:
-					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
+			##	if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+			##		if refreshMovieData and refreshMovieWall:
+			##			systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
+			##	if evt == systemevents.SERVICE_START:
+			##		systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
 	except Exception as ex:
 		write_log('sessionstart ' + str(ex))
 
@@ -272,13 +278,13 @@ def getExtendedMovieDescriptionNew(ref):
 def _refreshMovieWall(evt, *args):
 		if len(args) > 0:
 			write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
-		if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-			refreshData = Timer(30, refreshMovieWallData)
-			refreshData.start()
+		##if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+		##	refreshData = Timer(30, refreshMovieWallData)
+		##	refreshData.start()
 
 
 def refreshMovieWallData():
-	start_new_thread(saveMovieWallData, ())
+	threading.start_new_thread(saveMovieWallData, ())
 
 
 def saveMovieWallData():
@@ -797,7 +803,7 @@ def EPGSelection_onCreate(self):
 		title = self.saved_title + ' - ' + service.getServiceName()
 		self.instance.setTitle(title)
 		l.fillSingleEPG(service)
-	elif self.type == EPG_TYPE_EPGBAR:
+	elif self.type == EPG_TYPE_INFOBAR:
 		service = self.currentService
 		self["Service"].newService(service.ref)
 		l.fillEPGBar(service)
@@ -851,11 +857,11 @@ def EPGSelection_onSelectionChanged(self):
 		if self.key_green_choice != self.EMPTY:
 			self["key_green"].setText("")
 			self.key_green_choice = self.EMPTY
-		if self.key_red_choice != self.EMPTY and self.type != EPG_TYPE_EPGBAR and self.type != EPG_TYPE_SINGLE:
+		if self.key_red_choice != self.EMPTY and self.type != EPG_TYPE_INFOBAR and self.type != EPG_TYPE_SINGLE:
 			self["key_red"].setText("")
 			self.key_red_choice = self.EMPTY
 		return
-	elif self.key_red_choice != self.ZAP and (self.type == EPG_TYPE_MULTI or self.type == EPG_TYPE_EPGBAR or self.type == EPG_TYPE_SINGLE):
+	elif self.key_red_choice != self.ZAP and (self.type == EPG_TYPE_MULTI or self.type == EPG_TYPE_INFOBAR or self.type == EPG_TYPE_SINGLE):
 			if self.zapFunc:
 				self["key_red"].setText(_("Zap"))
 				self.key_red_choice = self.ZAP

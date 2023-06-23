@@ -21,7 +21,7 @@ import re
 EPG_TYPE_SINGLE = 0
 EPG_TYPE_MULTI = 1
 EPG_TYPE_SIMILAR = 2
-EPG_TYPE_EPGBAR = 3
+EPG_TYPE_INFOBAR = 3
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
 usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
@@ -64,7 +64,7 @@ class AEL_EPGList(HTMLComponent, GUIComponent):
 		self.type = type
 		self.l = eListboxPythonMultiContent()
 		self.defaultImage = str(skin.variables.get("EventLibraryEPGListsDefaultImage", ('/usr/share/enigma2/AELImages/movies.png',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		if type == EPG_TYPE_SINGLE or type == EPG_TYPE_EPGBAR:
+		if type == EPG_TYPE_SINGLE or type == EPG_TYPE_INFOBAR:
 			ffont, fsize = skin.parameters.get("EventLibraryEPGSingleListFirstFont", ('Regular', 26))
 			sfont, ssize = skin.parameters.get("EventLibraryEPGSingleListSecondFont", ('Regular', 30))
 			self.l.setItemHeight(int(skin.parameters.get("EventLibraryEPGSingleListItemHeight", (70,))[0]))
@@ -424,7 +424,7 @@ class AEL_EPGList(HTMLComponent, GUIComponent):
 		event_id = self.getSelectedEventId()
 		cur = self.getCurrent()
 		if cur[1]:
-			if self.type == EPG_TYPE_SINGLE or self.type == EPG_TYPE_EPGBAR:
+			if self.type == EPG_TYPE_SINGLE or self.type == EPG_TYPE_INFOBAR:
 				self.fillSingleEPG(cur[1])
 				if event_id:
 					self.moveToEventId(event_id)

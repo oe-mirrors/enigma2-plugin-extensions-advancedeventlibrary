@@ -13,7 +13,7 @@ from urllib.parse import quote
 import json
 import codecs
 import os
-import StringIO
+import io
 import base64
 import shutil
 import requests
@@ -26,17 +26,17 @@ import skin
 from random import SystemRandom
 from sqlite3 import Error
 from time import time, localtime, strftime, mktime
-from thread import start_new_thread
+import threading
 from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, eTimer, iPlayableServicePtr, iPlayableService
 from Screens.ChannelSelection import service_types_tv
 from operator import itemgetter
-from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, fileExists
+from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection
+from Tools.Directories import fileExists
 from PIL import Image
 from Tools.Alternatives import GetWithAlternative
 from Tools.Bytes2Human import bytes2human
 from Components.Sources.Event import Event
 from Components.Sources.ExtEvent import ExtEvent
-from Components.Sources.extEventInfo import extEventInfo
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from Tools.Directories import defaultRecordingLocation
@@ -49,7 +49,7 @@ from twisted.python import failure
 from twisted.internet._sslverify import ClientTLSOptions
 
 import tmdbsimple as tmdb
-from . import tvdbsimple as tvdb
+import tvdbsimple as tvdb
 from . import tvdb_api_v4
 isInstalled = True
 
@@ -94,7 +94,8 @@ if searchPlaces.value != '':
 	except:
 		pass
 
-vtidb_loc = config.misc.db_path.value + '/vtidb.db'
+#not used
+#vtidb_loc = config.misc.db_path.value + '/vtidb.db'
 
 STATUS = None
 PARAMETER_SET = 0
@@ -1339,7 +1340,7 @@ def removeLogs():
 
 def startUpdate():
 	if isInstalled:
-		start_new_thread(getallEventsfromEPG, ())
+		threading.start_new_thread(getallEventsfromEPG, ())
 	else:
 		write_log("AdvancedEventLibrary not installed")
 
@@ -1721,36 +1722,36 @@ def getAllRecords(db):
 				write_log('recordPath ' + str(recordPath) + ' is not exists')
 		write_log('found ' + str(len(names)) + ' new Records in meta Files')
 #		check vtidb
-		doIt = False
-		if "VTiDB" in sPDict:
-			if sPDict["VTiDB"]:
-				doIt = True
-		else:
-			doIt = True
-		if (fileExists(vtidb_loc) and doIt):
-			STATUS = 'durchsuche VTI-DB...'
-			vtidb_conn = sqlite3.connect(vtidb_loc, check_same_thread=False)
-			cur = vtidb_conn.cursor()
-			query = "SELECT title FROM moviedb_v0001"
-			cur.execute(query)
-			rows = cur.fetchall()
-			if rows:
-				write_log('check ' + str(len(rows)) + ' titles in vtidb')
-				for row in rows:
-					try:
-						if row[0] and row[0] != '' and row[0] != ' ':
-							foundInBl = False
-							name = convertTitle(row[0])
-							if db.getblackList(convert2base64(name)):
-								name = convertTitle2(row[0])
-								if db.getblackList(convert2base64(name)):
-									foundInBl = True
-							if not db.checkTitle(convert2base64(name)) and not foundInBl:
-								names.add(name)
-					except Exception as ex:
-						write_log("Fehler in getAllRecords vtidb: " + str(row[0]) + ' - ' + str(ex))
-						continue
-		write_log('found ' + str(len(names)) + ' new Records')
+		#doIt = False
+		#if "VTiDB" in sPDict:
+		#	if sPDict["VTiDB"]:
+		#		doIt = True
+		#else:
+		#	doIt = True
+		#if (fileExists(vtidb_loc) and doIt):
+		#	STATUS = 'durchsuche VTI-DB...'
+		#	vtidb_conn = sqlite3.connect(vtidb_loc, check_same_thread=False)
+		#	cur = vtidb_conn.cursor()
+		#	query = "SELECT title FROM moviedb_v0001"
+		#	cur.execute(query)
+		#	rows = cur.fetchall()
+		#	if rows:
+		#		write_log('check ' + str(len(rows)) + ' titles in vtidb')
+		#		for row in rows:
+		#			try:
+		#				if row[0] and row[0] != '' and row[0] != ' ':
+		#					foundInBl = False
+		#					name = convertTitle(row[0])
+		#					if db.getblackList(convert2base64(name)):
+		#						name = convertTitle2(row[0])
+		#						if db.getblackList(convert2base64(name)):
+		#							foundInBl = True
+		#					if not db.checkTitle(convert2base64(name)) and not foundInBl:
+		#						names.add(name)
+		#			except Exception as ex:
+		#				write_log("Fehler in getAllRecords vtidb: " + str(row[0]) + ' - ' + str(ex))
+		#				continue
+		#write_log('found ' + str(len(names)) + ' new Records')
 		return names
 	except Exception as ex:
 		write_log("Fehler in getAllRecords : " + str(ex))
@@ -2651,7 +2652,7 @@ def reduceImageSize(path, db):
 						w = int(img.size[0])
 						h = int(img.size[1])
 						STATUS = 'Bearbeite ' + str(fn) + '.jpg mit ' + str(bytes2human(os.path.getsize(f), 1)) + ' und ' + str(w) + 'x' + str(h) + 'px'
-						img_bytes = StringIO.StringIO()
+						img_bytes = io.StringIO()
 						img1 = img.convert('RGB', colors=256)
 						img1.save(img_bytes, format='jpeg')
 						if img_bytes.tell() / 1024 >= oldSize:
@@ -2710,7 +2711,7 @@ def reduceSigleImageSize(src, dest):
 					w = int(img.size[0])
 					h = int(img.size[1])
 					write_log('convert image ' + str(fn) + '.jpg with ' + str(bytes2human(os.path.getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
-					img_bytes = StringIO.StringIO()
+					img_bytes = io.StringIO()
 					img1 = img.convert('RGB', colors=256)
 					img1.save(img_bytes, format='jpeg')
 					if img_bytes.tell() / 1024 >= oldSize:
@@ -5451,7 +5452,7 @@ class HTTPProgressDownloader(client.HTTPDownloader):
 
 	def gotHeaders(self, headers):
 		if self.status == "200":
-			if headers.has_key("content-length"):
+			if "content-length" in headers:
 				self.totalbytes = int(headers["content-length"][0])
 			else:
 				self.totalbytes = 0
@@ -5469,13 +5470,13 @@ class HTTPProgressDownloader(client.HTTPDownloader):
 		return client.HTTPDownloader.pageEnd(self)
 
 
-import urlparse
+from urllib.parse import urlparse, urlunparse
 
 
 def url_parse(url, defaultPort=None):
-	parsed = urlparse.urlparse(url)
+	parsed = urlparse(url)
 	scheme = parsed[0]
-	path = urlparse.urlunparse(('', '') + parsed[2:])
+	path = urlunparse(('', '') + parsed[2:])
 	if defaultPort is None:
 		if scheme == 'https':
 			defaultPort = 443

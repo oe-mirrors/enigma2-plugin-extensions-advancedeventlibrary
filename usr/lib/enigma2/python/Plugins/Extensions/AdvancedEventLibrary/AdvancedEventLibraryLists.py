@@ -1,10 +1,12 @@
 ﻿#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 
+from __future__ import absolute_import
+from __future__ import print_function
 from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from Components.HTMLComponent import HTMLComponent
-from enigma import eListbox, eLabel, eWall, eWallPythonMultiContent, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from skin import parseColor
 from collections import OrderedDict
 from Components.AVSwitch import AVSwitch
@@ -13,10 +15,10 @@ from time import time, localtime
 from Components.config import config
 from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
-import HTMLParser
+from html.parser import HTMLParser
 import glob
 import os
-import skin
+from . import skin
 import datetime
 
 piconpath = config.usage.picon_dir.value
@@ -715,18 +717,18 @@ class MovieList(GUIComponent, object):
 
 
 class AELBaseWall(GUIComponent, object):
-	GUI_WIDGET = eWall
+	GUI_WIDGET = eListbox
 
 	def __init__(self):
 		GUIComponent.__init__(self)
-		self.l = eWallPythonMultiContent()
+		self.l = eListboxPythonMultiContent()
 		self.l.setBuildFunc(self.setentry)
 		self.l.setFont(0, gFont('Regular', 22))
 		self.l.setFont(1, gFont('Regular', 22))
 		self.onselectionchanged = []
 		self.l.setSelectableFunc(self.isselectable)
-		self.l.setViewMode(eWallPythonMultiContent.MODE_WALL)
-		self.l.setScrollMode(eWallPythonMultiContent.SCROLLMODE_PAGE)
+		self.l.setViewMode(eListboxPythonMultiContent.MODE_WALL)
+		self.l.setScrollMode(eListboxPythonMultiContent.SCROLLMODE_PAGE)
 		self.list = []
 		self.selectedItem = None
 		self.instance = None
@@ -861,21 +863,21 @@ class AELBaseWall(GUIComponent, object):
 						self.l.setItemScale_H(int(value))
 				elif attrib == "viewMode":
 					self.l.setViewMode(
-						{"wall": eWallPythonMultiContent.MODE_WALL,
-						 "list_horizontal": eWallPythonMultiContent.MODE_LIST_HORIZONTAL,
-							"list_vertical": eWallPythonMultiContent.MODE_LIST_VERTICAL,
+						{"wall": eListboxPythonMultiContent.MODE_WALL,
+						 "list_horizontal": eListboxPythonMultiContent.MODE_LIST_HORIZONTAL,
+							"list_vertical": eListboxPythonMultiContent.MODE_LIST_VERTICAL,
 						 }[value])
 				elif attrib == "aspectRatio":
 					self.l.setAspectRatio(
-						{"dvd": eWallPythonMultiContent.ASPECT_DVD,
-						 "cd": eWallPythonMultiContent.ASPECT_CD,
-							"screen": eWallPythonMultiContent.ASPECT_SCREEN,
-							"banner": eWallPythonMultiContent.ASPECT_BANNER,
+						{"dvd": eListboxPythonMultiContent.ASPECT_DVD,
+						 "cd": eListboxPythonMultiContent.ASPECT_CD,
+							"screen": eListboxPythonMultiContent.ASPECT_SCREEN,
+							"banner": eListboxPythonMultiContent.ASPECT_BANNER,
 						 }[value])
 				elif attrib == "scrollMode":
 					self.l.setScrollMode(
-						{"page": eWallPythonMultiContent.SCROLLMODE_PAGE,
-						 "flow": eWallPythonMultiContent.SCROLLMODE_FLOW,
+						{"page": eListboxPythonMultiContent.SCROLLMODE_PAGE,
+						 "flow": eListboxPythonMultiContent.SCROLLMODE_FLOW,
 						 }[value])
 				elif attrib == "dimensions":
 					self.l.setColumnCount(int(value.split(',')[0]))

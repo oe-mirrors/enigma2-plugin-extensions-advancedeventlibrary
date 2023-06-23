@@ -1,3 +1,4 @@
+from __future__ import print_function
 import base64
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode

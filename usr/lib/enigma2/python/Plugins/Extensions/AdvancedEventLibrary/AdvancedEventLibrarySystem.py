@@ -8,6 +8,7 @@
 #																				#
 #################################################################################
 
+from __future__ import absolute_import
 from Screens.Screen import Screen
 from Components.ActionMap import ActionMap
 from Screens.Standby import TryQuitMainloop
@@ -21,10 +22,11 @@ from Components.Sources.StaticText import StaticText
 from Components.GUIComponent import GUIComponent
 from Components.Input import Input
 from Components.Pixmap import Pixmap
-from Components.ConfigList import ConfigListScreen, getSelectionChoices
+from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
     ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, fileExists, ConfigNothing, ConfigDescription
+    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing, ConfigDescription
+from Tools.Directories import fileExists
 from time import localtime, time
 from Tools import AdvancedEventLibrary as AEL
 from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, createBackup, convertTitle, setStatus, startUpdate, clearMem
@@ -32,7 +34,7 @@ from Tools.Bytes2Human import bytes2human
 from enigma import eTimer, ePixmap, ePicLoad, eServiceReference, eServiceCenter, iServiceInformation
 from Tools.Directories import defaultRecordingLocation
 from Components.FileList import FileList
-from thread import start_new_thread
+import threading
 from Components.Button import Button
 from Components.Sources.List import List
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaTest
@@ -45,16 +47,16 @@ import shutil
 import linecache
 import base64
 import glob
-import skin
+from . import skin
 import json
 import requests
-import .AdvancedEventLibraryPrimeTime
-import .AdvancedEventLibrarySerienStarts
-import .AdvancedEventLibrarySimpleMovieWall
-import .AdvancedEventLibraryChannelSelection
-import .AdvancedEventLibraryLists
-import .AdvancedEventLibraryMediaHub
-import .AdvancedEventLibraryRecommendations
+from . import AdvancedEventLibraryPrimeTime
+from . import AdvancedEventLibrarySerienStarts
+from . import AdvancedEventLibrarySimpleMovieWall
+from . import AdvancedEventLibraryChannelSelection
+from . import AdvancedEventLibraryLists
+from . import AdvancedEventLibraryMediaHub
+from . import AdvancedEventLibraryRecommendations
 from .AdvancedEventLibrarySimpleMovieWall import saving
 
 currentVersion = 124
@@ -346,7 +348,7 @@ class AELMenu(Screen):
 		startUpdate()
 
 	def key_yellow_handler(self):
-		start_new_thread(createBackup, ())
+		threading.start_new_thread(createBackup, ())
 
 	def createDirs(self, path):
 		if not os.path.exists(path):
@@ -1079,7 +1081,7 @@ class Editor(Screen, ConfigListScreen):
 					self['pList'].setList(waitList)
 					self.cSource = 1
 					self.pSource = 1
-					start_new_thread(self.searchPics, ())
+					threading.start_new_thread(self.searchPics, ())
 				except Exception as ex:
 					write_log("Fehler in key_ok_handler " + str(ex))
 			elif self.activeList == 'editor':
@@ -1167,7 +1169,7 @@ class Editor(Screen, ConfigListScreen):
 			self['sList'].show()
 			self.activeList = 'choiceBox'
 			self.text = text
-			start_new_thread(self.searchAll, ())
+			threading.start_new_thread(self.searchAll, ())
 
 	def searchAll(self):
 		self['sList'].setList(AEL.get_searchResults(self.text, self.language))
@@ -1296,25 +1298,25 @@ class Editor(Screen, ConfigListScreen):
 						os.remove(f)
 					del filelist
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (nicht vorhandene)':
-				start_new_thread(AEL.downloadAllImagesfromAELImageServer, ())
+				threading.start_new_thread(AEL.downloadAllImagesfromAELImageServer, ())
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (ersetzen)':
-				start_new_thread(AEL.downloadAllImagesfromAELImageServer, (True,))
+				threading.start_new_thread(AEL.downloadAllImagesfromAELImageServer, (True,))
 			elif ret[0] == 'Bilder überprüfen':
-				start_new_thread(AEL.checkAllImages, ())
+				threading.start_new_thread(AEL.checkAllImages, ())
 			elif ret[0] == 'lade Cover':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.cSource = 1
 				self['cList'].setList(waitList)
-				start_new_thread(self.searchPics, (False, True))
+				threading.start_new_thread(self.searchPics, (False, True))
 			elif ret[0] == 'lade Poster':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.pSource = 1
 				self['pList'].setList(waitList)
-				start_new_thread(self.searchPics, (True, False))
+				threading.start_new_thread(self.searchPics, (True, False))
 			elif 'Screenshot' in ret[0]:
 				if self.activeList == "cover":
 					self.activeList = 'screenshot cover'
@@ -1567,7 +1569,7 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.cSource = 1
 					self['cList'].setList(waitList)
-					start_new_thread(self.searchPics, (False, True))
+					threading.start_new_thread(self.searchPics, (False, True))
 				del coverFiles
 
 			if refreshPoster:
@@ -1627,7 +1629,7 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.pSource = 1
 					self['pList'].setList(waitList)
-					start_new_thread(self.searchPics, (True, False))
+					threading.start_new_thread(self.searchPics, (True, False))
 				del posterFiles
 
 			self['sList'].setList(waitList)

@@ -36,7 +36,7 @@ class AdvancedEventLibraryNextEvents(Converter, object):
 				if self.element < 0:
 					return curEvent
 				else:
-					if not type(ref) is str:
+					if not isinstance(ref, str):
 						ref = eServiceReference(ref.toString())
 					else:
 						ref = eServiceReference(ref)

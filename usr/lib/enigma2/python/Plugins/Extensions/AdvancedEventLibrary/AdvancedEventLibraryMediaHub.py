@@ -1,4 +1,5 @@
 # coding=utf-8
+from __future__ import absolute_import
 from operator import itemgetter
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
@@ -21,30 +22,29 @@ import os
 import re
 import json
 import NavigationInstance
-import HTMLParser
-import skin
-import cPickle as pickle
+from html.parser import HTMLParser
+from skin import loadSkin
+import pickle
 import struct
 from datetime import timedelta
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eWallPythonMultiContent, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
-from thread import start_new_thread
-from Components.ConfigList import ConfigListScreen, getSelectionChoices
+from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
     ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, fileExists, ConfigNothing, ConfigDescription
-
-import .AdvancedEventLibrarySystem
-import .AdvancedEventLibrarySimpleMovieWall
-import .AdvancedEventLibraryChannelSelection
+    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing, ConfigDescription
+from Tools.Directories import fileExists
+from . import AdvancedEventLibrarySystem
+from . import AdvancedEventLibrarySimpleMovieWall
+from . import AdvancedEventLibraryChannelSelection
 from .AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
-htmlParser = HTMLParser.HTMLParser()
+htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/'

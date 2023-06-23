@@ -1,4 +1,5 @@
 ﻿# coding=utf-8
+from __future__ import absolute_import
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.ChoiceBox import ChoiceBox
@@ -16,23 +17,23 @@ from Components.Task import job_manager
 from time import time, localtime
 from enigma import iServiceInformation, eServiceReference, eServiceCenter, ePixmap
 from ServiceReference import ServiceReference
-from enigma import eTimer, ePicLoad, eLabel, eWall, eWallPythonMultiContent, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
-from Components.ConfigList import ConfigListScreen, getSelectionChoices
-from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile, fileExists, ConfigDescription
+from enigma import eTimer, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
+from Components.ConfigList import ConfigListScreen
+from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile, ConfigDescription
+from Tools.Directories import fileExists
 from glob import glob
-import .AdvancedEventLibrarySystem
+from . import AdvancedEventLibrarySystem
 from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, setStatus, clearMem, getDB, convert2base64
 from .AdvancedEventLibraryLists import AELBaseWall, MovieList
 from Tools.LoadPixmap import LoadPixmap
-from thread import start_new_thread
 import datetime
 import os
 import re
-import skin
+from skin import loadSkin
 import struct
 import shutil
 import linecache
-import cPickle as pickle
+import pickle
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/'
@@ -92,7 +93,7 @@ def loadskin(filename):
 
 class AdvancedEventLibrarySimpleMovieWall(Screen):
 	ALLOW_SUSPEND = True
-	skin = skin.loadSkin(skinpath + "AdvancedEventLibraryMovieLists.xml")
+	skin = loadSkin(skinpath + "AdvancedEventLibraryMovieLists.xml")
 
 	def __init__(self, session, viewType="Wallansicht"):
 		global active
@@ -457,55 +458,56 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					scrambled_or_rec = self.scrambledImage
 
 			if self.viewType == 'Wallansicht':
-				if entrys.isFolder and entrys.image != self.folderImage:
-					return [entrys,
-										(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-										(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 18, 20, 18, 20, self.tfolderImage, None, None, BT_SCALE),
-										(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-										(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-										]
-				else:
-					if entrys.isFolder:
-						return [entrys,
-											(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-											(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-											(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-											]
-					else:
-						if self.showProgress.value:
-							if scrambled_or_rec:
-								return [entrys,
-													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], scrambled_or_rec, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-													(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
-													]
-							else:
-								return [entrys,
-													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-													(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
-													]
-						else:
-							if scrambled_or_rec:
-								return [entrys,
-													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], scrambled_or_rec, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-													]
-							else:
-								return [entrys,
-													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-													]
+				#REWORK
+				#if entrys.isFolder and entrys.image != self.folderImage:
+				#	return [entrys,
+				#						(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#						(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 18, 20, 18, 20, self.tfolderImage, None, None, BT_SCALE),
+				#						(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#						(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#						]
+				#else:
+				#	if entrys.isFolder:
+				#		return [entrys,
+				#							(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#							(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#							(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#							]
+				#	else:
+				#		if self.showProgress.value:
+				#			if scrambled_or_rec:
+				#				return [entrys,
+				#									(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], scrambled_or_rec, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#									(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
+				#									]
+				#			else:
+				#				return [entrys,
+				#									(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#									(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
+				#									]
+				#		else:
+				#			if scrambled_or_rec:
+				#				return [entrys,
+				#									(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], scrambled_or_rec, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#									]
+				#			else:
+				#				return [entrys,
+				#									(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+				#									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#									]
 				write_log("error in entrys : " + str(entrys))
-				return [entrys,
-									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, self.fontOrientation, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-									]
+				#return [entrys,
+				#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, self.fontOrientation, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#					]
 			else:
 				width = self["movielist"].l.getItemSize().width()
 				height = self["movielist"].l.getItemSize().height()
@@ -548,9 +550,10 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		except Exception as ex:
 			write_log("setMovieEntry : " + str(ex))
 			if self.viewType == 'Wallansicht':
-				return [entrys,
-									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex), skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-									]
+				pass
+				#return [entrys,
+				#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex), skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+				#					]
 			else:
 				res = [None]
 				res.append((eListboxPythonMultiContent.TYPE_TEXT, 20, 0, (width - 40), height, 1, RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex)))
