@@ -18,11 +18,13 @@ class AuthenticationError(Exception):
 	"""
 	pass
 
+
 class APIKeyError(Exception):
 	"""
 	Missing API key exception class in case of missing api
 	"""
 	pass
+
 
 class TVDB(object):
 	"""
@@ -40,12 +42,12 @@ class TVDB(object):
 	def __init__(self, id=0, user=None, key=None):
 		"""
 		Initialize the base class.
-		
-		You can provide `id` that is the item id used for url creation. You can also 
-		provide `user`, that is the username for login. 
-		You can also provide `key`, that is the userkey needed to 
-		authenticate with the user, you can find it in the 
-		[account info](http://thetvdb.com/?tab=userinfo) under account identifier., 
+
+		You can provide `id` that is the item id used for url creation. You can also
+		provide `user`, that is the username for login.
+		You can also provide `key`, that is the userkey needed to
+		authenticate with the user, you can find it in the
+		[account info](http://thetvdb.com/?tab=userinfo) under account identifier.,
 		the language id you want to use to retrieve the info.
 		"""
 		self._ID = id
@@ -66,7 +68,7 @@ class TVDB(object):
 	def _set_language(self, language):
 		if language:
 			self._headers['Accept-Language'] = language
-	
+
 	def refresh_token(self):
 		try:
 			"""
@@ -107,14 +109,14 @@ class TVDB(object):
 				if not KEYS.API_KEY:
 					raise APIKeyError
 
-				if hasattr(self,"USER") and hasattr(self,"USER_KEY"):
+				if hasattr(self, "USER") and hasattr(self, "USER_KEY"):
 					data = {"apikey": KEYS.API_KEY, "username": self.USER, "userkey": self.USER_KEY}
 				else:
-					data={"apikey": KEYS.API_KEY}
+					data = {"apikey": KEYS.API_KEY}
 
 				response = requests.request(
-						'POST', self._get_complete_url('login'), 
-						data=json.dumps(data), 
+						'POST', self._get_complete_url('login'),
+						data=json.dumps(data),
 						headers=self._headers,
 						timeout=4)
 				if response.status_code == 200:
@@ -130,18 +132,18 @@ class TVDB(object):
 		except:
 			pass
 
-	def _request(self, method, path, params=None, payload=None, forceNewToken=False, cleanJson = True):
+	def _request(self, method, path, params=None, payload=None, forceNewToken=False, cleanJson=True):
 		try:
 			self._set_token_header(forceNewToken)
-			
+
 			url = self._get_complete_url(path)
 
 			response = requests.request(
-				method, url, params=params, 
+				method, url, params=params,
 				data=json.dumps(payload) if payload else payload,
 				headers=self._headers,
 				timeout=4)
-			
+
 			if response.status_code == 200:
 				response.encoding = 'utf-8'
 				jsn = response.json()
@@ -157,16 +159,16 @@ class TVDB(object):
 		except:
 			return None
 
-	def _GET(self, path, params=None, cleanJson = True):
+	def _GET(self, path, params=None, cleanJson=True):
 		return self._request('GET', path, params=params, cleanJson=cleanJson)
 
-	def _POST(self, path, params=None, payload=None, cleanJson = True):
+	def _POST(self, path, params=None, payload=None, cleanJson=True):
 		return self._request('POST', path, params=params, payload=payload, cleanJson=cleanJson)
 
-	def _DELETE(self, path, params=None, payload=None, cleanJson = True):
+	def _DELETE(self, path, params=None, payload=None, cleanJson=True):
 		return self._request('DELETE', path, params=params, payload=payload, cleanJson=cleanJson)
 
-	def _PUT(self, path, params=None, payload=None, cleanJson = True):
+	def _PUT(self, path, params=None, payload=None, cleanJson=True):
 		return self._request('PUT', path, params=params, payload=payload, cleanJson=cleanJson)
 
 	def _set_attrs_to_values(self, response={}):

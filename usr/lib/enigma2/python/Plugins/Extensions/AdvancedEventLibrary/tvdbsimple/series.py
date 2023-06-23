@@ -9,6 +9,7 @@ See [Series API section](https://api.thetvdb.com/swagger#/Series)
 
 from .base import TVDB
 
+
 class Series(TVDB):
     """
     Series class to retrieve all the info about a series.
@@ -18,12 +19,12 @@ class Series(TVDB):
     _URLS = {
         'info': '/{id}',
         'actors': '/{id}/actors'
-    }	
+    }
 
     def __init__(self, id, language=''):
         """
         Initialize the series class.
-        `id` is the TheTVDb series id. You can also provide `language`, 
+        `id` is the TheTVDb series id. You can also provide `language`,
         the language id you want to use to retrieve the info.
         """
         self._set_language(language)
@@ -39,10 +40,10 @@ class Series(TVDB):
 
     def info(self, language=''):
         """
-        Get the basic show information for a specific show id and sets 
+        Get the basic show information for a specific show id and sets
         them to the attributes.
 
-        You also provide `language`, the language id you want to use 
+        You also provide `language`, the language id you want to use
         to retrieve the info.
 
         Returns a dict with the series info
@@ -59,7 +60,7 @@ class Series(TVDB):
 
         """
         path = self._get_id_path('info')
-        
+
         self._set_language(language)
         response = self._GET(path)
         self._set_attrs_to_values(response)
@@ -67,10 +68,10 @@ class Series(TVDB):
 
     def actors(self, language=''):
         """
-        Get the actors for the show id and sets them to 
+        Get the actors for the show id and sets them to
         `actors` the attributes.
 
-        You also provide `language`, the language id you want to use 
+        You also provide `language`, the language id you want to use
         to retrieve the info.
 
         Returns a list of actors with their info.
@@ -87,15 +88,16 @@ class Series(TVDB):
 
         """
         path = self._get_id_path('actors')
-        
+
         self._set_language(language)
         response = self._GET(path)
         self._set_attrs_to_values({'actors': response})
         return response
 
+
 class Series_Episodes(TVDB):
     """
-    Class needed to organize series episodes. Allow to retrieve basic 
+    Class needed to organize series episodes. Allow to retrieve basic
     info episodes for the series.
     Requires the series id.
     """
@@ -112,19 +114,19 @@ class Series_Episodes(TVDB):
         Initialize the class.
 
         `id` is the TheTVDb series id.
-        You can  provide `language`, the language id you want to use to 
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
-        You can  provide `absoluteNumber` to get only episodes with the 
+        You can  provide `absoluteNumber` to get only episodes with the
         provided absolute number.
-        You can  provide `airedSeason` to get only episodes with the 
+        You can  provide `airedSeason` to get only episodes with the
         provided aired season number.
-        You can  provide `airedEpisode` to get only episodes with the 
+        You can  provide `airedEpisode` to get only episodes with the
         provided aired episode number.
-        You can  provide `dvdSeason` to get only episodes with the 
+        You can  provide `dvdSeason` to get only episodes with the
         provided dvd season number.
-        You can  provide `dvdEpisode` to get only episodes with the 
+        You can  provide `dvdEpisode` to get only episodes with the
         provided dvd episode number.
-        You can  provide `imdbId` to get only episodes with the 
+        You can  provide `imdbId` to get only episodes with the
         provided imdb id.
         """
         super(Series_Episodes, self).__init__(id)
@@ -138,26 +140,26 @@ class Series_Episodes(TVDB):
         """
         Set the filters for the episodes of the specific show id.
 
-        You can  provide `absoluteNumber` to get only episodes with the 
+        You can  provide `absoluteNumber` to get only episodes with the
         provided absolute number.
-        You can  provide `airedSeason` to get only episodes with the 
+        You can  provide `airedSeason` to get only episodes with the
         provided aired season number.
-        You can  provide `airedEpisode` to get only episodes with the 
+        You can  provide `airedEpisode` to get only episodes with the
         provided aired episode number.
-        You can  provide `dvdSeason` to get only episodes with the 
+        You can  provide `dvdSeason` to get only episodes with the
         provided dvd season number.
-        You can  provide `dvdEpisode` to get only episodes with the 
+        You can  provide `dvdEpisode` to get only episodes with the
         provided dvd episode number.
-        You can  provide `imdbId` to get only episodes with the 
+        You can  provide `imdbId` to get only episodes with the
         provided imdb id.
         """
         self._PAGES = -1
         self._PAGES_LIST = {}
-        self._FILTERS=kwargs
+        self._FILTERS = kwargs
 
     def summary(self):
         """
-        Get the episodes summary for a specific show id and sets 
+        Get the episodes summary for a specific show id and sets
         them to their attributes.
 
         Returns a dict with a summary of the episodes.
@@ -174,7 +176,7 @@ class Series_Episodes(TVDB):
 
         """
         path = self._get_id_path('summary')
-        
+
         response = self._GET(path)
         self._set_attrs_to_values(response)
         return response
@@ -186,7 +188,7 @@ class Series_Episodes(TVDB):
         Returns a dict with all the filters allowed.
         """
         path = self._get_id_path('query_params')
-        
+
         response = self._GET(path)
         self._set_attrs_to_values({'query_params': response})
         return response
@@ -204,7 +206,7 @@ class Series_Episodes(TVDB):
     def all(self):
         """
         Get the full episode list with basic details for a specific show id.
-        
+
         Returns a list of episodes with basic info.
 
         For example
@@ -219,9 +221,9 @@ class Series_Episodes(TVDB):
 
         """
         episodes = []
-        for i in range (1, self.pages()+1):
+        for i in range(1, self.pages() + 1):
             episodes.extend(self.page(i))
-        
+
         self._set_attrs_to_values({'episodes': episodes})
         return episodes
 
@@ -238,7 +240,7 @@ class Series_Episodes(TVDB):
             path = self._get_id_path('query')
         else:
             path = self._get_id_path('episodes')
-        
+
         filters = self._FILTERS.copy()
         filters['page'] = page
         response = self._GET(path, params=filters, cleanJson=False)
@@ -249,12 +251,13 @@ class Series_Episodes(TVDB):
         return response['data']
 
     def __iter__(self):
-        for i in range (1, self.pages()+1):
+        for i in range(1, self.pages() + 1):
             yield self.page(i)
+
 
 class Series_Images(TVDB):
     """
-    Class needed to organize series images. Allow to retrieve all 
+    Class needed to organize series images. Allow to retrieve all
     the types of images of a series.
     Requires the series id.
 
@@ -274,11 +277,11 @@ class Series_Images(TVDB):
         Initialize the class.
 
         `id` is the TheTVDb series id.
-        You can  provide `language`, the language id you want to use to 
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
-        You can  provide `reqolution` to get only episodes with the 
+        You can  provide `reqolution` to get only episodes with the
         provided resolution.
-        You can  provide `subKey` to get only episodes with the 
+        You can  provide `subKey` to get only episodes with the
         provided subKey.
         """
         super(Series_Images, self).__init__(id)
@@ -289,18 +292,18 @@ class Series_Images(TVDB):
         """
         Set the filters for the episodes of the specific show id.
 
-        You can  provide `language`, the language id you want to use to 
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
-        You can  provide `reqolution` to get only episodes with the 
+        You can  provide `reqolution` to get only episodes with the
         provided resolution.
-        You can  provide `subKey` to get only episodes with the 
+        You can  provide `subKey` to get only episodes with the
         provided subKey.
         """
-        self._FILTERS=kwargs
+        self._FILTERS = kwargs
 
     def summary(self):
         """
-        Get the images summary for a specific show id and sets 
+        Get the images summary for a specific show id and sets
         them to `summary` attributes.
 
         Returns a dict with a summary of the images.
@@ -317,7 +320,7 @@ class Series_Images(TVDB):
 
         """
         path = self._get_id_path('summary')
-        
+
         response = self._GET(path)
         self._set_attrs_to_values(response)
         return response
@@ -330,17 +333,16 @@ class Series_Images(TVDB):
             A dict respresentation of the JSON returned from the API.
         """
         path = self._get_id_path('query_params')
-        
+
         response = self._GET(path)
         self._set_attrs_to_values({'query_params': response})
         return response
 
-
     def poster(self, language=''):
         """
         Get the posters for a specific show.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of posters.
@@ -361,8 +363,8 @@ class Series_Images(TVDB):
     def fanart(self, language=''):
         """
         Get the fanarts for a specific show.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of fanarts.
@@ -383,8 +385,8 @@ class Series_Images(TVDB):
     def series(self, language=''):
         """
         Get the series images for a specific show.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of series images.
@@ -405,8 +407,8 @@ class Series_Images(TVDB):
     def season(self, language=''):
         """
         Get the season images for a specific show.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of season images.
@@ -427,8 +429,8 @@ class Series_Images(TVDB):
     def seasonwide(self, language=''):
         """
         Get the seasonwide images for a specific show.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of seasonwide images.
@@ -450,8 +452,8 @@ class Series_Images(TVDB):
         """
         Get all the images for a specific show and sets it to `images` attribute.
         It needs to have at least one filter set.
-        
-        You can  provide `language`, the language id you want to use to 
+
+        You can  provide `language`, the language id you want to use to
         retrieve the info.
 
         Returns a list of images.
@@ -471,7 +473,7 @@ class Series_Images(TVDB):
 
     def _get_image_type(self, type, language=''):
         path = self._get_id_path('imagequery')
-        
+
         self._set_language(language)
         filters = self._FILTERS.copy()
         if type != 'images':

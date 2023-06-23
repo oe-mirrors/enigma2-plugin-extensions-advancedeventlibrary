@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Coded by tsiegel (c) 2020
-from Renderer import Renderer 
+from Renderer import Renderer
 from enigma import ePixmap, eTimer, loadJPG
 from Tools.AdvancedEventLibrary import getPictureDir
 import os
 import glob
 import random
+
 
 class AdvancedEventLibraryRandomPicture(Renderer):
 	def __init__(self):
@@ -15,15 +16,15 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 		self.Path = getPictureDir()
 
 	def applySkin(self, desktop, parent):
-		attribs = [ ]
+		attribs = []
 		for (attrib, value) in self.skinAttributes:
 			if attrib == "path":
 				self.Path += value
-				str(self.Path).replace('//','/')
+				str(self.Path).replace('//', '/')
 			elif attrib == "delay":
 				self.delay = int(value)
 			else:
-				attribs.append((attrib,value))
+				attribs.append((attrib, value))
 		self.skinAttributes = attribs
 		if os.path.isdir(self.Path):
 			self.animate(self.Path)
@@ -44,7 +45,7 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 		self.picchanger.stop()
 		self.instance.setScale(1)
 		try:
-			number = random.randint(1,len(self.piclist)-1)
+			number = random.randint(1, len(self.piclist) - 1)
 			self.instance.setPixmap(loadJPG(self.piclist[number]))
 		except:
 			pass

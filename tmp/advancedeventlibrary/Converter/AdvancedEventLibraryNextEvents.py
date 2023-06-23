@@ -8,6 +8,7 @@ from Components.Converter.Converter import Converter
 from Components.Element import cached
 from enigma import eEPGCache, eServiceReference, iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter
 
+
 class AdvancedEventLibraryNextEvents(Converter, object):
 	def __init__(self, type):
 		Converter.__init__(self, type)
@@ -53,7 +54,7 @@ class AdvancedEventLibraryNextEvents(Converter, object):
 				eventlist = []
 				while i <= (self.eventcount):
 					eventlist.append(self.epgcache.getNextTimeEntry())
-					i +=1
+					i += 1
 				if eventlist:
 					if len(eventlist) >= element:
 						return eventlist[element]

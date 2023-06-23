@@ -15,7 +15,6 @@ import requests
 import json
 import shutil
 import re
-import urllib2
 import datetime
 from time import localtime, mktime, sleep
 from enigma import eLabel, ePixmap, ePicLoad, ePoint, eSize, eTimer, eWidget, loadPNG
@@ -35,19 +34,21 @@ from thread import start_new_thread
 from datetime import datetime
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = False)
+usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
 previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
 
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 screensWithEvent = ["ChannelSelection", "ChannelSelectionHorizontal", "InfoBarZapHistory", "NumberZapWithName", "ChannelSelection_summary", "AdvancedEventLibraryMediaHub", "AdvancedEventLibraryChannelSelection"]
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AEL_log = open(log,"a")
+	AEL_log = open(log, "a")
 	AEL_log.write(str(logtime) + " : [AdvancedEventLibraryImage] - " + str(svalue) + "\n")
 	AEL_log.close()
+
 
 class AdvancedEventLibraryImage(Renderer):
 	IMAGE = "Image"
@@ -59,7 +60,7 @@ class AdvancedEventLibraryImage(Renderer):
 
 	def __init__(self):
 		Renderer.__init__(self)
-		self.nameCache = { }
+		self.nameCache = {}
 		self.ishide = True
 		self.imageType = self.IMAGE
 		self.WCover = self.HCover = 0
@@ -72,12 +73,12 @@ class AdvancedEventLibraryImage(Renderer):
 		self.noImage = None
 		self.rotate = "left"
 		self.frameImage = None
-		self.lastName = (None,None)
+		self.lastName = (None, None)
 		self.screenName = ""
 		if os.path.isfile('/usr/share/enigma2/Chamaeleon/png/pigframe.png'):
 			self.frameImage = '/usr/share/enigma2/Chamaeleon/png/pigframe.png'
-		self.coverPath = AdvancedEventLibrary.getPictureDir()+'cover/'
-		self.posterPath = AdvancedEventLibrary.getPictureDir()+'poster/'
+		self.coverPath = AdvancedEventLibrary.getPictureDir() + 'cover/'
+		self.posterPath = AdvancedEventLibrary.getPictureDir() + 'poster/'
 		self.db = AdvancedEventLibrary.getDB()
 		self.ptr = None
 		self.ptr2 = None
@@ -112,9 +113,9 @@ class AdvancedEventLibraryImage(Renderer):
 					params = str(value).split(",")
 					self.imageType = params[0]
 					if self.imageType == self.IMAGE_THUMBNAIL:
-						self.coverPath = AdvancedEventLibrary.getPictureDir()+'cover/thumbnails/'
+						self.coverPath = AdvancedEventLibrary.getPictureDir() + 'cover/thumbnails/'
 					if self.imageType == self.POSTER_THUMBNAIL:
-						self.posterPath = AdvancedEventLibrary.getPictureDir()+'poster/thumbnails/'
+						self.posterPath = AdvancedEventLibrary.getPictureDir() + 'poster/thumbnails/'
 					if len(params) > 1:
 						self.frameImage = params[1]
 						if os.path.isfile(self.frameImage):
@@ -131,7 +132,7 @@ class AdvancedEventLibraryImage(Renderer):
 			self.skinAttributes = attribs
 
 		if self.frameImage:
-			self.image.resize(eSize(self.WCover-20, self.HCover-20))
+			self.image.resize(eSize(self.WCover - 20, self.HCover - 20))
 			self.imageframe.resize(eSize(self.WCover, self.HCover))
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
@@ -156,7 +157,7 @@ class AdvancedEventLibraryImage(Renderer):
 						service = self.source.getCurrentService()
 						sRef = service.toString()
 						if '/' in sRef:
-							self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__',' ').replace('_',' ')
+							self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')
 							self.fileName = service.getPath()
 							if self.fileName.endswith("/"):
 								name = self.fileName[:-1]
@@ -166,13 +167,13 @@ class AdvancedEventLibraryImage(Renderer):
 								name = info.getName(service)
 								if name:
 									self.ptr = self.removeExtension(name)
-								event=info.getEvent(service)
+								event = info.getEvent(service)
 						else:
 							if self.screenName in screensWithEvent:
 								event = self.source.event
 							else:
 								info = eServiceCenter.getInstance().info(service)
-								event=info.getEvent(service)
+								event = info.getEvent(service)
 					elif hasattr(self.source, 'getEvent'):
 						event = self.source.getEvent()
 						if event:
@@ -187,12 +188,12 @@ class AdvancedEventLibraryImage(Renderer):
 									ref = self.source.getCurrentlyPlayingServiceReference().toString()
 									if '/' in ref:
 										self.ptr = info.getName()
-										event=info.getEvent(0)
+										event = info.getEvent(0)
 									else:
-										event=info.getEvent(0)
+										event = info.getEvent(0)
 								else:
 									self.ptr = info.getName()
-									event=info.getEvent(0)
+									event = info.getEvent(0)
 							else:
 								event = self.source.event
 								if (isinstance(event, tuple) and event):
@@ -205,7 +206,7 @@ class AdvancedEventLibraryImage(Renderer):
 						if not self.ptr:
 							self.ptr = event.getEventName()
 						self.ptr2 = self.ptr
-						self.evt = self.db.getliveTV(event.getEventId(),str(event.getEventName()),event.getBeginTime())
+						self.evt = self.db.getliveTV(event.getEventId(), str(event.getEventName()), event.getBeginTime())
 						if self.evt:
 							if self.evt[0][3] != '':
 								self.ptr = str(self.evt[0][3])
@@ -220,7 +221,6 @@ class AdvancedEventLibraryImage(Renderer):
 #								self.ptr = str(name[:-3])
 				except Exception as ex:
 					write_log('find event ' + str(ex))
-
 
 				if self.ptr:
 					self.ptr = AdvancedEventLibrary.convertDateInFileName(AdvancedEventLibrary.convertSearchName(self.ptr))
@@ -271,7 +271,7 @@ class AdvancedEventLibraryImage(Renderer):
 	def onHide(self):
 		self.suspended = True
 
-	def setthePixmap(self, eventNames,run=0):
+	def setthePixmap(self, eventNames, run=0):
 		self.lastName = eventNames
 		self.foundPoster = False
 		self.foundImage = False
@@ -317,7 +317,6 @@ class AdvancedEventLibraryImage(Renderer):
 		if self.pfilename:
 			self.nameCache[eventName + str(self.imageType)] = str(self.pfilename)
 
-
 		if (self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL) and self.foundImage:
 			self.loadPic(self.ifilename)
 		elif (self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL) and self.foundPoster:
@@ -344,7 +343,7 @@ class AdvancedEventLibraryImage(Renderer):
 			self.loadPic(self.ifilename)
 		else:
 			if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
-				self.setthePixmap(eventNames,1)
+				self.setthePixmap(eventNames, 1)
 			else:
 				self.hideimage()
 
@@ -353,16 +352,16 @@ class AdvancedEventLibraryImage(Renderer):
 			self.instance.move(ePoint(self.x, self.y))
 			self.instance.resize(eSize(self.WCover, self.HCover))
 			if self.imageframe:
-				self.image.resize(eSize(self.WCover-20, self.HCover-20))
+				self.image.resize(eSize(self.WCover - 20, self.HCover - 20))
 				self.imageframe.resize(eSize(self.WCover, self.HCover))
 			else:
 				self.image.resize(eSize(self.WCover, self.HCover))
 		elif how == 'Image':
 			if self.rotate == "left":
-				self.instance.move(ePoint(self.x-self.HCover+self.WCover, self.y-self.WCover+self.HCover))
+				self.instance.move(ePoint(self.x - self.HCover + self.WCover, self.y - self.WCover + self.HCover))
 			self.instance.resize(eSize(self.HCover, self.WCover))
 			if self.imageframe:
-				self.image.resize(eSize(self.HCover-20, self.WCover-20))
+				self.image.resize(eSize(self.HCover - 20, self.WCover - 20))
 				self.imageframe.resize(eSize(self.HCover, self.WCover))
 			else:
 				self.image.resize(eSize(self.HCover, self.WCover))
@@ -375,7 +374,7 @@ class AdvancedEventLibraryImage(Renderer):
 		return
 
 	def removeExtension(self, ext):
-		ext = ext.replace('.wmv','').replace('.mpeg2','').replace('.ts','').replace('.m2ts','').replace('.mkv','').replace('.avi','').replace('.mpeg','').replace('.mpg','').replace('.iso','').replace('.mp4','')
+		ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
 		return ext
 
 	def loadPic(self, picname):
@@ -393,7 +392,7 @@ class AdvancedEventLibraryImage(Renderer):
 		except:
 			self.hideimage()
 
-	def showCallback(self, picInfo = None):
+	def showCallback(self, picInfo=None):
 		try:
 			if self.picload:
 				ptr = self.picload.getData()

@@ -25,7 +25,7 @@ from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListbox, ePicLoad, eLabel, eWallPythonMultiContent, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer,Thread
+from threading import Timer, Thread
 from thread import start_new_thread
 from Components.ConfigList import ConfigListScreen, getSelectionChoices
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
@@ -34,8 +34,8 @@ from Components.config import getConfigListEntry, ConfigEnableDisable, \
 
 from Components.Sources.Event import Event
 
-import AdvancedEventLibrarySystem
-import AdvancedEventLibraryLists
+import .AdvancedEventLibrarySystem
+import .AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
@@ -50,12 +50,14 @@ log = "/var/tmp/AdvancedEventLibrary.log"
 global active
 active = False
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log,"a")
+	AdvancedEventLibrary_log = open(log, "a")
 	AdvancedEventLibrary_log.write(str(logtime) + " : [SerienStartsScreen] : " + str(svalue) + "\n")
 	AdvancedEventLibrary_log.close()
+
 
 class EventEntry():
 	def __init__(self, name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer):
@@ -80,9 +82,11 @@ class EventEntry():
 	def __repr__(self):
 		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
 
+
 class AdvancedEventLibraryPlanerScreens(Screen):
 	ALLOW_SUSPEND = True
 	skin = skin.loadSkin(skinpath + "AdvancedEventLibraryPlaners.xml")
+
 	def __init__(self, session, viewType):
 		global active
 		active = True
@@ -101,7 +105,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.pageCount = 0
 
 		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Timer hinzufügen")
+		self["key_green"] = StaticText("Timer hinzufÃ¼gen")
 		self["key_yellow"] = StaticText("")
 		self["key_blue"] = StaticText("Umschalten")
 
@@ -139,11 +143,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_menu": self.key_menu_handler,
 			'key_play': self.key_play_handler,
 			"key_ok": self.key_ok_handler,
-		},-1)
+		}, -1)
 
 		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
 			{
-				"startTeletext": (self.infoKeyPressed,_("Switch between views")),
+				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
 			}, -1)
 
 		self.buildGenreList()
@@ -184,7 +188,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			eventName = (selection.name, selection.eit)
 		self.session.openWithCallback(self.CELcallBack, AdvancedEventLibrarySystem.Editor, eventname=eventName)
 
-
 	def CELcallBack(self):
 		selected_element = self["genreList"].l.getCurrentSelection()[0]
 		if self.viewType == 'Listenansicht':
@@ -197,25 +200,25 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.sel_changed()
 
 	def buildGenreList(self):
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 		startCategories = self.db.getSeriesStartsCategories()
 		genrelist = []
 		if startCategories:
 			for category in startCategories:
 				if str(category[0]) == "Spielfilm":
-					itm = [str(category[0]), imgpath +  "filme.png"]
+					itm = [str(category[0]), imgpath + "filme.png"]
 				elif str(category[0]) == "Unterhaltung":
-					itm = [str(category[0]), imgpath +  "shows.png"]
+					itm = [str(category[0]), imgpath + "shows.png"]
 				elif str(category[0]) == "Sport":
-					itm = [str(category[0]), imgpath +  "sport.png"]
+					itm = [str(category[0]), imgpath + "sport.png"]
 				elif str(category[0]) == "Serien":
-					itm = [str(category[0]), imgpath +  "serien.png"]
+					itm = [str(category[0]), imgpath + "serien.png"]
 				elif str(category[0]) == "Kinder":
-					itm = [str(category[0]), imgpath +  "kinder.png"]
+					itm = [str(category[0]), imgpath + "kinder.png"]
 				elif str(category[0]) == "Reportage":
-					itm = [str(category[0]), imgpath +  "dokus.png"]
+					itm = [str(category[0]), imgpath + "dokus.png"]
 				else:
-					itm = [str(category[0]), imgpath +  "movies.png"]
+					itm = [str(category[0]), imgpath + "movies.png"]
 				genrelist.append((itm,))
 		genrelist.sort(key=lambda x: x[0][0])
 		self["genreList"].setList(genrelist)
@@ -228,7 +231,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self.substituteImage = str(self.parameter[5])
 				self.FontOrientation = self.getFontOrientation(self.parameter[25])
 				self.Coverings = eval(str(self.parameter[23]))
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
@@ -366,14 +369,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					if selected_element[8]:
 						sRef = eServiceReference(4097, 0, str(selected_element[8]))
 						sRef.setName(str(selected_element[0]))
-						self.session.open(MoviePlayer,sRef)
+						self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventWall"].getcurrentselection()
 				if selected_element:
 					if selected_element.hasTrailer:
 						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
 						sRef.setName(str(selected_element.name))
-						self.session.open(MoviePlayer,sRef)
+						self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
@@ -401,9 +404,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					else:
 						recname += ' - '
 					if str(val[0][12]) != "":
-						recname +=  "S" + str(val[0][12]).zfill(2)
+						recname += "S" + str(val[0][12]).zfill(2)
 					if str(val[0][13]) != "":
-						recname +=  "E" + str(val[0][13]).zfill(2) + ' - '
+						recname += "E" + str(val[0][13]).zfill(2) + ' - '
 					if str(val[0][2]) != "":
 						recname += str(val[0][2]) + ' - '
 					if recname.endswith(' - '):
@@ -428,16 +431,15 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			else:
 				recdesc = description
 
-			timer = RecordTimerEntry(ServiceReference(sRef),begin,end,recname,recdesc,eit,False,False,afterEvent = AFTEREVENT.AUTO,dirname = config.usage.default_path.value,tags = None)
+			timer = RecordTimerEntry(ServiceReference(sRef), begin, end, recname, recdesc, eit, False, False, afterEvent=AFTEREVENT.AUTO, dirname=config.usage.default_path.value, tags=None)
 			timer.repeated = 0
 			timer.tags = ['AEL-Serien-Starts-Planer']
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : "+ str(ex))
+			write_log("addtimer : " + str(ex))
 
-
-	def finishedAdd(self, answer, instantTimer = False):
+	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
 			entry = answer[1]
 			simulTimerList = self.session.nav.RecordTimer.record(entry)
@@ -528,7 +530,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 			serviceHandler = eServiceCenter.getInstance()
 			self.tvbouquets = serviceHandler.list(root).getContent("SN", True)
-			self.slist = { }
+			self.slist = {}
 			for bouquet in self.tvbouquets:
 				root = eServiceReference(str(bouquet[0]))
 				serviceHandler = eServiceCenter.getInstance()
@@ -546,12 +548,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sportslist = []
 			self.miscellaneouslist = []
 
-			timers=[]
+			timers = []
 			recordHandler = NavigationInstance.instance.RecordTimer
 			for timer in recordHandler.timer_list:
 				if timer and timer.service_ref:
 					_timer = str(timer.name)
-					_timer = _timer.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").upper()
+					_timer = _timer.strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					timers.append(_timer)
 				if timer and timer.eit:
 					_timer = str(timer.eit)
@@ -571,7 +573,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						shortdesc = start_event.getShortDescription()
 						extdesc = start_event.getExtendedDescription()
 						desc = None
-						cleanname = name.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").upper()
+						cleanname = name.strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 						hasTimer = False
 						if cleanname in timers or str(eit) in timers:
 							hasTimer = True
@@ -617,7 +619,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						elif 'Sonstiges' in startEvent[2]:
 							self.miscellaneouslist.append((itm,))
 				except Exception as ex:
-					write_log("get Event : "+ str(ex))
+					write_log("get Event : " + str(ex))
 					continue
 			itm = EventEntry('Keine Sendungen gefunden!', ' ', 0, 0, 0, False, ' ', ' ', None, None)
 			if not self.doculist:
@@ -635,7 +637,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if not self.miscellaneouslist:
 				self.miscellaneouslist.append((itm,))
 		except Exception as ex:
-			write_log("getAllEvents : "+ str(ex))
+			write_log("getAllEvents : " + str(ex))
 
 	def getSimilarEvents(self, id, ref):
 		epgcache = eEPGCache.getInstance()
@@ -646,11 +648,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			text = '\n\nWeitere Sendetermine:'
 			for x in ret:
 				t = localtime(x[1])
-				text += '\n%d.%d.%d, %02d:%02d  -  %s'%(t[2], t[1], t[0], t[3], t[4], x[0])
+				text += '\n%d.%d.%d, %02d:%02d  -  %s' % (t[2], t[1], t[0], t[3], t[4], x[0])
 			return text
 		return ''
 
-	def sort_func(self,x,y):
+	def sort_func(self, x, y):
 		if x[1] < y[1]:
 			return -1
 		elif x[1] == y[1]:
@@ -680,7 +682,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.listlen = len(cList)
 			return cList
 		except Exception as ex:
-			write_log("getEPGdata : "+ str(ex))
+			write_log("getEPGdata : " + str(ex))
 
 	def seteventEntry(self, entrys):
 		try:
@@ -705,7 +707,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					image = self.picloader.load(self.substituteImage)
 			self.picloader.destroy()
 			if pic:
-				picon = LoadPixmap(pic)#self.picloader.load(entrys.picon)
+				picon = LoadPixmap(pic)  # self.picloader.load(entrys.picon)
 
 			ret = [entrys]
 			if image:
@@ -715,8 +717,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if picon:
 				ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
 			if entrys.hasTimer and fileExists(self.parameter[15]):
-				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0]+self.parameter[19][4], self.parameter[19][1], self.parameter[19][0]+self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0]+self.parameter[20][4], self.parameter[20][1], self.parameter[20][0]+self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 				ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
 			else:
 				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
@@ -728,17 +730,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 								(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 								]
 
-	def findPicon(self, service = None, serviceName = None):
+	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
 			pos = service.rfind(':')
 			if pos != -1:
 				if service.startswith("1:134"):
 					service = GetWithAlternative(service)
 					pos = service.rfind(':')
-				service = service[:pos].rstrip(':').replace(':','_')
+				service = service[:pos].rstrip(':').replace(':', '_')
 			pos = service.rfind('_http')
 			if pos != -1:
-					service = service[:pos].rstrip('_http').replace(':','_')
+					service = service[:pos].rstrip('_http').replace(':', '_')
 			for piconpath in piconpaths:
 				pngname = os.path.join(piconpath, service + ".png")
 				if os.path.isfile(pngname):
@@ -751,6 +753,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		return None
 
 ####################################################################################
+
+
 class MySetup(Screen, ConfigListScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
@@ -765,12 +769,12 @@ class MySetup(Screen, ConfigListScreen):
 		self["key_green"] = StaticText("Speichern")
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.startType = config.plugins.AdvancedEventLibrary.SeriesType = ConfigSelection(default = "Staffelstart", choices = [ "Staffelstart", "Serienstart" ])
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
+		self.startType = config.plugins.AdvancedEventLibrary.SeriesType = ConfigSelection(default="Staffelstart", choices=["Staffelstart", "Serienstart"])
+		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 
 		self.configlist = []
 		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -797,7 +801,7 @@ class MySetup(Screen, ConfigListScreen):
 			self["config"].updateConfigListView(cur)
 
 	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI,MessageBox,_("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
+		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
 	def restartGUI(self, answer):
@@ -809,6 +813,8 @@ class MySetup(Screen, ConfigListScreen):
 			self.close()
 
 #################################################################################################################################################
+
+
 class PicLoader:
 	def __init__(self, width, height):
 		self.picload = ePicLoad()

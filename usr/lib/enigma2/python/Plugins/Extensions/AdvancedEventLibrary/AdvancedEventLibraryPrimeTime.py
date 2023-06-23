@@ -25,7 +25,7 @@ from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListbox, ePicLoad, eLabel, eWallPythonMultiContent, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer,Thread
+from threading import Timer, Thread
 from thread import start_new_thread
 from Components.ConfigList import ConfigListScreen, getSelectionChoices
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
@@ -34,8 +34,8 @@ from Components.config import getConfigListEntry, ConfigEnableDisable, \
 
 from Components.Sources.Event import Event
 
-import AdvancedEventLibrarySystem
-import AdvancedEventLibraryLists
+import .AdvancedEventLibrarySystem
+import .AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
@@ -47,23 +47,25 @@ imgpath = '/usr/share/enigma2/AELImages/'
 piconpaths = [config.usage.servicelist_picon_dir.value, config.usage.picon_dir.value]
 log = "/var/tmp/AdvancedEventLibrary.log"
 
-Movies = ["Abenteuer","Abenteuerfilm","Abenteuerkomödie","Action","Action Abenteuer","Action-Abenteuer","Action-Fantasyfilm","Actionabenteuer","Actiondrama","Actionfilm","Actionkomödie","Actionkrimi","Actionthriller","Agentenfilm","Agentenkomödie","Agententhriller","Beziehungsdrama","Beziehungskomödie","Bibelverfilmung","Bollywoodfilm","Comicverfilmung","Crime","Deutsche Komödie","Drama","Dramedy","Ehedrama","Ehekomödie","Episodenfilm","Erotikdrama","Erotikfilm","Erotikkomödie","Familie","Familiendrama","Familienfilm","Familienkomödie","Familiensaga","Fantasy","Fantasy-Abenteuer","Fantasy-Abenteuerfilm","Fantasy-Action","Fantasyabenteuer","Fantasyaction","Fantasydrama","Fantasyfilm","Fantasykomödie","Fernsehfilm","Gangsterdrama","Gangsterkomödie","Gangsterthriller","Gaunerkomödie","Gefängnisdrama","Geschichtliches Drama","Gesellschaftsdrama","Gesellschaftskomödie","Gesellschaftssatire","Gruselfilm","Gruselkomödie","Heimatdrama","Heimatfilm","Heimatkomödie","Historienabenteuer","Historiendrama","Historienfilm","Historisches Drama","Horror","Horror-Actionfilm","Horrorfilm","Horrorkomödie","Horrorthriller","Italo-Western","Jugenddrama","Jugendfilm","Jugendkomödie","Justizdrama","Justizthriller","Katastrophendrama","Katastrophenfilm","Kriegsdrama","Komödie","Kriegsfilm","Krimi","Krimidrama","Krimikomödie","Krimikömödie","Kriminalfilm","Krimiparodie","Liebesdrama","Liebesdramödie","Liebesfilm","Liebesgeschichte","Liebeskomödie","Liebesmelodram","Literaturverfilmung","Mediensatire","Melodram","Monumentalfilm","Mystery","Mysterydrama","Mysteryfilm","Mysterythriller","Psychodrama","Psychokrimi","Psychothriller","Revuefilm","Politdrama","Politkomödie","Politsatire","Politthriller","Road Movie","Romance","Romantic Comedy","Romantikkomödie","Romantische Komödie","Romanverfilmung","Romanze","Satire","Schwarze Komödie","Sci-Fi-Fantasy","Science-Fiction","Science-Fiction-Abenteuer","Science-Fiction-Action","Science-Fiction-Film","Science-Fiction-Horror","Science-Fiction-Komödie","Science-Fiction-Thriller","Spielfilm","Spionagethriller","Sportfilm","Sportlerkomödie","Tanzfilm","Teenagerfilm","Teenagerkomödie","Teeniekomödie","Thriller","Thrillerkomödie","Tierfilm","Tragikomödie","TV-Movie","Vampirfilm","Vampirkomödie","Western","Westerndrama","Westernkomödie"]
-Series = ["Abenteuer-Serie","Actionserie","Arztreihe","Crime-Serie","Episode","Familien-Serie","Staffel","Folge","Familienserie","Fernsehserie","Fernsehspiel","Heimatserie","Horror-Serie","Comedy-Serie","Dramaserie","Krankenhaus-Serie","Krankenhaus-Soap","Krimireihe","Krimi-Serie","Krimiserie","Polizeiserie","Reality","Scripted Reality","Scripted-Reality","Science-Fiction-Serie","Sci-Fi-Serie","Serie","Serien","Sitcom","Soap","Telenovela"]
-Dokus = ["Doku-Experiment","Doku-Reihe","Doku-Serie","Documentary","Documentary-Serie","Dokumentarfilm","Dokumentarreihe","Dokumentarserie","Dokumentation","Dokumentation-Serie","Dokumentationsreihe","Dokureihe","Dokuserie","Dokutainment","Dokutainment-Reihe","History","Naturdokumentarreihe","Naturdokumentation","Naturdokumentationsreihe","Real Life Doku","Reality-Doku","Reality-TV","Reisedoku","Reportage","Reportagemagazin","Reportagereihe","Biografie","Biographie","Familienchronik","Ermittler-Doku","Koch-Doku","Porträt","War","War & Politics","Wissenschaftsmagazin","Wissensmagazin"]
-Music = ["Disco","Musical","Musik","Music","Musikdokumentation","Musikfilm","Musikkomödie","Konzertfilm","Konzert"]
-Kinder = ["Animation","Animations-Serie","Animationsfilm","Animationsserie","Kinder-Abenteuerfilm","Kinder-Animationsfilm","Kinder-Fantasyfilm","Kinder-Komödie","Kinder-Zeichentrickfilm","Kinderabenteuer","Kinderfilm","Kinderserie","Kinder-Serie","Märchenfilm","Trickfilm","Zeichentrick-Serie","Zeichentrick-Special","Zeichentrickfilm"]
-Shows = ["Clipshow","Comedy Show","Information","Informationssendung","Infotainment","Kochshow","Kulturmagazin","Live Shopping","Magazin","Quizshow","Show","Sketch-Comedy","Talk","Talkshow","Unterhaltung","Unterhaltungs-Show","Unterhaltungsshow"]
-Sport = ["Sport","Fußball","Bundesliga", "PL:", "Handball", "Champions-League", "Tennis", "Sportschau", "Sportmagazin", "Sportnachrichten", "Boxen", "Formel 1", "Wrestling", "Sportclub", "Blickpunkt Sport", "Golf"]
+Movies = ["Abenteuer", "Abenteuerfilm", "Abenteuerkomï¿½die", "Action", "Action Abenteuer", "Action-Abenteuer", "Action-Fantasyfilm", "Actionabenteuer", "Actiondrama", "Actionfilm", "Actionkomï¿½die", "Actionkrimi", "Actionthriller", "Agentenfilm", "Agentenkomï¿½die", "Agententhriller", "Beziehungsdrama", "Beziehungskomï¿½die", "Bibelverfilmung", "Bollywoodfilm", "Comicverfilmung", "Crime", "Deutsche Komï¿½die", "Drama", "Dramedy", "Ehedrama", "Ehekomï¿½die", "Episodenfilm", "Erotikdrama", "Erotikfilm", "Erotikkomï¿½die", "Familie", "Familiendrama", "Familienfilm", "Familienkomï¿½die", "Familiensaga", "Fantasy", "Fantasy-Abenteuer", "Fantasy-Abenteuerfilm", "Fantasy-Action", "Fantasyabenteuer", "Fantasyaction", "Fantasydrama", "Fantasyfilm", "Fantasykomï¿½die", "Fernsehfilm", "Gangsterdrama", "Gangsterkomï¿½die", "Gangsterthriller", "Gaunerkomï¿½die", "Gefï¿½ngnisdrama", "Geschichtliches Drama", "Gesellschaftsdrama", "Gesellschaftskomï¿½die", "Gesellschaftssatire", "Gruselfilm", "Gruselkomï¿½die", "Heimatdrama", "Heimatfilm", "Heimatkomï¿½die", "Historienabenteuer", "Historiendrama", "Historienfilm", "Historisches Drama", "Horror", "Horror-Actionfilm", "Horrorfilm", "Horrorkomï¿½die", "Horrorthriller", "Italo-Western", "Jugenddrama", "Jugendfilm", "Jugendkomï¿½die", "Justizdrama", "Justizthriller", "Katastrophendrama", "Katastrophenfilm", "Kriegsdrama", "Komï¿½die", "Kriegsfilm", "Krimi", "Krimidrama", "Krimikomï¿½die", "Krimikï¿½mï¿½die", "Kriminalfilm", "Krimiparodie", "Liebesdrama", "Liebesdramï¿½die", "Liebesfilm", "Liebesgeschichte", "Liebeskomï¿½die", "Liebesmelodram", "Literaturverfilmung", "Mediensatire", "Melodram", "Monumentalfilm", "Mystery", "Mysterydrama", "Mysteryfilm", "Mysterythriller", "Psychodrama", "Psychokrimi", "Psychothriller", "Revuefilm", "Politdrama", "Politkomï¿½die", "Politsatire", "Politthriller", "Road Movie", "Romance", "Romantic Comedy", "Romantikkomï¿½die", "Romantische Komï¿½die", "Romanverfilmung", "Romanze", "Satire", "Schwarze Komï¿½die", "Sci-Fi-Fantasy", "Science-Fiction", "Science-Fiction-Abenteuer", "Science-Fiction-Action", "Science-Fiction-Film", "Science-Fiction-Horror", "Science-Fiction-Komï¿½die", "Science-Fiction-Thriller", "Spielfilm", "Spionagethriller", "Sportfilm", "Sportlerkomï¿½die", "Tanzfilm", "Teenagerfilm", "Teenagerkomï¿½die", "Teeniekomï¿½die", "Thriller", "Thrillerkomï¿½die", "Tierfilm", "Tragikomï¿½die", "TV-Movie", "Vampirfilm", "Vampirkomï¿½die", "Western", "Westerndrama", "Westernkomï¿½die"]
+Series = ["Abenteuer-Serie", "Actionserie", "Arztreihe", "Crime-Serie", "Episode", "Familien-Serie", "Staffel", "Folge", "Familienserie", "Fernsehserie", "Fernsehspiel", "Heimatserie", "Horror-Serie", "Comedy-Serie", "Dramaserie", "Krankenhaus-Serie", "Krankenhaus-Soap", "Krimireihe", "Krimi-Serie", "Krimiserie", "Polizeiserie", "Reality", "Scripted Reality", "Scripted-Reality", "Science-Fiction-Serie", "Sci-Fi-Serie", "Serie", "Serien", "Sitcom", "Soap", "Telenovela"]
+Dokus = ["Doku-Experiment", "Doku-Reihe", "Doku-Serie", "Documentary", "Documentary-Serie", "Dokumentarfilm", "Dokumentarreihe", "Dokumentarserie", "Dokumentation", "Dokumentation-Serie", "Dokumentationsreihe", "Dokureihe", "Dokuserie", "Dokutainment", "Dokutainment-Reihe", "History", "Naturdokumentarreihe", "Naturdokumentation", "Naturdokumentationsreihe", "Real Life Doku", "Reality-Doku", "Reality-TV", "Reisedoku", "Reportage", "Reportagemagazin", "Reportagereihe", "Biografie", "Biographie", "Familienchronik", "Ermittler-Doku", "Koch-Doku", "Portrï¿½t", "War", "War & Politics", "Wissenschaftsmagazin", "Wissensmagazin"]
+Music = ["Disco", "Musical", "Musik", "Music", "Musikdokumentation", "Musikfilm", "Musikkomï¿½die", "Konzertfilm", "Konzert"]
+Kinder = ["Animation", "Animations-Serie", "Animationsfilm", "Animationsserie", "Kinder-Abenteuerfilm", "Kinder-Animationsfilm", "Kinder-Fantasyfilm", "Kinder-Komï¿½die", "Kinder-Zeichentrickfilm", "Kinderabenteuer", "Kinderfilm", "Kinderserie", "Kinder-Serie", "Mï¿½rchenfilm", "Trickfilm", "Zeichentrick-Serie", "Zeichentrick-Special", "Zeichentrickfilm"]
+Shows = ["Clipshow", "Comedy Show", "Information", "Informationssendung", "Infotainment", "Kochshow", "Kulturmagazin", "Live Shopping", "Magazin", "Quizshow", "Show", "Sketch-Comedy", "Talk", "Talkshow", "Unterhaltung", "Unterhaltungs-Show", "Unterhaltungsshow"]
+Sport = ["Sport", "Fuï¿½ball", "Bundesliga", "PL:", "Handball", "Champions-League", "Tennis", "Sportschau", "Sportmagazin", "Sportnachrichten", "Boxen", "Formel 1", "Wrestling", "Sportclub", "Blickpunkt Sport", "Golf"]
 
 global active
 active = False
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log,"a")
+	AdvancedEventLibrary_log = open(log, "a")
 	AdvancedEventLibrary_log.write(str(logtime) + " : [PrimeTimeScreen] : " + str(svalue) + "\n")
 	AdvancedEventLibrary_log.close()
+
 
 class EventEntry():
 	def __init__(self, name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer):
@@ -85,9 +87,11 @@ class EventEntry():
 	def __repr__(self):
 		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
 
+
 class AdvancedEventLibraryPlanerScreens(Screen):
 	ALLOW_SUSPEND = True
 	skin = skin.loadSkin(skinpath + "AdvancedEventLibraryPlaners.xml")
+
 	def __init__(self, session, viewType):
 		global active
 		active = True
@@ -107,7 +111,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.pageCount = 0
 
 		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Timer hinzufügen")
+		self["key_green"] = StaticText("Timer hinzufÃ¼gen")
 		self["key_yellow"] = StaticText("")
 		self["key_blue"] = StaticText("Umschalten")
 		self["trailer"] = Pixmap()
@@ -121,10 +125,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.userBouquets.append(bouquet[1])
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default = "Filme", choices = [ "Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport" ])
-		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default = "Alle Bouquets", choices = self.userBouquets)
-		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default = True)
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default = 69300) # 20:15
+		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
+		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
+		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
+		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
 		self.primeTimeDuration = config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
 
 		self["Content"] = StaticText("")
@@ -160,11 +164,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_menu": self.key_menu_handler,
 			'key_play': self.key_play_handler,
 			"key_ok": self.key_ok_handler,
-		},-1)
+		}, -1)
 
 		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
 			{
-				"startTeletext": (self.infoKeyPressed,_("Switch between views")),
+				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
 			}, -1)
 
 		self.buildGenreList()
@@ -226,8 +230,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.sel_changed()
 
 	def buildGenreList(self):
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
-		genreTypes = (["Filme" , imgpath +  "filme.png"], ["Serien" , imgpath +  "serien.png"], ["Dokus" , imgpath +  "dokus.png"], ["Kinder", imgpath +  "kinder.png"], ["Shows", imgpath +  "shows.png"], ["Sport", imgpath +  "sport.png"], ["Music", imgpath +  "music.png"], ["Sonstiges", imgpath +  "sonstiges.png"])
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		genreTypes = (["Filme", imgpath + "filme.png"], ["Serien", imgpath + "serien.png"], ["Dokus", imgpath + "dokus.png"], ["Kinder", imgpath + "kinder.png"], ["Shows", imgpath + "shows.png"], ["Sport", imgpath + "sport.png"], ["Music", imgpath + "music.png"], ["Sonstiges", imgpath + "sonstiges.png"])
 		genrelist = []
 		for genre in genreTypes:
 			genrelist.append((genre,))
@@ -241,7 +245,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self.substituteImage = str(self.parameter[5])
 				self.FontOrientation = self.getFontOrientation(self.parameter[25])
 				self.Coverings = eval(str(self.parameter[23]))
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
@@ -258,11 +262,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.addtimer()
 
 	def key_yellow_handler(self):
-		choices, idx = (self.userBouquets,0)
-		keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
-		self.session.openWithCallback(self.yellowCallBack, ChoiceBox, title = 'Bouquetauswahl', keys = keys, list = choices, selection = idx )
+		choices, idx = (self.userBouquets, 0)
+		keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+		self.session.openWithCallback(self.yellowCallBack, ChoiceBox, title='Bouquetauswahl', keys=keys, list=choices, selection=idx)
 
-	def yellowCallBack(self, ret = None):
+	def yellowCallBack(self, ret=None):
 		if ret:
 			self.currentBouquet = ret[0]
 			self.getAllEvents(ret[0])
@@ -386,14 +390,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					if selected_element[8]:
 						sRef = eServiceReference(4097, 0, str(selected_element[8]))
 						sRef.setName(str(selected_element[0]))
-						self.session.open(MoviePlayer,sRef)
+						self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventWall"].getcurrentselection()
 				if selected_element:
 					if selected_element.hasTrailer:
 						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
 						sRef.setName(str(selected_element.name))
-						self.session.open(MoviePlayer,sRef)
+						self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
@@ -421,9 +425,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					else:
 						recname += ' - '
 					if str(val[0][12]) != "":
-						recname +=  "S" + str(val[0][12]).zfill(2)
+						recname += "S" + str(val[0][12]).zfill(2)
 					if str(val[0][13]) != "":
-						recname +=  "E" + str(val[0][13]).zfill(2) + ' - '
+						recname += "E" + str(val[0][13]).zfill(2) + ' - '
 					if str(val[0][2]) != "":
 						recname += str(val[0][2]) + ' - '
 					if recname.endswith(' - '):
@@ -448,16 +452,15 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			else:
 				recdesc = description
 
-			timer = RecordTimerEntry(ServiceReference(sRef),begin,end,recname,recdesc,eit,False,False,afterEvent = AFTEREVENT.AUTO,dirname = config.usage.default_path.value,tags = None)
+			timer = RecordTimerEntry(ServiceReference(sRef), begin, end, recname, recdesc, eit, False, False, afterEvent=AFTEREVENT.AUTO, dirname=config.usage.default_path.value, tags=None)
 			timer.repeated = 0
 			timer.tags = ['AEL-Prime-Time-Planer']
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : "+ str(ex))
+			write_log("addtimer : " + str(ex))
 
-
-	def finishedAdd(self, answer, instantTimer = False):
+	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
 			entry = answer[1]
 			simulTimerList = self.session.nav.RecordTimer.record(entry)
@@ -477,7 +480,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				cs = self["eventWall"].getcurrentselection()
 				cs.__setitem__('hasTimer', True)
 				self["eventWall"].refresh()
-
 
 	def finishSanityCorrection(self, answer):
 		self.finishedAdd(answer)
@@ -589,7 +591,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						playable = not (eServiceReference(serviceref).flags & mask)
 						if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != ".":
 							if not self.HDonly.value or "1:0:19:" in serviceref:
-								line = [serviceref,servicename]
+								line = [serviceref, servicename]
 								if line not in lines:
 									lines.append(line)
 
@@ -604,7 +606,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						playable = not (eServiceReference(serviceref).flags & mask)
 						if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != ".":
 							if not self.HDonly.value or "1:0:19:" in serviceref:
-								line = [serviceref,servicename]
+								line = [serviceref, servicename]
 								if line not in lines:
 									lines.append(line)
 
@@ -618,12 +620,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			epgcache = eEPGCache.getInstance()
 			self.allevents = epgcache.lookupEvent(test) or []
 
-			timers=[]
+			timers = []
 			recordHandler = NavigationInstance.instance.RecordTimer
 			for timer in recordHandler.timer_list:
 				if timer and timer.service_ref:
 					_timer = str(timer.name)
-					_timer = _timer.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").upper()
+					_timer = _timer.strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					timers.append(_timer)
 				if timer and timer.eit:
 					_timer = str(timer.eit)
@@ -632,7 +634,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			for serviceref, eit, name, begin, duration, shortdesc, extdesc, service_name in self.allevents:
 				if not 'Sendepause' in name and not 'Sendeschluss' in name:
 					desc = None
-					cleanname = name.strip().replace(".","").replace(":","").replace("-","").replace("  "," ").upper()
+					cleanname = name.strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
 					if cleanname in timers or str(eit) in timers:
 						hasTimer = True
@@ -682,9 +684,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							self.unknownlist.append((itm,))
 
 			if self.viewType == 'Listenansicht':
-				itm = ['habe leider keine Sendungen zum Genre gefunden', '0', -1, 0, 0, False, '','',None]
+				itm = ['habe leider keine Sendungen zum Genre gefunden', '0', -1, 0, 0, False, '', '', None]
 			else:
-				itm = EventEntry('habe leider keine Sendungen zum Genre gefunden', None, -1, 0, 0, False, '', '', imgpath +  "substituteImage.jpg",None)
+				itm = EventEntry('habe leider keine Sendungen zum Genre gefunden', None, -1, 0, 0, False, '', '', imgpath + "substituteImage.jpg", None)
 			if not self.movielist:
 				self.movielist.append((itm,))
 			if not self.doculist:
@@ -702,7 +704,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if not self.unknownlist:
 				self.unknownlist.append((itm,))
 		except Exception as ex:
-			write_log("getAllEvents : "+ str(ex))
+			write_log("getAllEvents : " + str(ex))
 
 	def getSimilarEvents(self, id, ref):
 		epgcache = eEPGCache.getInstance()
@@ -713,11 +715,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			text = '\n\nWeitere Sendetermine:'
 			for x in ret:
 				t = localtime(x[1])
-				text += '\n%d.%d.%d, %02d:%02d  -  %s'%(t[2], t[1], t[0], t[3], t[4], x[0])
+				text += '\n%d.%d.%d, %02d:%02d  -  %s' % (t[2], t[1], t[0], t[3], t[4], x[0])
 			return text
 		return ''
 
-	def sort_func(self,x,y):
+	def sort_func(self, x, y):
 		if x[1] < y[1]:
 			return -1
 		elif x[1] == y[1]:
@@ -749,7 +751,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.listlen = len(cList)
 			return cList
 		except Exception as ex:
-			write_log("getEPGdata : "+ str(ex))
+			write_log("getEPGdata : " + str(ex))
 
 	def getEventGenre(self, eit, serviceref, name, desc, begin):
 		try:
@@ -782,19 +784,19 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					genres = dbData[2].split()
 					if genres:
 						for genre in genres:
-							if str(genre).strip() in map(lambda x: x.strip(),Movies):
+							if str(genre).strip() in map(lambda x: x.strip(), Movies):
 								return 'Spielfilm'
-							elif str(genre).strip() in map(lambda x: x.strip(),Series):
+							elif str(genre).strip() in map(lambda x: x.strip(), Series):
 								return 'Serien'
-							elif str(genre).strip() in map(lambda x: x.strip(),Dokus):
+							elif str(genre).strip() in map(lambda x: x.strip(), Dokus):
 								return 'Reportage'
-							elif str(genre).strip() in map(lambda x: x.strip(),Music):
+							elif str(genre).strip() in map(lambda x: x.strip(), Music):
 								return 'Music'
-							elif str(genre).strip() in map(lambda x: x.strip(),Kinder):
+							elif str(genre).strip() in map(lambda x: x.strip(), Kinder):
 								return 'Kinder'
-							elif str(genre).strip() in map(lambda x: x.strip(),Shows):
+							elif str(genre).strip() in map(lambda x: x.strip(), Shows):
 								return 'Unterhaltung'
-							elif str(genre).strip() in map(lambda x: x.strip(),Sport):
+							elif str(genre).strip() in map(lambda x: x.strip(), Sport):
 								return 'Sport'
 
 			if 'Folge' in desc or 'Staffel' in desc or 'Episode' in desc or 'Soap' in desc or 'Reihe' in desc or 'Serie' in desc:
@@ -851,7 +853,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					image = self.picloader.load(self.substituteImage)
 			self.picloader.destroy()
 			if pic:
-				picon = LoadPixmap(pic)#self.picloader.load(entrys.picon)
+				picon = LoadPixmap(pic)  # self.picloader.load(entrys.picon)
 
 			ret = [entrys]
 			if image:
@@ -861,8 +863,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if picon:
 				ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
 			if entrys.hasTimer and fileExists(self.parameter[15]):
-				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0]+self.parameter[19][4], self.parameter[19][1], self.parameter[19][0]+self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0]+self.parameter[20][4], self.parameter[20][1], self.parameter[20][0]+self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 				ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
 			else:
 				ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
@@ -879,17 +881,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 								(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 								]
 
-	def findPicon(self, service = None, serviceName = None):
+	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
 			pos = service.rfind(':')
 			if pos != -1:
 				if service.startswith("1:134"):
 					service = GetWithAlternative(service)
 					pos = service.rfind(':')
-				service = service[:pos].rstrip(':').replace(':','_')
+				service = service[:pos].rstrip(':').replace(':', '_')
 			pos = service.rfind('_http')
 			if pos != -1:
-					service = service[:pos].rstrip('_http').replace(':','_')
+					service = service[:pos].rstrip('_http').replace(':', '_')
 			for piconpath in piconpaths:
 				pngname = os.path.join(piconpath, service + ".png")
 				if os.path.isfile(pngname):
@@ -902,6 +904,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		return None
 
 ####################################################################################
+
+
 class MySetup(Screen, ConfigListScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
@@ -924,16 +928,16 @@ class MySetup(Screen, ConfigListScreen):
 			self.userBouquets.append(bouquet[1])
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default = "Filme", choices = [ "Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport" ])
-		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default = "Alle Bouquets", choices = self.userBouquets)
-		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default = True)
+		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
+		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
+		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 		self.primeTimeDuration = config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default = 69300) # 20:15
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
+		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
+		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 
 		self.configlist = []
 		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -964,7 +968,7 @@ class MySetup(Screen, ConfigListScreen):
 			self["config"].updateConfigListView(cur)
 
 	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI,MessageBox,_("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
+		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
 	def restartGUI(self, answer):
@@ -976,6 +980,8 @@ class MySetup(Screen, ConfigListScreen):
 			self.close()
 
 #################################################################################################################################################
+
+
 class PicLoader:
 	def __init__(self, width, height):
 		self.picload = ePicLoad()

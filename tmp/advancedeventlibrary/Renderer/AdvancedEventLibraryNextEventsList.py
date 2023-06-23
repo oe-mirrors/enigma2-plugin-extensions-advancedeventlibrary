@@ -15,8 +15,9 @@ import re
 import math
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = False)
+usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
 previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
+
 
 class AdvancedEventLibraryNextEventsList(Renderer):
 
@@ -91,9 +92,9 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		width = self.l.getItemSize().width()
 		height = self.l.getItemSize().height()
 
-		flc  = '#00ffffff'
+		flc = '#00ffffff'
 		flcs = '#00ffffff'
-		slc  = '#00ffffff'
+		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
 			flc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColor").argb())
@@ -137,7 +138,7 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 
 class PicLoader:
 
-	def __init__(self, width, height, sc = None):
+	def __init__(self, width, height, sc=None):
 		self.picload = ePicLoad()
 		if not sc:
 			sc = AVSwitch().getFramebufferScale()

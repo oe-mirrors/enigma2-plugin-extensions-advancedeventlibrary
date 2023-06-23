@@ -20,9 +20,9 @@ from enigma import eTimer, ePicLoad, eLabel, eWall, eWallPythonMultiContent, eLi
 from Components.ConfigList import ConfigListScreen, getSelectionChoices
 from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile, fileExists, ConfigDescription
 from glob import glob
-import AdvancedEventLibrarySystem
+import .AdvancedEventLibrarySystem
 from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, setStatus, clearMem, getDB, convert2base64
-from AdvancedEventLibraryLists import AELBaseWall, MovieList
+from .AdvancedEventLibraryLists import AELBaseWall, MovieList
 from Tools.LoadPixmap import LoadPixmap
 from thread import start_new_thread
 import datetime
@@ -49,6 +49,7 @@ if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyo'):
 	from Plugins.Extensions.tmdb import tmdb
 	isTMDb = True
 
+
 class MovieEntry():
 	def __init__(self, filename, date, name, service, image, isFolder, progress, desc, trailer="", mlen=0):
 		self.filename = filename
@@ -71,24 +72,28 @@ class MovieEntry():
 	def __repr__(self):
 		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
 
+
 def write_log(svalue, logging=True):
 	if logging:
 		t = localtime()
 		logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-		AEL_log = open(log,"a")
+		AEL_log = open(log, "a")
 		AEL_log.write(str(logtime) + " : [AdvancedEventLibrarySimpleMovieWall] - " + str(svalue) + "\n")
 		AEL_log.close()
 
+
 def loadskin(filename):
-	path = skinpath  + filename
+	path = skinpath + filename
 	with open(path, "r") as f:
 		skin = f.read()
 		f.close()
 	return skin
 
+
 class AdvancedEventLibrarySimpleMovieWall(Screen):
 	ALLOW_SUSPEND = True
 	skin = skin.loadSkin(skinpath + "AdvancedEventLibraryMovieLists.xml")
+
 	def __init__(self, session, viewType="Wallansicht"):
 		global active
 		active = True
@@ -107,9 +112,9 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.pageCount = 0
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default = True)
-		self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigText(default = "None")
-		sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default = "Datum absteigend", choices = [ "Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend" ])
+		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
+		self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigText(default="None")
+		sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend"])
 		if sortType.value == "Datum absteigend":
 			self.sortType = 0
 		elif sortType.value == "Datum aufsteigend":
@@ -127,7 +132,6 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		else:
 			self["key_yellow"] = StaticText("")
 		self["key_blue"] = StaticText(str(sortType.value))
-
 
 		self['NaviInfo'] = Label('')
 
@@ -162,14 +166,14 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			"key_pvr": self.key_pvr_handler,
 			'key_play': self.key_play_handler,
 			"key_info": self.key_info_handler,
-		},-1)
+		}, -1)
 
 		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
 			{
-				"startTeletext": (self.infoKeyPressed,_("Switch between views")),
+				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
 			}, -1)
 
-		self.scrambledVideoList = [ ]
+		self.scrambledVideoList = []
 		if fileExists("/etc/enigma2/.scrambled_video_list"):
 			with open("/etc/enigma2/.scrambled_video_list", "r") as scrambledFiles:
 				for line in scrambledFiles:
@@ -221,9 +225,9 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					packed = packed[12:]
 					cue = struct.unpack('>QI', packedCue)
 					if cue[1] == 5:
-						movie_len = cue[0]/90000
+						movie_len = cue[0] / 90000
 						return movie_len
-			except Exception, ex:
+			except Exception as ex:
 				write_log("getMovieLen : " + str(ex))
 		return 0
 
@@ -236,7 +240,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				f = open(moviename + ".cuts", "rb")
 				packed = f.read()
 				f.close()
-				
+
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
@@ -251,10 +255,10 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		if len(cut_list):
 			for (pts, what) in cut_list:
 				if what == 3:
-					last_end_point = pts/90000
+					last_end_point = pts / 90000
 
 		if movie_len > 0 and last_end_point is not None:
-			play_progress = (last_end_point*100) / movie_len
+			play_progress = (last_end_point * 100) / movie_len
 		else:
 			play_progress = 0
 
@@ -272,8 +276,8 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.scrambledImage = LoadPixmap(self.parameter[16])
 		self.recordImage = LoadPixmap(self.parameter[15])
 		self.fontOrientation = self.getFontOrientation(self.parameter[25])
-		if fileExists(str(self.folderImage).replace('.jpg','.png')):
-			self.tfolderImage = LoadPixmap(str(self.folderImage).replace('.jpg','.png'))
+		if fileExists(str(self.folderImage).replace('.jpg', '.png')):
+			self.tfolderImage = LoadPixmap(str(self.folderImage).replace('.jpg', '.png'))
 		else:
 			self.tfolderImage = LoadPixmap(self.folderImage)
 		self.substituteImage = str(self.parameter[5])
@@ -284,7 +288,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 		for k in self.moviedict:
 			for v in self.moviedict[k]:
-				self.currentFolder = [k,v]
+				self.currentFolder = [k, v]
 				break
 			break
 
@@ -293,7 +297,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				for k, v in self.moviedict.items():
 					for ik, iv in v.items():
 						if str(ik) == str(self.startPath.value):
-							self.currentFolder = [k,ik]
+							self.currentFolder = [k, ik]
 							break
 		else:
 			self.currentFolder = goToFolder
@@ -318,7 +322,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					img = getImageFile(getPictureDir() + self.imageType + '/', k.split('/')[-1])
 					if not img:
 						img = self.folderImage
-					itm = MovieEntry([k,k],0,k.split('/')[-1]+'...',eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1]+'/'),img,True,0,"")
+					itm = MovieEntry([k, k], 0, k.split('/')[-1] + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1] + '/'), img, True, 0, "")
 					hasElements = True
 					if not itm in currentList:
 						currentList.append((itm,))
@@ -328,7 +332,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						img = getImageFile(getPictureDir() + self.imageType + '/', self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1])
 						if not img:
 							img = self.folderImage
-						itm = MovieEntry([self.currentFolder[0],self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent']],0,'...',eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1]+'/'),img,True,0,"")
+						itm = MovieEntry([self.currentFolder[0], self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent']], 0, '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1] + '/'), img, True, 0, "")
 						hasElements = True
 						if not itm in currentList:
 							currentList.append((itm,))
@@ -336,7 +340,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						for k in self.moviedict:
 							if self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'] != k:
 								img = self.folderImage
-								itm = MovieEntry(["root",""],0,'...',eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1]+'/'),img,True,0,"")
+								itm = MovieEntry(["root", ""], 0, '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1] + '/'), img, True, 0, "")
 								currentList.append((itm,))
 								hasElements = True
 								break
@@ -345,11 +349,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					folderlist = self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['directories']
 					folderlist.sort()
 					for path in folderlist:
-						if self.currentFolder[1]+'/'+path in self.moviedict[self.currentFolder[0]]:
+						if self.currentFolder[1] + '/' + path in self.moviedict[self.currentFolder[0]]:
 							img = getImageFile(getPictureDir() + self.imageType + '/', path)
 							if not img:
 								img = self.folderImage
-							itm = MovieEntry([self.currentFolder[0],self.currentFolder[1]+'/'+path],0,path+'...',eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.currentFolder[1] + '/' + path+'/'),img,True,0,"")
+							itm = MovieEntry([self.currentFolder[0], self.currentFolder[1] + '/' + path], 0, path + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.currentFolder[1] + '/' + path + '/'), img, True, 0, "")
 							hasElements = True
 							if not itm in currentList:
 								currentList.append((itm,))
@@ -388,19 +392,19 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 							image = item[5]
 						if len(item) > 7:
 							if self.showProgress.value:
-								itm = MovieEntry(item[0],item[1],item[2],eServiceReference(item[3]),image,False,self.getProgress(item[0],item[4]),item[6],item[7],item[4])
+								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, self.getProgress(item[0], item[4]), item[6], item[7], item[4])
 							else:
-								itm = MovieEntry(item[0],item[1],item[2],eServiceReference(item[3]),image,False,0,item[6],item[7],item[4])
+								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, 0, item[6], item[7], item[4])
 						else:
 							if self.showProgress.value:
-								itm = MovieEntry(item[0],item[1],item[2],eServiceReference(item[3]),image,False,self.getProgress(item[0],item[4]),item[6])
+								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, self.getProgress(item[0], item[4]), item[6])
 							else:
-								itm = MovieEntry(item[0],item[1],item[2],eServiceReference(item[3]),image,False,0,item[6])
+								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, 0, item[6])
 						currentList.append((itm,))
 					del self.movielist
 		except Exception as ex:
 			if self.lastFolder:
-				itm = MovieEntry([self.lastFolder[0],self.lastFolder[1]],0,'Error...',eServiceReference('1:0:0:0:0:0:0:0:0:0:' + self.lastFolder[1].split('/')[-1]),self.folderImage,True,0,"")
+				itm = MovieEntry([self.lastFolder[0], self.lastFolder[1]], 0, 'Error...', eServiceReference('1:0:0:0:0:0:0:0:0:0:' + self.lastFolder[1].split('/')[-1]), self.folderImage, True, 0, "")
 				currentList.append((itm,))
 			write_log("getMovieList : " + str(ex))
 		try:
@@ -420,7 +424,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def findEpisode(self, title):
 		try:
-			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE|re.DOTALL)
+			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE | re.DOTALL)
 			ex = regexfinder.findall(str(title))
 			if ex:
 				return True
@@ -432,7 +436,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		try:
 			maxLength = self.parameter[2]
 			textHeight = int(self.parameter[8])
-			textBegin = 100-textHeight
+			textBegin = 100 - textHeight
 			if len(entrys.name) > maxLength:
 				name = str(entrys.name)[:maxLength] + '...'
 			else:
@@ -447,7 +451,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				if fileExists(entrys.filename + '.rec'):
 					scrambled_or_rec = self.recordImage
 				if fileExists(entrys.filename + '.meta'):
-					if linecache.getline(entrys.filename + '.meta', 9).replace("\n","").strip() == '1' or entrys.filename in self.scrambledVideoList:
+					if linecache.getline(entrys.filename + '.meta', 9).replace("\n", "").strip() == '1' or entrys.filename in self.scrambledVideoList:
 						scrambled_or_rec = self.scrambledImage
 				elif entrys.filename in self.scrambledVideoList:
 					scrambled_or_rec = self.scrambledImage
@@ -473,15 +477,15 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 								return [entrys,
 													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
 													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], scrambled_or_rec, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin-3, 0, textBegin-3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin-3, 2, textBegin-3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 													(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
 													]
 							else:
 								return [entrys,
 													(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin-3, 0, textBegin-3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
-													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin-3, 2, textBegin-3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+													(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin - 3, 0, textBegin - 3, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
+													(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin - 3, 2, textBegin - 3, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 													(eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, 0, 97, 0, 97, 100, 3, 100, 3, entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()),
 													]
 						else:
@@ -517,10 +521,10 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						if scrambled_or_rec:
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], image, None, None, BT_SCALE))
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[22][0], self.parameter[22][1], self.parameter[22][2], self.parameter[22][3], scrambled_or_rec, None, None, BT_SCALE))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[20][0]+self.parameter[20][4]), self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
-							res.append((eListboxPythonMultiContent.TYPE_PROGRESS, (self.parameter[17][0]+self.parameter[17][4]), self.parameter[17][1], self.parameter[17][2], self.parameter[17][3], entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[21][0]+self.parameter[21][4]), self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, entrys.desc, skin.parseColor(self.parameter[26]).argb(), skin.parseColor(self.parameter[27]).argb()))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[18][0]+self.parameter[18][4]), self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][5], RT_HALIGN_RIGHT | RT_VALIGN_CENTER, self.correctweekdays(_time), skin.parseColor(self.parameter[28]).argb(), skin.parseColor(self.parameter[29]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[20][0] + self.parameter[20][4]), self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_PROGRESS, (self.parameter[17][0] + self.parameter[17][4]), self.parameter[17][1], self.parameter[17][2], self.parameter[17][3], entrys.progress, self.parameter[13], skin.parseColor(self.parameter[9]).argb(), skin.parseColor(self.parameter[11]).argb(), skin.parseColor(self.parameter[10]).argb(), skin.parseColor(self.parameter[12]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[21][0] + self.parameter[21][4]), self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, entrys.desc, skin.parseColor(self.parameter[26]).argb(), skin.parseColor(self.parameter[27]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[18][0] + self.parameter[18][4]), self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][5], RT_HALIGN_RIGHT | RT_VALIGN_CENTER, self.correctweekdays(_time), skin.parseColor(self.parameter[28]).argb(), skin.parseColor(self.parameter[29]).argb()))
 						else:
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], image, None, None, BT_SCALE))
 							res.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
@@ -531,9 +535,9 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						if scrambled_or_rec:
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], image, None, None, BT_SCALE))
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[22][0], self.parameter[22][1], self.parameter[22][2], self.parameter[22][3], scrambled_or_rec, None, None, BT_SCALE))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[20][0]+self.parameter[20][4]), self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[21][0]+self.parameter[21][4]), self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, entrys.desc, skin.parseColor(self.parameter[26]).argb(), skin.parseColor(self.parameter[27]).argb()))
-							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[18][0]+self.parameter[18][4]), self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][5], RT_HALIGN_RIGHT | RT_VALIGN_CENTER, self.correctweekdays(_time), skin.parseColor(self.parameter[28]).argb(), skin.parseColor(self.parameter[29]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[20][0] + self.parameter[20][4]), self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[21][0] + self.parameter[21][4]), self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, entrys.desc, skin.parseColor(self.parameter[26]).argb(), skin.parseColor(self.parameter[27]).argb()))
+							res.append((eListboxPythonMultiContent.TYPE_TEXT, (self.parameter[18][0] + self.parameter[18][4]), self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][5], RT_HALIGN_RIGHT | RT_VALIGN_CENTER, self.correctweekdays(_time), skin.parseColor(self.parameter[28]).argb(), skin.parseColor(self.parameter[29]).argb()))
 						else:
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], image, None, None, BT_SCALE))
 							res.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], RT_HALIGN_LEFT | RT_VALIGN_CENTER, name, skin.parseColor(self.parameter[24]).argb(), skin.parseColor(self.parameter[25]).argb()))
@@ -549,29 +553,29 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 									]
 			else:
 				res = [None]
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, 20, 0,(width - 40), height, 1, RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex)))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, 20, 0, (width - 40), height, 1, RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex)))
 				return res
 
 	def key_menu_handler(self):
-		keys = [ "1", "2", "3", "4", "5", "6", "7", "8"]
+		keys = ["1", "2", "3", "4", "5", "6", "7", "8"]
 		if self.viewType == 'Listenansicht':
 			cs = self['movielist'].getCurrentSelection()
 		else:
 			cs = self['moviewall'].getcurrentselection()
 		if cs.isFolder:
 			if self.currentFolder[0] != "root" and cs.name != "...":
-				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abrechen',)],0)
-				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title = 'Menüauswahl', keys = keys, list = choices, selection = idx )
+				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abrechen',)], 0)
+				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
 			else:
 				self.menuCallBack(ret=["Einstellungen"])
 		else:
 			if config.usage.movielist_use_moviedb_trash.value:
-				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('lösche (Papierkorb) : ' + cs.name,), ('Abrechen',)],0)
+				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('lösche (Papierkorb) : ' + cs.name,), ('Abrechen',)], 0)
 			else:
-				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abrechen',)],0)
-			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title = 'Menüauswahl', keys = keys, list = choices, selection = idx )
+				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abrechen',)], 0)
+			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
 
-	def menuCallBack(self, ret = None):
+	def menuCallBack(self, ret=None):
 		if ret:
 			if self.viewType == 'Listenansicht':
 				cs = self['movielist'].getCurrentSelection()
@@ -589,28 +593,28 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					for ik, iv in v.items():
 						paths.append((ik,))
 				paths.sort()
-				choices, idx = (paths,0)
-				keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-				self.session.openWithCallback(self.moveCallBack, ChoiceBox, title = 'Ziel', keys = keys, list = choices, selection = idx )
+				choices, idx = (paths, 0)
+				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+				self.session.openWithCallback(self.moveCallBack, ChoiceBox, title='Ziel', keys=keys, list=choices, selection=idx)
 			elif 'kopiere : ' in ret[0]:
 				paths = []
 				for k, v in self.moviedict.items():
 					for ik, iv in v.items():
 						paths.append((ik,))
 				paths.sort()
-				choices, idx = (paths,0)
-				keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-				self.session.openWithCallback(self.copyCallBack, ChoiceBox, title = 'Ziel', keys = keys, list = choices, selection = idx )
+				choices, idx = (paths, 0)
+				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+				self.session.openWithCallback(self.copyCallBack, ChoiceBox, title='Ziel', keys=keys, list=choices, selection=idx)
 			elif 'lösche : ' in ret[0]:
 				if cs.isFolder:
 					msg = "Möchtest Du den Ordner und dessen Inhalt " + cs.filename[1] + " wirklich löschen?"
 				else:
 					msg = "Möchtest Du die Aufnahme " + cs.name + " wirklich löschen?"
-				movebox = self.session.openWithCallback(self.remove,MessageBox,msg, MessageBox.TYPE_YESNO)
+				movebox = self.session.openWithCallback(self.remove, MessageBox, msg, MessageBox.TYPE_YESNO)
 				movebox.setTitle(_("Löschen"))
 			elif '(Papierkorb)' in ret[0]:
 				msg = "Möchtest Du die Aufnahme " + cs.name + " wirklich in den Papierkorb verschieben?"
-				movebox = self.session.openWithCallback(self.recycle,MessageBox,msg, MessageBox.TYPE_YESNO)
+				movebox = self.session.openWithCallback(self.recycle, MessageBox, msg, MessageBox.TYPE_YESNO)
 				movebox.setTitle(_("Löschen (Papierkorb)"))
 			elif ret[0] == "aktualisiere Ansicht":
 				self.getList(self.currentFolder, True)
@@ -619,7 +623,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				if self.viewType == 'Wallansicht':
 					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
-	def moveCallBack(self, ret = None):
+	def moveCallBack(self, ret=None):
 		if ret:
 			if self.viewType == 'Listenansicht':
 				cs = self['movielist'].getCurrentSelection()
@@ -630,7 +634,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				msg = "Möchtest Du den Ordner " + cs.filename[1] + " nach " + self.destination + " verschieben?"
 			else:
 				msg = "Möchtest Du die Aufnahme " + cs.name + " nach " + self.destination + " verschieben?"
-			movebox = self.session.openWithCallback(self.move,MessageBox,msg, MessageBox.TYPE_YESNO)
+			movebox = self.session.openWithCallback(self.move, MessageBox, msg, MessageBox.TYPE_YESNO)
 			movebox.setTitle(_("Verschieben"))
 
 	def move(self, answer):
@@ -642,18 +646,18 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			if cs.isFolder:
 				write_log('move folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
 #				shutil.move(cs.filename[1], self.destination)
-				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, False,  "%s : %s" % (_("move folder"), cs.filename[1])))
+				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, False, "%s : %s" % (_("move folder"), cs.filename[1])))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
 					write_log('move file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
 #					shutil.move(file, os.path.join(self.destination, os.path.basename(file)))
-					job_manager.AddJob(FileTransferJob(file, self.destination, False, False,  "%s : %s" % (_("move file"), file)))
+					job_manager.AddJob(FileTransferJob(file, self.destination, False, False, "%s : %s" % (_("move file"), file)))
 				self.openTasklist()
 				del files
 
-	def copyCallBack(self, ret = None):
+	def copyCallBack(self, ret=None):
 		if ret:
 			if self.viewType == 'Listenansicht':
 				cs = self['movielist'].getCurrentSelection()
@@ -664,7 +668,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				msg = "Möchtest Du den Ordner " + cs.filename[1] + " nach " + self.destination + " kopieren?"
 			else:
 				msg = "Möchtest Du die Aufnahme " + cs.name + " nach " + self.destination + " kopieren?"
-			movebox = self.session.openWithCallback(self.copy,MessageBox,msg, MessageBox.TYPE_YESNO)
+			movebox = self.session.openWithCallback(self.copy, MessageBox, msg, MessageBox.TYPE_YESNO)
 			movebox.setTitle(_("Kopieren"))
 
 	def copy(self, answer):
@@ -675,20 +679,20 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
 				write_log('copy folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
-				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, True,  "%s : %s" % (_("copy folder"), cs.filename[1])))
+				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, True, "%s : %s" % (_("copy folder"), cs.filename[1])))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
 					write_log('copy file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
-					job_manager.AddJob(FileTransferJob(file, self.destination, False, True,  "%s : %s" % (_("copy file"), file)))
+					job_manager.AddJob(FileTransferJob(file, self.destination, False, True, "%s : %s" % (_("copy file"), file)))
 				self.openTasklist()
 				del files
 
 	def openTasklist(self):
 		self.tasklist = []
 		for job in job_manager.getPendingJobs():
-			self.tasklist.append((job,job.name,job.getStatustext(),int(100*job.progress/float(job.end)) ,str(100*job.progress/float(job.end)) + "%" ))
+			self.tasklist.append((job, job.name, job.getStatustext(), int(100 * job.progress / float(job.end)), str(100 * job.progress / float(job.end)) + "%"))
 		if len(self.tasklist):
 			self.session.open(TaskListScreen, self.tasklist)
 			self.progressTimer.start(3000, True)
@@ -697,7 +701,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		foundJobs = False
 		for job in job_manager.getPendingJobs():
 			if 'move' in job.name or 'copy' in job.name:
-				self["NaviInfo"].setText(job.getStatustext() + ' : ' + job.name + ' ' + str(100*job.progress/float(job.end)) + '%')
+				self["NaviInfo"].setText(job.getStatustext() + ' : ' + job.name + ' ' + str(100 * job.progress / float(job.end)) + '%')
 				foundJobs = True
 				break
 		if foundJobs:
@@ -720,7 +724,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
 				write_log('delete folder : ' + str(cs.filename[1]))
-				shutil.rmtree(cs.filename[1], ignore_errors = True)
+				shutil.rmtree(cs.filename[1], ignore_errors=True)
 				self.getList(None, True)
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
@@ -767,19 +771,19 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					write_log('Trailer: ' + str(cs.name) + ' URL: ' + str(cs.trailer))
 					sRef = eServiceReference(4097, 0, str(cs.trailer))
 					sRef.setName(str(cs.name))
-					self.session.open(MoviePlayer,sRef)
+					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
 	def key_pvr_handler(self):
 		if self.currentFolder[0] != 'root':
-			self.session.openWithCallback(self.return_from_bookmarks, MovieLocationBox, "MovieWall", self.currentFolder[0]+'/')
+			self.session.openWithCallback(self.return_from_bookmarks, MovieLocationBox, "MovieWall", self.currentFolder[0] + '/')
 		else:
 			if self.viewType == 'Listenansicht':
 				cs = self['movielist'].getCurrentSelection()
 			else:
 				cs = self['moviewall'].getcurrentselection()
-			self.session.openWithCallback(self.return_from_bookmarks, MovieLocationBox, "MovieWall", cs.filename[0]+'/')
+			self.session.openWithCallback(self.return_from_bookmarks, MovieLocationBox, "MovieWall", cs.filename[0] + '/')
 
 	def return_from_bookmarks(self, ret=None):
 		if ret:
@@ -789,11 +793,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			for k, v in self.moviedict.items():
 				for ik, iv in v.items():
 					if str(ik) == str(ret):
-						self.currentFolder = [k,ik]
+						self.currentFolder = [k, ik]
 						found = True
 						break
 			if not found:
-				self.getList(createUpdate = True)
+				self.getList(createUpdate=True)
 			self.getMovieList(self.sortType)
 			self.sel_changed()
 			if self.viewType == 'Wallansicht':
@@ -807,7 +811,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			else:
 				cs = self['moviewall'].getcurrentselection()
 			if not cs.isFolder:
-				self.session.openWithCallback(self.return_from_player, MoviePlayer,cs.service)
+				self.session.openWithCallback(self.return_from_player, MoviePlayer, cs.service)
 			else:
 				self.currentFolder = cs.filename
 				self.getMovieList(self.sortType)
@@ -824,7 +828,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		info = eServiceCenter.getInstance().info(cs.service)
 		if info:
 			mlen = info.getLength(cs.service)
-		cs.__setitem__('progress', self.getProgress(cs.filename,mlen))
+		cs.__setitem__('progress', self.getProgress(cs.filename, mlen))
 		if self.viewType == 'Wallansicht':
 			self["moviewall"].refresh()
 		self.sel_changed()
@@ -843,7 +847,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.sel_changed()
 				if self.viewType == 'Wallansicht':
 					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
-				imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+				imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 				ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 				self["trailer"].instance.setPixmap(ptr)
 		except Exception as ex:
@@ -865,11 +869,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						self.session.open(EventViewSimple, evt, ServiceReference(cs.service))
 					else:
 						if info.getLength(cs.service) > 0:
-							mlen = str(info.getLength(cs.service)/60) + ' min'
+							mlen = str(info.getLength(cs.service) / 60) + ' min'
 						else:
-							mlen = str(self.getMovieLen(cs.filename)/60) + ' min'
+							mlen = str(self.getMovieLen(cs.filename) / 60) + ' min'
 						name, ext_desc = self.getExtendedMovieDescription(cs.service)
-						self.session.open(EventViewMovieEvent, name=name, ext_desc = ext_desc, dur = mlen, service=cs.service)
+						self.session.open(EventViewMovieEvent, name=name, ext_desc=ext_desc, dur=mlen, service=cs.service)
 			except Exception as ex:
 				write_log("call EventView : " + str(ex))
 
@@ -898,7 +902,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			if os.path.exists(info_file + ext):
 				f = info_file + ext
 				break
-		if not f:	
+		if not f:
 			ext_pos = info_file.rfind('.')
 			name_len = len(info_file)
 			ext_len = name_len - ext_pos
@@ -910,7 +914,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						break
 		if f:
 			try:
-				with open (f, "r") as txtfile:
+				with open(f, "r") as txtfile:
 					extended_desc = txtfile.read()
 			except IOError:
 				pass
@@ -927,7 +931,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			cs = self['moviewall'].getcurrentselection()
 		isFolder = cs.isFolder
 		if isFolder:
-			self.session.openWithCallback(self.return_from_AEL, AdvancedEventLibrarySystem.Editor, service=None, eventname=(cs.name.replace("...",""),0))
+			self.session.openWithCallback(self.return_from_AEL, AdvancedEventLibrarySystem.Editor, service=None, eventname=(cs.name.replace("...", ""), 0))
 		else:
 			self.session.openWithCallback(self.return_from_AEL, AdvancedEventLibrarySystem.Editor, service=cs.service, eventname=None)
 
@@ -940,11 +944,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self.session.open(tmdb.tmdbScreen, cs.service, 1)
 
 	def key_blue_handler(self):
-		choices, idx = ([('Datum absteigend',), ('Datum aufsteigend',), ('Name aufsteigend',), ('Name absteigend',), ('Tag aufsteigend',), ('Tag absteigend',)],0)
-		keys = [ "1", "2", "3", "4", "5", "6"]
-		self.session.openWithCallback(self.blueCallBack, ChoiceBox, title = 'Sortierung', keys = keys, list = choices, selection = idx )
+		choices, idx = ([('Datum absteigend',), ('Datum aufsteigend',), ('Name aufsteigend',), ('Name absteigend',), ('Tag aufsteigend',), ('Tag absteigend',)], 0)
+		keys = ["1", "2", "3", "4", "5", "6"]
+		self.session.openWithCallback(self.blueCallBack, ChoiceBox, title='Sortierung', keys=keys, list=choices, selection=idx)
 
-	def blueCallBack(self, ret = None):
+	def blueCallBack(self, ret=None):
 		if ret:
 			if ret[0] == "Datum absteigend":
 				self.sortType = 0
@@ -1056,9 +1060,8 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			write_log("sel_changed : " + str(ex))
 
 	def removeExtension(self, ext):
-		ext = ext.replace('.wmv','').replace('.mpeg2','').replace('.ts','').replace('.m2ts','').replace('.mkv','').replace('.avi','').replace('.mpeg','').replace('.mpg','').replace('.iso','').replace('.mp4','')
+		ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
 		return ext
-
 
 	def go_close(self):
 		global active
@@ -1072,13 +1075,14 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def correctweekdays(self, itm):
 		_itm = str(itm)
-		_itm = _itm.replace("Mon","Mo").replace("Tue","Di").replace("Wed","Mi").replace("Thu","Do").replace("Fri","Fr").replace("Sat","Sa").replace("Sun","So")
+		_itm = _itm.replace("Mon", "Mo").replace("Tue", "Di").replace("Wed", "Mi").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
 		return _itm
 
 
 def removeExtension(ext):
-	ext = ext.replace('.wmv','').replace('.mpeg2','').replace('.ts','').replace('.m2ts','').replace('.mkv','').replace('.avi','').replace('.mpeg','').replace('.mpg','').replace('.iso','').replace('.mp4','')
+	ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
 	return ext
+
 
 def getMovieLen(moviename):
 	if fileExists(moviename + ".cuts"):
@@ -1091,18 +1095,19 @@ def getMovieLen(moviename):
 				packed = packed[12:]
 				cue = struct.unpack('>QI', packedCue)
 				if cue[1] == 5:
-					movie_len = cue[0]/90000
+					movie_len = cue[0] / 90000
 					return movie_len
-		except Exception, ex:
+		except Exception as ex:
 			write_log("getMovieLen : " + str(ex))
 	return 0
+
 
 def saveList(imageType):
 	try:
 		global saving
 		saving = True
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default = True)
+		searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 		setStatus('Advanced-Event-Library SimpleMovieWall aktualisiert Deine Daten.')
 		f = open(os.path.join(pluginpath, 'imageType.data'), "w")
 		f.write(str(imageType))
@@ -1111,10 +1116,10 @@ def saveList(imageType):
 		paths = []
 		db = getDB()
 		if os.path.isfile(os.path.join(pluginpath, 'movieplaces.data')):
-			with open(os.path.join(pluginpath, 'movieplaces.data'),'r') as f:
+			with open(os.path.join(pluginpath, 'movieplaces.data'), 'r') as f:
 				lines = f.readlines()
 				for line in lines:
-					line = line.replace('\r','').replace('\n','')
+					line = line.replace('\r', '').replace('\n', '')
 					if line.endswith('/'):
 						paths.append(line[:-1])
 					else:
@@ -1133,7 +1138,7 @@ def saveList(imageType):
 				if path not in recordPaths:
 					recordPaths.append(path)
 
-		for x in range(0,len(recordPaths)):
+		for x in range(0, len(recordPaths)):
 			for recordPath in recordPaths:
 				search = recordPath
 				result = [recordPath for recordPath in recordPaths if search in recordPath]
@@ -1164,7 +1169,7 @@ def saveList(imageType):
 												desc = ""
 												trailer = ""
 												info = None
-												name = str(removeExtension(filename)).split('/')[-1].replace('__',': ').replace('_ ',': ').replace('_',' ')
+												name = str(removeExtension(filename)).split('/')[-1].replace('__', ': ').replace('_ ', ': ').replace('_', ' ')
 												try:
 													if filename.endswith('.ts'):
 														s_service = '1:0:0:0:0:0:0:0:0:0:' + os.path.join(root, filename)
@@ -1186,7 +1191,7 @@ def saveList(imageType):
 															trailer = dbdata[7]
 													image = getImageFile(getPictureDir() + imageType + '/', name)
 													if info:
-														ptr=info.getEvent(service)
+														ptr = info.getEvent(service)
 														if ptr:
 															if image is None:
 																image = getImageFile(getPictureDir() + imageType + '/', ptr.getEventName())
@@ -1212,7 +1217,7 @@ def saveList(imageType):
 							parent = root
 						else:
 							parent = os.path.dirname(root)
-						moviedict[recordPath][root] = {'directories' : directories, 'parent' : parent, 'files' : movielist}
+						moviedict[recordPath][root] = {'directories': directories, 'parent': parent, 'files': movielist}
 					del files
 		with open(os.path.join(pluginpath, 'moviewall.data'), 'wb') as f:
 			pickle.dump(moviedict, f)
@@ -1242,15 +1247,15 @@ class MySetup(Screen, ConfigListScreen):
 		self["key_green"] = StaticText("Speichern")
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default = "Datum absteigend", choices = [ "Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend" ])
+		self.sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend"])
 		if self.paths:
-			self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigSelection(default = self.paths[0], choices = self.paths)
-		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default = True)
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
+			self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigSelection(default=self.paths[0], choices=self.paths)
+		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
+		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 
 		self.configlist = []
 		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -1280,7 +1285,7 @@ class MySetup(Screen, ConfigListScreen):
 			self["config"].updateConfigListView(cur)
 
 	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI,MessageBox,_("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
+		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
 	def restartGUI(self, answer):
@@ -1292,6 +1297,8 @@ class MySetup(Screen, ConfigListScreen):
 			self.close()
 
 #################################################################################################################################################
+
+
 class PicLoader:
 	def __init__(self, width, height):
 		self.picload = ePicLoad()

@@ -12,12 +12,14 @@ from Tools import AdvancedEventLibrary as AEL
 
 log = "/var/tmp/AdvancedEventLibrary.log"
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	Chamaeleon_log = open(log,"a")
+	Chamaeleon_log = open(log, "a")
 	Chamaeleon_log.write(str(logtime) + " : [AdvancedEventLibraryUpdateInfo] - " + str(svalue) + "\n")
 	Chamaeleon_log.close()
+
 
 class AdvancedEventLibraryUpdateInfo(Poll, Converter, object):
 	def __init__(self, type):

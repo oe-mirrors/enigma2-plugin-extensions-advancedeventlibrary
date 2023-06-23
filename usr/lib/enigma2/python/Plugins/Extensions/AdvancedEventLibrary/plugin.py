@@ -49,13 +49,13 @@ import skin
 import cPickle as pickle
 import Screens.Standby
 
-import AdvancedEventLibrarySystem
-import AdvancedEventLibrarySimpleMovieWall
-import AdvancedEventLibrarySerienStarts
-import AdvancedEventLibraryPrimeTime
-import AdvancedEventLibraryChannelSelection
-import AdvancedEventLibraryMediaHub
-import AdvancedEventLibraryRecommendations
+import .AdvancedEventLibrarySystem
+import .AdvancedEventLibrarySimpleMovieWall
+import .AdvancedEventLibrarySerienStarts
+import .AdvancedEventLibraryPrimeTime
+import .AdvancedEventLibraryChannelSelection
+import .AdvancedEventLibraryMediaHub
+import .AdvancedEventLibraryRecommendations
 from Tools.AdvancedEventLibrary import getDB, convertTitle, convert2base64
 
 global leavePlayerfromTrailer
@@ -68,17 +68,17 @@ pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 
 pdesc = 'AdvancedEventLibrary'
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default = False)
+useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
 useEPGLists = useAELEPGLists.value or useAELEPGLists.value == 'true'
-showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default = False)
+showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
 setEPGList = showinEPG.value or showinEPG.value == 'true'
-useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default = False)
+useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
 useMW = useAELMW.value or useAELMW.value == 'true'
-viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
+viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
-refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default = True)
+refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
 refreshMovieData = refreshMW.value or refreshMW.value == 'true'
-updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default = True)
+updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 refreshMovieWall = updateAELMovieWall.value or updateAELMovieWall.value == 'true'
 
 baseEPGSelection__init__ = None
@@ -93,12 +93,14 @@ addFont('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/fonts/S
 
 log = "/var/tmp/AdvancedEventLibrary.log"
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AEL_log = open(log,"a")
+	AEL_log = open(log, "a")
 	AEL_log.write(str(logtime) + " : [AdvancedEventLibraryPlugin] - " + str(svalue) + "\n")
 	AEL_log.close()
+
 
 def sessionstart(reason, **kwargs):
 	try:
@@ -116,9 +118,9 @@ def sessionstart(reason, **kwargs):
 				if 'AdvancedEventLibraryBackup' in fTimer:
 					foundBackup = True
 			if not foundTimer:
-				functionTimer.add(("AdvancedEventLibraryUpdate",{"name" : "Advanced-Event-Library-Update", "imports" : "Tools.AdvancedEventLibrary", "fnc" : "getallEventsfromEPG"}))
+				functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "imports": "Tools.AdvancedEventLibrary", "fnc": "getallEventsfromEPG"}))
 			if not foundBackup:
-				functionTimer.add(("AdvancedEventLibraryBackup",{"name" : "Advanced-Event-Library-Backup", "imports" : "Tools.AdvancedEventLibrary", "fnc" : "createBackup"}))
+				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
 			InfoBarSimpleEventViewInit()
 			EPGSelectionInit()
@@ -135,17 +137,19 @@ def sessionstart(reason, **kwargs):
 #				write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
 				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
 					if refreshMovieData and refreshMovieWall:
-						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_"+evt, evt)
+						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
 				if evt == systemevents.SERVICE_START:
-					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_"+evt, evt)
+					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
 	except Exception as ex:
 		write_log('sessionstart ' + str(ex))
+
 
 def _serviceStart(evt, *args):
 		global ServiceTrack
 #		write_log("new service detected : " + str(args[1]))
-		if len(args)>0 and ServiceTrack and not Screens.Standby.inStandby:
+		if len(args) > 0 and ServiceTrack and not Screens.Standby.inStandby:
 			ServiceTrack.newServiceStarted(args)
+
 
 def openMoviePlayerEventViewMI(self):
 	write_log('call MediaInfo openMoviePlayerEventView')
@@ -162,6 +166,7 @@ def openMoviePlayerEventViewMI(self):
 	else:
 		InfoBarSimpleEventViewBase_openEventView(self)
 
+
 def InfoBarSimpleEventViewBase__init__(self):
 	self["EPGActions"] = HelpableActionMap(self, "InfobarEPGActions",
 		{
@@ -169,17 +174,18 @@ def InfoBarSimpleEventViewBase__init__(self):
 			"showInfobarOrEpgWhenInfobarAlreadyVisible": self.showEventInfoWhenNotVisible,
 		})
 
+
 def InfoBarSimpleEventViewBase_openEventView(self):
-	epglist = [ ]
+	epglist = []
 	self.epglist = epglist
 	service = self.session.nav.getCurrentService()
 	ref = self.session.nav.getCurrentlyPlayingServiceReference()
 	write_log('openEventViewNew ' + str(ref.toString()))
 	info = service.info()
-	ptr=info.getEvent(0)
+	ptr = info.getEvent(0)
 	if ptr:
 		epglist.append(ptr)
-	ptr=info.getEvent(1)
+	ptr = info.getEvent(1)
 	if ptr:
 		epglist.append(ptr)
 	if epglist:
@@ -199,12 +205,13 @@ def InfoBarSimpleEventViewBase_openEventView(self):
 				if not length[0] and length[1] > 1:
 					length = length[1] / 90000
 					if config.usage.movielist_duration_in_min.value:
-						length = "%d min" % (int(length)/60)
+						length = "%d min" % (int(length) / 60)
 					else:
-						length = "%02d:%02d:%02d" % (length/3600, length%3600/60, length%60)
+						length = "%02d:%02d:%02d" % (length / 3600, length % 3600 / 60, length % 60)
 			name, ext_desc = getExtendedMovieDescriptionNew(ref)
 		write_log('open EventViewMovieEvent from Player ' + str(ref.toString()))
 		self.session.open(EventViewMovieEvent, name, ext_desc, length, ref)
+
 
 def showEventInformationNew(self):
 	evt = self["list"].getCurrentEvent()
@@ -216,6 +223,7 @@ def showEventInformationNew(self):
 			dur = self["list"].getCurrentDuration()
 			name, ext_desc = getExtendedMovieDescriptionNew(current)
 			self.session.open(EventViewMovieEvent, name, ext_desc, dur, self.getCurrent())
+
 
 def getExtendedMovieDescriptionNew(ref):
 	extended_desc = ""
@@ -242,7 +250,7 @@ def getExtendedMovieDescriptionNew(ref):
 		if os.path.exists(info_file + ext):
 			f = info_file + ext
 			break
-	if not f:	
+	if not f:
 		ext_pos = info_file.rfind('.')
 		name_len = len(info_file)
 		ext_len = name_len - ext_pos
@@ -254,21 +262,24 @@ def getExtendedMovieDescriptionNew(ref):
 					break
 	if f:
 		try:
-			with open (f, "r") as txtfile:
+			with open(f, "r") as txtfile:
 				extended_desc = txtfile.read()
 		except IOError:
 			pass
 	return (name, extended_desc)
 
+
 def _refreshMovieWall(evt, *args):
-		if len(args)>0:
+		if len(args) > 0:
 			write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
 		if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-			refreshData = Timer(30,refreshMovieWallData)
+			refreshData = Timer(30, refreshMovieWallData)
 			refreshData.start()
 
+
 def refreshMovieWallData():
-	start_new_thread(saveMovieWallData,())
+	start_new_thread(saveMovieWallData, ())
+
 
 def saveMovieWallData():
 	try:
@@ -281,7 +292,7 @@ def saveMovieWallData():
 						itype = f.read()
 						f.close()
 				if itype:
-					from Plugins.Extensions.AdvancedEventLibrary.AdvancedEventLibrarySimpleMovieWall import saveList
+					from .AdvancedEventLibrarySimpleMovieWall import saveList
 					saveList(itype)
 					write_log("MovieWall data saved with " + str(itype))
 			except Exception as ex:
@@ -291,29 +302,30 @@ def saveMovieWallData():
 
 
 def showMoviesNew(self):
-	from AdvancedEventLibrarySimpleMovieWall import active as MWactive
-	from AdvancedEventLibraryMediaHub import active as MHactive
+	from .AdvancedEventLibrarySimpleMovieWall import active as MWactive
+	from .AdvancedEventLibraryMediaHub import active as MHactive
 	if not MWactive and not MHactive:
 		ref = self.session.nav.getCurrentlyPlayingServiceReference()
 		try:
-			self.session.openWithCallback(self.movieSelected, MovieSelection, ref, isVirtualDir = self.isVirtualDir)
+			self.session.openWithCallback(self.movieSelected, MovieSelection, ref, isVirtualDir=self.isVirtualDir)
 		except:
 			self.session.openWithCallback(self.movieSelected, MovieSelection, ref)
+
 
 def handleLeaveNew(self, how):
 	if self.session.pipshown:
 		self.InfoBar_Instance.showPiP()
 	self.is_closing = True
 	global leavePlayerfromTrailer
-	from AdvancedEventLibrarySimpleMovieWall import active as MWactive
-	from AdvancedEventLibraryMediaHub import active as MHactive
-	from AdvancedEventLibraryChannelSelection import active as CSactive
-	from AdvancedEventLibraryPrimeTime import active as PTactive
-	from AdvancedEventLibrarySerienStarts import active as SSactive
-	from AdvancedEventLibraryRecommendations import active as Favactive
+	from .AdvancedEventLibrarySimpleMovieWall import active as MWactive
+	from .AdvancedEventLibraryMediaHub import active as MHactive
+	from .AdvancedEventLibraryChannelSelection import active as CSactive
+	from .AdvancedEventLibraryPrimeTime import active as PTactive
+	from .AdvancedEventLibrarySerienStarts import active as SSactive
+	from .AdvancedEventLibraryRecommendations import active as Favactive
 	if MWactive or MHactive or CSactive or PTactive or SSactive or Favactive or leavePlayerfromTrailer:
 		if not self.playmode and how == "ask":
-			if config.usage.setup_level.index < 2: # -expert
+			if config.usage.setup_level.index < 2:  # -expert
 				list = (
 					(_("Yes"), "quit"),
 					(_("No"), "continue")
@@ -326,14 +338,14 @@ def handleLeaveNew(self, how):
 				)
 
 			from Screens.ChoiceBox import ChoiceBox
-			self.session.openWithCallback(self.leavePlayerConfirmed, ChoiceBox, title=_("Stop playing this movie?"), list = list)
+			self.session.openWithCallback(self.leavePlayerConfirmed, ChoiceBox, title=_("Stop playing this movie?"), list=list)
 		elif self.playmode and self.playmode in ("random", "loop"):
 			self.leavePlayerConfirmed([True, "playnext"])
 		else:
 			self.leavePlayerConfirmed([True, "quit"])
 	else:
 		if not self.playmode and how == "ask":
-			if config.usage.setup_level.index < 2: # -expert
+			if config.usage.setup_level.index < 2:  # -expert
 				list = (
 					(_("Yes"), "quit"),
 					(_("No"), "continue")
@@ -350,15 +362,16 @@ def handleLeaveNew(self, how):
 				)
 
 			from Screens.ChoiceBox import ChoiceBox
-			self.session.openWithCallback(self.leavePlayerConfirmed, ChoiceBox, title=_("Stop playing this movie?"), list = list)
+			self.session.openWithCallback(self.leavePlayerConfirmed, ChoiceBox, title=_("Stop playing this movie?"), list=list)
 		elif self.playmode and self.playmode in ("random", "loop"):
 			self.leavePlayerConfirmed([True, "playnext"])
 		else:
 			self.leavePlayerConfirmed([True, how])
 
+
 def setPlayModeNew(self):
-	from AdvancedEventLibrarySimpleMovieWall import active as MWactive
-	from AdvancedEventLibraryMediaHub import active as MHactive
+	from .AdvancedEventLibrarySimpleMovieWall import active as MWactive
+	from .AdvancedEventLibraryMediaHub import active as MHactive
 	if not MWactive and not MHactive and self.movie_playlist:
 		if len(self.movie_playlist):
 			choicelist = (
@@ -367,10 +380,12 @@ def setPlayModeNew(self):
 					(_("Play all"), "loop"),
 				)
 			from Screens.ChoiceBox import ChoiceBox
-			self.session.openWithCallback(self.playModeChanged, ChoiceBox, title=_("Please select play mode :"), list = choicelist)
+			self.session.openWithCallback(self.playModeChanged, ChoiceBox, title=_("Please select play mode :"), list=choicelist)
+
 
 def cancelTimerFunction():
-	print"[Advanced-Event-Library-Update] Aufgabe beendet!"
+	print("[Advanced-Event-Library-Update] Aufgabe beendet!")
+
 
 def InfoBarSimpleEventViewInit():
 	global baseInfoBarSimpleEventView__init__
@@ -378,6 +393,7 @@ def InfoBarSimpleEventViewInit():
 		baseInfoBarSimpleEventView__init__ = InfoBarSimpleEventView.__init__
 	InfoBarSimpleEventView.__init__ = InfoBarSimpleEventViewBase__init__
 	InfoBarSimpleEventView.openEventView = InfoBarSimpleEventViewBase_openEventView
+
 
 def EventViewInit():
 	global baseEventViewBase__init__
@@ -388,6 +404,7 @@ def EventViewInit():
 	EventViewBase.setEvent = EventViewBase_setEvent
 	EventViewBase.onCreate = EventViewBase_onCreate
 
+
 def EventViewMovieEventInit():
 	global baseEventViewMovieEvent__init__
 	if baseEventViewMovieEvent__init__ is None:
@@ -395,7 +412,8 @@ def EventViewMovieEventInit():
 	EventViewMovieEvent.__init__ = EventViewMovieEvent__init__
 	EventViewMovieEvent.onCreate = EventViewMovieEvent_onCreate
 
-def EventViewMovieEvent__init__(self, session, name = None, ext_desc = None, dur = None, service = None):
+
+def EventViewMovieEvent__init__(self, session, name=None, ext_desc=None, dur=None, service=None):
 	Screen.__init__(self, session)
 	from Components.Sources.ExtEvent import ExtEvent
 	from Components.Sources.ServiceEvent import ServiceEvent
@@ -439,7 +457,7 @@ def EventViewMovieEvent__init__(self, session, name = None, ext_desc = None, dur
 			leavePlayerfromTrailer = True
 			sRef = eServiceReference(4097, 0, str(self.trailer))
 			sRef.setName(str(getMovieDescriptionFromTXT(self.service)[0]))
-			self.session.open(MoviePlayer,sRef)
+			self.session.open(MoviePlayer, sRef)
 
 	self["actions"] = ActionMap(["OkCancelActions", "EventViewActions"],
 		{
@@ -451,8 +469,9 @@ def EventViewMovieEvent__init__(self, session, name = None, ext_desc = None, dur
 	self["aelactions"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_play": key_play_handler,
-		},-1)
+		}, -1)
 	self.onShown.append(self.onCreate)
+
 
 def EventViewMovieEvent_onCreate(self):
 	self.setTitle(self.screentitle)
@@ -462,18 +481,19 @@ def EventViewMovieEvent_onCreate(self):
 		if self.service:
 			self["Service"].newService(self.service)
 			self["ExtEvent"].newService(self.service)
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 		ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 		self["trailer"].instance.setPixmap(ptr)
 		self["trailer"].hide()
 		if self.name is not None:
-			if self.db and 	"trailer" in self:
+			if self.db and "trailer" in self:
 				dbdata = self.db.getTitleInfo(convert2base64(self.name))
 				if dbdata and dbdata[7].endswith('mp4'):
 					self.trailer = dbdata[7]
 					self["trailer"].show()
 	except Exception as ex:
 		write_log('EventViewMovieEvent_onCreate ' + str(ex))
+
 
 def getMovieDescriptionFromTXT(ref):
 	f = None
@@ -503,12 +523,13 @@ def getMovieDescriptionFromTXT(ref):
 					break
 	if f:
 		try:
-			with open (f, "r") as txtfile:
+			with open(f, "r") as txtfile:
 				extended_desc = txtfile.read()
 		except IOError:
 			pass
 
 	return (name, extended_desc)
+
 
 def EventViewBase__init__(self, Event, Ref, callback=None, similarEPGCB=None):
 	from Components.Sources.ExtEvent import ExtEvent
@@ -520,7 +541,7 @@ def EventViewBase__init__(self, Event, Ref, callback=None, similarEPGCB=None):
 	self.screentitle = _("Eventview")
 	self.similarEPGCB = similarEPGCB
 	self.cbFunc = callback
-	self.currentService=Ref
+	self.currentService = Ref
 	path = Ref.ref.getPath()
 	self.isRecording = (not Ref.ref.flags & eServiceReference.isGroup) and path
 	if path.find('://') != -1:
@@ -553,7 +574,7 @@ def EventViewBase__init__(self, Event, Ref, callback=None, similarEPGCB=None):
 			leavePlayerfromTrailer = True
 			sRef = eServiceReference(4097, 0, str(self.trailer))
 			sRef.setName(str(self.event.getEventName()))
-			self.session.open(MoviePlayer,sRef)
+			self.session.open(MoviePlayer, sRef)
 
 	self["actions"] = ActionMap(["OkCancelActions", "EventViewActions"],
 		{
@@ -567,25 +588,27 @@ def EventViewBase__init__(self, Event, Ref, callback=None, similarEPGCB=None):
 			"instantTimer": self.addInstantTimer,
 			"openSimilarList": self.openSimilarList
 		})
-	self["menu_actions"] =  HelpableActionMap(self, "MenuActions", {
+	self["menu_actions"] = HelpableActionMap(self, "MenuActions", {
 			"menu": (self.menuClicked, _("Setup")),
-		},-2)
+		}, -2)
 	self["aelactions"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_play": key_play_handler,
-		},-1)
+		}, -1)
 	self.onShown.append(self.onCreate)
 
+
 def EventViewBase_onCreate(self):
-	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 	ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 	self["trailer"].instance.setPixmap(ptr)
 	self.setService(self.currentService)
 	self.setEvent(self.event)
 	self.setTitle(self.screentitle)
 
+
 def EventViewBase_setService(self, service):
-	self.currentService=service
+	self.currentService = service
 	if self.isRecording:
 		self["channel"].setText(_("Recording"))
 	else:
@@ -596,6 +619,7 @@ def EventViewBase_setService(self, service):
 			self["channel"].setText(_("unknown service"))
 	self["Service"].newService(service.ref)
 	self["ExtEvent"].newService(service.ref)
+
 
 def EventViewBase_setEvent(self, event):
 	self.event = event
@@ -610,8 +634,8 @@ def EventViewBase_setEvent(self, event):
 		short = event.getShortDescription()
 		ext = event.getExtendedDescription()
 		self["datetime"].setText(event.getBeginTimeString())
-		self["duration"].setText(_("%d min")%(event.getDuration()/60))
-		if self.db and 	"trailer" in self:
+		self["duration"].setText(_("%d min") % (event.getDuration() / 60))
+		if self.db and "trailer" in self:
 			(begin, end, name, description, eit) = parseEvent(event)
 			val = self.db.getliveTV(eit, name)
 			if val:
@@ -640,7 +664,7 @@ def EventViewBase_setEvent(self, event):
 	self["key_red"].setText("")
 	if event:
 		if self.SimilarBroadcastTimer is not None:
-			self.SimilarBroadcastTimer.start(400,True)
+			self.SimilarBroadcastTimer.start(400, True)
 		serviceref = self.currentService
 		eventid = self.event.getEventId()
 		refstr = serviceref.ref.toString()
@@ -658,6 +682,7 @@ def EventViewBase_setEvent(self, event):
 		self["ExtEvent"].newEvent(event)
 	self["ExtEvent"].newService(self.currentService)
 
+
 def EPGSelectionInit(reason=None):
 	if reason is not None:
 		write_log('EPGSelectionInit : ' + str(reason))
@@ -670,6 +695,7 @@ def EPGSelectionInit(reason=None):
 		EPGSelection.askTimerPath = EPGSelection_askTimerPath
 		EPGSelection.onSelectionChanged = EPGSelection_onSelectionChanged
 		EPGSelection.onCreate = EPGSelection_onCreate
+
 
 def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bouquetChangeCB=None, serviceChangeCB=None, isEPGBar=None, switchBouquet=None, EPGNumberZap=None, togglePiP=None):
 	baseEPGSelection__init__(self, session, service, zapFunc, eventid, bouquetChangeCB, serviceChangeCB, isEPGBar, switchBouquet, EPGNumberZap, togglePiP)
@@ -685,11 +711,11 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 			leavePlayerfromTrailer = True
 			sRef = eServiceReference(4097, 0, str(self.trailer))
 			sRef.setName(str(self.eventName))
-			self.session.open(MoviePlayer,sRef)
+			self.session.open(MoviePlayer, sRef)
 
 	if useEPGLists:
 		from Components.AdvancedEventLibraryEpgList import AEL_EPGList
-		self["list"] = AEL_EPGList(type = self.type, selChangedCB = self.onSelectionChanged, timer = session.nav.RecordTimer)
+		self["list"] = AEL_EPGList(type=self.type, selChangedCB=self.onSelectionChanged, timer=session.nav.RecordTimer)
 
 	if self.type != EPG_TYPE_MULTI and setEPGList:
 		def infoClicked():
@@ -700,17 +726,17 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 			else:
 				id = 0
 				name = ''
-			session.open(AdvancedEventLibrarySystem.Editor, eventname=(name,id))
+			session.open(AdvancedEventLibrarySystem.Editor, eventname=(name, id))
 
 		self["AEL_actions"] = ActionMap(["EPGSelectActions", "OkCancelActions"],
 			{
 			"info": infoClicked,
-			},-1)
+			}, -1)
 
 	self["aelactions"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_play": key_play_handler,
-		},-1)
+		}, -1)
 
 #	check TMDb
 	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyo'):
@@ -718,6 +744,7 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 		if self.type != EPG_TYPE_MULTI and config.plugins.tmdb.keyyellow.value:
 			write_log('Overwrite TMDb Key Yellow')
 			from Plugins.Extensions.tmdb import tmdb
+
 			def yellowClicked():
 				cur = self["list"].getCurrent()
 				if cur[0] is not None:
@@ -736,6 +763,7 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 		if self.type != EPG_TYPE_MULTI and config.plugins.epgsearch.add_search_to_epg.value:
 			from Plugins.Extensions.EPGSearch import EPGSearch
 			from Components.Sources.StaticText import StaticText
+
 			def bluePressed():
 				cur = self["list"].getCurrent()
 				if cur[0] is not None:
@@ -751,8 +779,9 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 					})
 			self["key_blue"].text = "Suche..."
 
+
 def EPGSelection_onCreate(self):
-	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 	ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 	self["trailer"].instance.setPixmap(ptr)
 	l = self["list"]
@@ -774,6 +803,7 @@ def EPGSelection_onCreate(self):
 		l.fillEPGBar(service)
 	else:
 		l.fillSimilarList(self.currentService, self.eventid)
+
 
 def EPGSelection_onSelectionChanged(self):
 	if "trailer" in self:
@@ -800,7 +830,7 @@ def EPGSelection_onSelectionChanged(self):
 			self.applyButtonState(2)
 		else:
 			self.applyButtonState(1)
-		days = [ _("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun") ]
+		days = [_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun")]
 		datestr = ""
 		if event is not None:
 			now = time()
@@ -808,9 +838,9 @@ def EPGSelection_onSelectionChanged(self):
 			nowTime = localtime(now)
 			begTime = localtime(beg)
 			if nowTime[2] != begTime[2]:
-				datestr = '%s %d.%d.'%(days[begTime[6]], begTime[2], begTime[1])
+				datestr = '%s %d.%d.' % (days[begTime[6]], begTime[2], begTime[1])
 			else:
-				datestr = '%s %d.%d.'%(_("Today"), begTime[2], begTime[1])
+				datestr = '%s %d.%d.' % (_("Today"), begTime[2], begTime[1])
 		self["date"].setText(datestr)
 		if cur[1] is None:
 			self["Service"].newService(None)
@@ -825,7 +855,7 @@ def EPGSelection_onSelectionChanged(self):
 			self["key_red"].setText("")
 			self.key_red_choice = self.EMPTY
 		return
-	elif self.key_red_choice != self.ZAP and  (self.type == EPG_TYPE_MULTI or self.type == EPG_TYPE_EPGBAR or self.type == EPG_TYPE_SINGLE):
+	elif self.key_red_choice != self.ZAP and (self.type == EPG_TYPE_MULTI or self.type == EPG_TYPE_EPGBAR or self.type == EPG_TYPE_SINGLE):
 			if self.zapFunc:
 				self["key_red"].setText(_("Zap"))
 				self.key_red_choice = self.ZAP
@@ -876,6 +906,7 @@ def EPGSelection_onSelectionChanged(self):
 		self["key_green"].setText(_("Add timer"))
 		self.key_green_choice = self.ADD_TIMER
 
+
 def getRecordName(event):
 	db = getDB()
 	if db:
@@ -890,9 +921,9 @@ def getRecordName(event):
 				else:
 					recname += ' - '
 				if str(val[0][12]) != "":
-					recname +=  "S" + str(val[0][12]).zfill(2)
+					recname += "S" + str(val[0][12]).zfill(2)
 				if str(val[0][13]) != "":
-					recname +=  "E" + str(val[0][13]).zfill(2) + ' - '
+					recname += "E" + str(val[0][13]).zfill(2) + ' - '
 				if str(val[0][2]) != "":
 					recname += str(val[0][2]) + ' - '
 				if recname.endswith(' - '):
@@ -918,7 +949,8 @@ def getRecordName(event):
 			recdesc = description
 		return recdesc, recname, begin, end, eit
 
-def EPGSelection_timerAdd(self, instantTimer = False):
+
+def EPGSelection_timerAdd(self, instantTimer=False):
 	cur = self["list"].getCurrent()
 	event = cur[0]
 	serviceref = cur[1]
@@ -926,14 +958,14 @@ def EPGSelection_timerAdd(self, instantTimer = False):
 		return
 	eventid = event.getEventId()
 	refstr = serviceref.ref.toString()
-	
+
 	if self.key_green_choice == self.ENABLE_TIMER:
 		for timer in self.session.nav.RecordTimer.processed_timers:
 			if timer.eit == eventid and timer.service_ref.ref.toString() == refstr and timer.disabled == True:
 				if instantTimer:
 					self.removeTimer(timer, True)
 				else:
-					cb_func = lambda ret : not ret or self.removeTimer(timer)
+					cb_func = lambda ret: not ret or self.removeTimer(timer)
 					self.session.openWithCallback(cb_func, MessageBox, _("Do you really want to delete %s?") % event.getEventName())
 				break
 	else:
@@ -942,13 +974,13 @@ def EPGSelection_timerAdd(self, instantTimer = False):
 				if instantTimer:
 					self.removeTimer(timer, True)
 				else:
-					cb_func = lambda ret : not ret or self.removeTimer(timer)
+					cb_func = lambda ret: not ret or self.removeTimer(timer)
 					self.session.openWithCallback(cb_func, MessageBox, _("Do you really want to delete %s?") % event.getEventName())
 				break
 		else:
 			recdesc, recname, begin, end, eit = getRecordName(event)
 
-			newEntry = RecordTimerEntry(serviceref,begin,end,recname,recdesc,eit,False,False,afterEvent = AFTEREVENT.AUTO,dirname = preferredTimerPath(),tags = None)
+			newEntry = RecordTimerEntry(serviceref, begin, end, recname, recdesc, eit, False, False, afterEvent=AFTEREVENT.AUTO, dirname=preferredTimerPath(), tags=None)
 			newEntry.repeated = 0
 			newEntry.tags = ['Advanced-Event-Library']
 
@@ -956,22 +988,23 @@ def EPGSelection_timerAdd(self, instantTimer = False):
 				if config.usage.timer_ask_path.value and config.movielist.videodirs.value:
 					choicelist = []
 					for x in config.movielist.videodirs.value:
-						choicelist.append((x,x))
+						choicelist.append((x, x))
 					idx = 0
 					pref = (preferredTimerPath(), preferredTimerPath())
 					if pref in choicelist:
 						idx = choicelist.index(pref)
-					self.session.openWithCallback(self.askTimerPath, ChoiceBox, title=_("Timer record location"), list = choicelist, selection = idx)
+					self.session.openWithCallback(self.askTimerPath, ChoiceBox, title=_("Timer record location"), list=choicelist, selection=idx)
 				else:
 					self.session.nav.RecordTimer.saveTimer()
 					self.finishedAdd((True, newEntry), True)
 			else:
 				if AutoTimerHook.AUTOTIMER_OK and config.usage.ask_for_timer_typ.value:
-					self.session.openWithCallback(self.askTimerType, ChoiceBox, title=_("Select timer type..."), list = AutoTimerHook.getChoiceList())
+					self.session.openWithCallback(self.askTimerType, ChoiceBox, title=_("Select timer type..."), list=AutoTimerHook.getChoiceList())
 				else:
 					self.session.openWithCallback(self.finishedAdd, TimerEntry, newEntry)
 
-def EPGSelection_askTimerPath(self, ret = None):
+
+def EPGSelection_askTimerPath(self, ret=None):
 	if ret and ret[0] and os.path.exists(ret[0]):
 		cur = self["list"].getCurrent()
 		event = cur[0]
@@ -980,7 +1013,7 @@ def EPGSelection_askTimerPath(self, ret = None):
 			return
 		recdesc, recname, begin, end, eit = getRecordName(event)
 
-		newEntry = RecordTimerEntry(serviceref,begin,end,recname,recdesc,eit,False,False,checkOldTimers = True, afterEvent = AFTEREVENT.AUTO,dirname = ret[0],allow_duplicate = config.usage.timer_allow_duplicate.value, tags = None)
+		newEntry = RecordTimerEntry(serviceref, begin, end, recname, recdesc, eit, False, False, checkOldTimers=True, afterEvent=AFTEREVENT.AUTO, dirname=ret[0], allow_duplicate=config.usage.timer_allow_duplicate.value, tags=None)
 		newEntry.repeated = 0
 		newEntry.tags = ['Advanced-Event-Library']
 
@@ -994,12 +1027,14 @@ def mlist(session, service, **kwargs):
 	except Exception as ex:
 		write_log('MovieList ' + str(ex))
 
+
 def main(session, **kwargs):
 #	reload(AdvancedEventLibrarySystem)
 	try:
 		session.open(AdvancedEventLibrarySystem.Editor)
 	except Exception as ex:
 		write_log('Main ' + str(ex))
+
 
 def iBshowMovies(session, **kwargs):
 	global gSession
@@ -1011,6 +1046,7 @@ def iBshowMovies(session, **kwargs):
 	else:
 		InfoBar.showMovies_org(InfoBar.instance)
 
+
 def open_moviewall(session, **kwargs):
 	global gSession
 #	reload(AdvancedEventLibrarySimpleMovieWall)
@@ -1018,32 +1054,36 @@ def open_moviewall(session, **kwargs):
 		while AdvancedEventLibrarySimpleMovieWall.saving:
 			pass
 		if gSession:
-			gSession.openWithCallback(restartMW,AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
+			gSession.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
 		else:
-			session.openWithCallback(restartMW,AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
+			session.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
 	except Exception as ex:
 		write_log('MovieWall ' + str(ex))
+
 
 def open_primetime(session, **kwargs):
 #	reload(AdvancedEventLibraryPrimeTime)
 	try:
-		session.openWithCallback(restartPTP,AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, viewType.value)
+		session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, viewType.value)
 	except Exception as ex:
 		write_log('Prime-Time-Planer ' + str(ex))
+
 
 def open_serienstarts(session, **kwargs):
 #	reload(AdvancedEventLibrarySerienStarts)
 	try:
-		session.openWithCallback(restartSSP,AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, viewType.value)
+		session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, viewType.value)
 	except Exception as ex:
 		write_log('Serien-Starts-Planer ' + str(ex))
+
 
 def open_favourites(session, **kwargs):
 #	reload(AdvancedEventLibraryRecommendations)
 	try:
-		session.openWithCallback(restartFav,AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, viewType.value)
+		session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, viewType.value)
 	except Exception as ex:
 		write_log('Recommendations ' + str(ex))
+
 
 def open_channelselection(session, **kwargs):
 #	reload(AdvancedEventLibraryChannelSelection)
@@ -1052,12 +1092,14 @@ def open_channelselection(session, **kwargs):
 	except Exception as ex:
 		write_log('ChannelSelection ' + str(ex))
 
+
 def open_mediaHub(session, **kwargs):
 #	reload(AdvancedEventLibraryMediaHub)
 	try:
 		session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 	except Exception as ex:
 		write_log('MediaHub ' + str(ex))
+
 
 def open_aelMenu(session, **kwargs):
 #	reload(AdvancedEventLibrarySystem)
@@ -1066,6 +1108,7 @@ def open_aelMenu(session, **kwargs):
 	except Exception as ex:
 		write_log('AELMenu ' + str(ex))
 
+
 def aelMenu_in_mainmenu(menuid, **kwargs):
 	if menuid == 'mainmenu':
 		return [('Advanced-Event-Library',
@@ -1073,6 +1116,7 @@ def aelMenu_in_mainmenu(menuid, **kwargs):
 		  'Advanced-Event-Library',
 		  1)]
 	return []
+
 
 def restartMW(ret=None):
 	global gSession
@@ -1083,6 +1127,7 @@ def restartMW(ret=None):
 			viewType.save()
 			open_moviewall(gSession)
 
+
 def restartPTP(ret=None):
 	global gSession
 	if ret:
@@ -1091,6 +1136,7 @@ def restartPTP(ret=None):
 			viewType.value = ret
 			viewType.save()
 			open_primetime(gSession)
+
 
 def restartSSP(ret=None):
 	global gSession
@@ -1101,6 +1147,7 @@ def restartSSP(ret=None):
 			viewType.save()
 			open_serienstarts(gSession)
 
+
 def restartFav(ret=None):
 	global gSession
 	if ret:
@@ -1109,6 +1156,7 @@ def restartFav(ret=None):
 			viewType.value = ret
 			viewType.save()
 			open_favourites(gSession)
+
 
 def EPGSearch__init__(self, session, *args):
 	from Components.Sources.ServiceEvent import ServiceEvent
@@ -1125,13 +1173,13 @@ def EPGSearch__init__(self, session, *args):
 	self["popup"] = Label()
 	self["popup"].hide()
 	self.hidePopup = eTimer()
-	
+
 	self["SelectedEvent"] = StaticText()
 	self["ExtEvent"] = ExtEvent()
-	
+
 	self.searchargs = args
 	self.currSearch = ""
-	self.searchType = eEPGCache.PARTIAL_TITLE_SEARCH #default search type
+	self.searchType = eEPGCache.PARTIAL_TITLE_SEARCH  # default search type
 	self.search_string = ""
 
 	self.bouquetservices = []
@@ -1147,34 +1195,34 @@ def EPGSearch__init__(self, session, *args):
 	self.switchBouquet = None
 	self.bouquetChangeCB = None
 	self.serviceChangeCB = None
-	self.ask_time = -1 #now
+	self.ask_time = -1  # now
 	self["key_red"] = Button(_("Edit Search"))
 	self.closeRecursive = False
 	self.saved_title = None
 	self["Service"] = ServiceEvent()
 	self["Event"] = Event()
 	self.type = EPG_TYPE_SINGLE
-	self.currentService=None
+	self.currentService = None
 	self.zapFunc = None
 	self.sort_type = 0
 	self["key_green"] = Button(_("Add timer"))
 	self.key_green_choice = self.ADD_TIMER
 	self.key_red_choice = self.EMPTY
-	self["list"] = EPGSearch.EPGSearchList(type = self.type, selChangedCB = self.onSelectionChanged, timer = session.nav.RecordTimer)
+	self["list"] = EPGSearch.EPGSearchList(type=self.type, selChangedCB=self.onSelectionChanged, timer=session.nav.RecordTimer)
 	self["actions"] = HelpableActionMap(self, "EPGSelectActions",
 		{
 			"timerAdd": self.timerAdd,
 			"timerEnableDisable": self.timerEnableDisable,
-			"instantToggleTimerState" : self.instantToggleTimerState,
+			"instantToggleTimerState": self.instantToggleTimerState,
 			"instantTimer": self.addInstantTimer,
 			"yellow": self.yellowButtonPressed,
 			"blue": self.blueButtonPressed,
 			"info": self.infoKeyPressed,
 			"red": self.redButtonPressed,
-			"nextBouquet": self.nextBouquet, # just used in multi epg yet
-			"prevBouquet": self.prevBouquet, # just used in multi epg yet
-			"nextService": self.nextService, # just used in single epg yet
-			"prevService": self.prevService, # just used in single epg yet
+			"nextBouquet": self.nextBouquet,  # just used in multi epg yet
+			"prevBouquet": self.prevBouquet,  # just used in multi epg yet
+			"nextService": self.nextService,  # just used in single epg yet
+			"prevService": self.prevService,  # just used in single epg yet
 		}, -1)
 	self["MenuActions"] = HelpableActionMap(self, "MenuActions",
 		{
@@ -1203,6 +1251,7 @@ def EPGSearch__init__(self, session, *args):
 	self["actions"].csel = self
 	self.onLayoutFinish.append(self.onCreate)
 
+
 def autostart(reason, **kwargs):
 	if reason == 0:
 		try:
@@ -1226,20 +1275,21 @@ def autostart(reason, **kwargs):
 		except Exception as ex:
 			write_log('Fehler in TMDb EPGSelectionInit : ' + str(ex))
 
+
 def Plugins(**kwargs):
-	epgSearch = PluginDescriptor(where = PluginDescriptor.WHERE_AUTOSTART, fnc = autostart, needsRestart = False, weight = 100)
-	desc_pluginmenu = PluginDescriptor(name='AEL-Übersicht', description="AEL Menü & Statistik",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_aelMenu)
-	desc_pluginmenued = PluginDescriptor(name='AEL-Editor', description="Eventinformationen bearbeiten",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = main)
-	desc_pluginmenumw = PluginDescriptor(name='AEL-Movie-Lists', description="Advanced-Event-Library-MovieLists",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_moviewall)
-	desc_pluginmenupt = PluginDescriptor(name='AEL-Prime-Time-Planer', description="Advanced-Event-Library-Prime-Time-Planer",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_primetime)
-	desc_pluginmenuss = PluginDescriptor(name='AEL-Serien-Starts-Planer', description="Advanced-Event-Library-Serien-Starts-Planer",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_serienstarts)
-	desc_pluginmenufav = PluginDescriptor(name='AEL-Favoriten-Planer', description="Advanced-Event-Library-Favourites-Planer",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_favourites)
-	desc_pluginmenucs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_channelselection)
-	desc_pluginmenuhb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub",  where = PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc = open_mediaHub)
-	desc_eventinfocs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection",  where = PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc = open_channelselection)
-	desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub",  where = PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc = open_mediaHub)
-	desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description=pdesc,  where = PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc = mlist)
-	desc_sessionstart = PluginDescriptor(where = [PluginDescriptor.WHERE_SESSIONSTART,PluginDescriptor.WHERE_AUTOSTART], fnc = sessionstart)
+	epgSearch = PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, fnc=autostart, needsRestart=False, weight=100)
+	desc_pluginmenu = PluginDescriptor(name='AEL-Übersicht', description="AEL Menü & Statistik", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_aelMenu)
+	desc_pluginmenued = PluginDescriptor(name='AEL-Editor', description="Eventinformationen bearbeiten", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=main)
+	desc_pluginmenumw = PluginDescriptor(name='AEL-Movie-Lists', description="Advanced-Event-Library-MovieLists", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_moviewall)
+	desc_pluginmenupt = PluginDescriptor(name='AEL-Prime-Time-Planer', description="Advanced-Event-Library-Prime-Time-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_primetime)
+	desc_pluginmenuss = PluginDescriptor(name='AEL-Serien-Starts-Planer', description="Advanced-Event-Library-Serien-Starts-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_serienstarts)
+	desc_pluginmenufav = PluginDescriptor(name='AEL-Favoriten-Planer', description="Advanced-Event-Library-Favourites-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_favourites)
+	desc_pluginmenucs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_channelselection)
+	desc_pluginmenuhb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_mediaHub)
+	desc_eventinfocs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_channelselection)
+	desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_mediaHub)
+	desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description=pdesc, where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
+	desc_sessionstart = PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=sessionstart)
 	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description=pdesc, where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
 	list = []
 	list.append(epgSearch)
@@ -1258,6 +1308,7 @@ def Plugins(**kwargs):
 	list.append(desc_eventinfohb)
 	return list
 
+
 class Recommendations(object):
 	def __init__(self):
 		self.wait = eTimer()
@@ -1271,7 +1322,7 @@ class Recommendations(object):
 		if fileExists(os.path.join(pluginpath, 'favourites.data')):
 			self.favourites = self.load_pickle(os.path.join(pluginpath, 'favourites.data'))
 		else:
-			self.favourites = {'genres' : {}, 'titles' : {}}
+			self.favourites = {'genres': {}, 'titles': {}}
 
 	def newServiceStarted(self, what):
 		self.currentService = what[0]
@@ -1327,7 +1378,7 @@ class Recommendations(object):
 	def cleanFavorites(self):
 		keys = []
 		for k, v in self.favourites['genres'].items():
-			if v[1] < (time()-(86400*favouritesMaxAge.value)):
+			if v[1] < (time() - (86400 * favouritesMaxAge.value)):
 				keys.append(k)
 		if keys:
 			for key in keys:
@@ -1335,7 +1386,7 @@ class Recommendations(object):
 				del self.favourites['genres'][key]
 		keys = []
 		for k, v in self.favourites['titles'].items():
-			if v[1] < (time()-(86400*favouritesMaxAge.value)):
+			if v[1] < (time() - (86400 * favouritesMaxAge.value)):
 				keys.append(k)
 		if keys:
 			for key in keys:

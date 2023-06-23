@@ -13,13 +13,15 @@ from time import localtime, strftime, mktime, time
 from datetime import datetime, timedelta
 import HTMLParser
 
+
 class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 	htmlParser = HTMLParser.HTMLParser()
+
 	def __init__(self, type):
 		Converter.__init__(self, type)
 		self.epgcache = eEPGCache.getInstance()
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default = 69300) # 20:15
+		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300) # 20:15
 
 	def getServiceRef(self):
 		ref = None
@@ -31,7 +33,6 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 			if info:
 				ref = info.getInfoString(iServiceInformation.sServiceref)
 		return ref
-
 
 	@cached
 	def getText(self):
@@ -81,18 +82,17 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		else:
 			return None
 
-
-	def getPrimeTimeEvent(self,event):
+	def getPrimeTimeEvent(self, event):
 		time = "%s - %s" % (strftime("%H:%M", localtime(event.getBeginTime())), strftime("%H:%M", localtime(event.getBeginTime() + event.getDuration())))
 		title = event.getEventName()
 		duration = "%d Min." % (event.getDuration() / 60)
-		return str(time) +  " " + str(title) + ' (' + str(duration) + ')' + str(self.getOneLineDescription(title, event))
+		return str(time) + " " + str(title) + ' (' + str(duration) + ')' + str(self.getOneLineDescription(title, event))
 
 	def getOneLineDescription(self, title, event):
-		if(event != None):
+		if (event != None):
 			desc = event.getShortDescription()
-			if(desc != "" and desc != None and desc != title):
-				desc = desc.replace(title+'\n', '')
+			if (desc != "" and desc != None and desc != title):
+				desc = desc.replace(title + '\n', '')
 				if '\n' in desc:
 					desc = desc.replace('\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
 				else:

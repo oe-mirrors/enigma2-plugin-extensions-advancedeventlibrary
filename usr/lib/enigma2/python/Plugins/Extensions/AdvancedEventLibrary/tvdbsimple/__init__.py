@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
 """
-`tvdbsimple` is a wrapper, written in Python, for TheTVDb.com 
-API v2.  By calling the functions available in `tvdbsimple` you can simplify 
-your code and easily access a vast amount of tv and cast data. To find 
+`tvdbsimple` is a wrapper, written in Python, for TheTVDb.com
+API v2.  By calling the functions available in `tvdbsimple` you can simplify
+your code and easily access a vast amount of tv and cast data. To find
 out more about TheTVDb API, check out the [official api page](https://api.thetvdb.com/swagger/)
 
 Features
 --------
 
 - Full API implementation. Supports Search, Series, Episode, Updated, User and Languages methods.
-- Updated with the latest JSON API. 
+- Updated with the latest JSON API.
 - Fully tested with automated tests and travis.ci.
 - Supports Python 2.7, 3.3, 3.4, 3.5, 3.6.
 - Easy to access data using Python class attributes.
@@ -63,12 +63,12 @@ from .episode import Episode
 from .updates import Updates
 from .user import User, User_Ratings
 
-KEYS=keys()
+KEYS = keys()
 """
 Contains `API_KEY` and `API_TOKEN`.
 
 To use the module you have to set at least the `API_KEY` value (THETVDb api key).
-You can also provide an `API_TOKEN` if you already have a valid one stored. If the 
+You can also provide an `API_TOKEN` if you already have a valid one stored. If the
 valid token doesn't work anymore the module will try to retrieve a new one
 using the `API_KEY` variable
 """

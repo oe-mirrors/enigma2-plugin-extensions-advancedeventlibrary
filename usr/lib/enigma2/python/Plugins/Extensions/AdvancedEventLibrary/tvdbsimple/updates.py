@@ -9,6 +9,7 @@ See [Updates API section](https://api.thetvdb.com/swagger#!/Updates)
 
 from .base import TVDB
 
+
 class Updates(TVDB):
     """
     Updates class to retrieve updated series in a timespan.
@@ -24,9 +25,9 @@ class Updates(TVDB):
         """
         Initialize the Updates class.
         `fromTime` is the epoch time to start your date range to search for.
-        You can set `toTime` to set the epoch time to end your date range. 
+        You can set `toTime` to set the epoch time to end your date range.
         Must be one week from `fromTime`.
-        You can also set `language` with a language id to get the result 
+        You can also set `language` with a language id to get the result
         in the specific language.
         """
         self._FILTERS = {}
@@ -37,9 +38,9 @@ class Updates(TVDB):
         Updates the filters for the updates class.
 
         `fromTime` is the epoch time to start your date range to search for.
-        You can set `toTime` to set the epoch time to end your date range. 
+        You can set `toTime` to set the epoch time to end your date range.
         Must be one week from `fromTime`.
-        You can also set `language` with a language id to get the result 
+        You can also set `language` with a language id to get the result
         in the specific language.
         """
         if fromTime:
@@ -56,7 +57,7 @@ class Updates(TVDB):
         Returns a list of series updated in the timespan with basic info
         """
         path = self._get_path('query')
-        
+
         response = self._GET(path, params=self._FILTERS)
         self._set_attrs_to_values({'series': response})
         return response
@@ -68,7 +69,7 @@ class Updates(TVDB):
         Returns a list of filters available for updates.
         """
         path = self._get_path('update_params')
-        
+
         response = self._GET(path)
         self._set_attrs_to_values({'update_params': response})
         return response

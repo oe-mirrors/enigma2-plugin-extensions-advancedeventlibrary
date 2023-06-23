@@ -48,14 +48,14 @@ import glob
 import skin
 import json
 import requests
-import AdvancedEventLibraryPrimeTime
-import AdvancedEventLibrarySerienStarts
-import AdvancedEventLibrarySimpleMovieWall
-import AdvancedEventLibraryChannelSelection
-import AdvancedEventLibraryLists
-import AdvancedEventLibraryMediaHub
-import AdvancedEventLibraryRecommendations
-from AdvancedEventLibrarySimpleMovieWall import saving
+import .AdvancedEventLibraryPrimeTime
+import .AdvancedEventLibrarySerienStarts
+import .AdvancedEventLibrarySimpleMovieWall
+import .AdvancedEventLibraryChannelSelection
+import .AdvancedEventLibraryLists
+import .AdvancedEventLibraryMediaHub
+import .AdvancedEventLibraryRecommendations
+from .AdvancedEventLibrarySimpleMovieWall import saving
 
 currentVersion = 124
 PARAMETER_SET = 0
@@ -69,27 +69,29 @@ pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = os.path.join(pluginpath, "skin/")
 log = "/var/tmp/AdvancedEventLibrary.log"
 
-bestmount = defaultRecordingLocation().replace('movie/','') + 'AdvancedEventLibrary/'
+bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default = bestmount)
-backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default = "/media/hdd/AdvancedEventLibraryBackup/")
+mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
+backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
 maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
 previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default = False)
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = True)
-dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices = ["Datenverzeichnis", "Flash"])
-useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default = True)
-maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices = [("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
-closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default = True)
-createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default = False)
-updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default = True)
+addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
+usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
+dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
+useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
+closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
+createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
+updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
+
 
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AEL_log = open(log,"a")
+	AEL_log = open(log, "a")
 	AEL_log.write(str(logtime) + " : [AdvancedEventLibrarySystem] - " + str(svalue) + "\n")
 	AEL_log.close()
+
 
 def loadskin(filename):
 	path = skinpath + filename
@@ -99,19 +101,22 @@ def loadskin(filename):
 	return skin
 
 ####################################################################################
+
+
 class AELMenu(Screen):
 	ALLOW_SUSPEND = True
 	skin = str(loadskin("AdvancedEventLibraryMenu.xml"))
+
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.session = session
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = "Advanced-Event-Library Menüauswahl: (R" + str(currentVersion) + ")"
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
-		self.menulist = [('Einstellungen','Grundeinstellungen von AEL vornehmen',LoadPixmap(imgpath + 'settings.png'),'setup'),('Editor','Eventinformationen bearbeiten',LoadPixmap(imgpath + 'keyboard.png'),'editor'),('Prime-Time-Planer','zeigt nach Genres gegliederte Sendungen zur Prime-Time an',LoadPixmap(imgpath + 'primetime.png'),'ptp'),('Serien-Starts-Planer','zeigt aktuelle Serien- und Staffelstarts an',LoadPixmap(imgpath + 'serien.png'),'ssp'),('Favoriten-Planer','Deine Empfehlungen im TV',LoadPixmap(imgpath + 'favoriten.png'),'fav'),('Simple-Movie-Wall','zeigt Aufnahmen im Wall-Format an',LoadPixmap(imgpath + 'movies.png'),'smw'),('AEL-Channel-Selection','zeigt AEL Kanalübersicht an',LoadPixmap(imgpath + 'sender.png'),'scs'),('AEL-Media-Hub','Aktuelles aus TV/Aufnahmen',LoadPixmap(imgpath + 'mediahub.png'),'hub')]
-		self["menulist"] = List(self.menulist,enableWrapAround = True)
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		self.menulist = [('Einstellungen', 'Grundeinstellungen von AEL vornehmen', LoadPixmap(imgpath + 'settings.png'), 'setup'), ('Editor', 'Eventinformationen bearbeiten', LoadPixmap(imgpath + 'keyboard.png'), 'editor'), ('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'), ('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'), ('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'), ('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'), ('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'), ('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')]
+		self["menulist"] = List(self.menulist, enableWrapAround=True)
 
-		self.vtype = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
+		self.vtype = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -163,36 +168,36 @@ class AELMenu(Screen):
 				lastpreviewImageCount = self.db.parameter(PARAMETER_GET, 'lastpreviewImageCount', None, 0)
 				lastadditionalDataCount = self.db.parameter(PARAMETER_GET, 'lastadditionalDataCount', None, 0)
 				lastadditionalDataCountBlacklist = self.db.parameter(PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0)
-				lastadditionalDataCountSuccess = int(lastadditionalDataCount)-int(lastadditionalDataCountBlacklist)
+				lastadditionalDataCountSuccess = int(lastadditionalDataCount) - int(lastadditionalDataCountBlacklist)
 
-				dbSize = os.path.getsize(dir)/1024.0
+				dbSize = os.path.getsize(dir) / 1024.0
 
 				titleCount = self.db.getTitleInfoCount()
 				blackListCount = self.db.getblackListCount()
-				if (titleCount+blackListCount) > 0:
-					percent = 100 * titleCount / (titleCount+blackListCount)
+				if (titleCount + blackListCount) > 0:
+					percent = 100 * titleCount / (titleCount + blackListCount)
 				else:
 					percent = 0
 				percent = str(percent) + " %"
 
 				liveTVtitleCount = self.db.getliveTVCount()
 				liveTVidtitleCount = self.db.getliveTVidCount()
-				if (liveTVidtitleCount+liveTVtitleCount) > 0:
+				if (liveTVidtitleCount + liveTVtitleCount) > 0:
 					percentTV = 100 * liveTVidtitleCount / liveTVtitleCount
 				else:
 					percentTV = 0
 				percentTV = str(percentTV) + " %"
 
 				if 'G' in str(posterSize):
-					cpS = round(float(str(posterSize).replace('G','')) * 1024.0,2)
+					cpS = round(float(str(posterSize).replace('G', '')) * 1024.0, 2)
 				else:
 					cpS = posterSize
 				if 'G' in str(coverSize):
-					ccS = round(float(str(coverSize).replace('G','')) * 1024.0,2)
+					ccS = round(float(str(coverSize).replace('G', '')) * 1024.0, 2)
 				else:
 					ccS = coverSize
 				if 'G' in str(previewSize):
-					pcS = round(float(str(previewSize).replace('G','')) * 1024.0,2)
+					pcS = round(float(str(previewSize).replace('G', '')) * 1024.0, 2)
 				else:
 					pcS = previewSize
 
@@ -210,9 +215,9 @@ class AELMenu(Screen):
 
 				trailers = self.db.getTrailerCount()
 
-				size = int(float(str(cpS).replace('G','').replace('M','').replace('kB','').replace('K','')) + float(str(ccS).replace('G','').replace('M','').replace('kB','').replace('K',''))  + float(str(pcS).replace('G','').replace('M','').replace('kB','').replace('K',''))+ round(float(dbSize/1024.0),1))
-				self.statistic = 'Statistik letzter Suchlauf:\nAnzahl Poster | Cover | Vorschaubilder:\t' + str(lastposterCount) + ' | ' + str(lastcoverCount) + ' | ' + str(lastpreviewImageCount) + '\ngesuchte Event-Informationen:\t' + str(lasteventInfoCount) + '\tgefunden:\t'+ str(lasteventInfoCountSuccsess) + ' | ' +  str(percentlIC)  + '\ngesuchte Extradaten:     \t' + str(lastadditionalDataCount) + '\tgefunden:\t' + str(lastadditionalDataCountSuccess) + ' | ' +  str(percentlaC) + str(self.getlastUpdateInfo(self.db))
-				self.statistic += '\n\nStatistik gesamt:\nAnzahl Poster:\t' + str(posterCount) + '\tGröße:\t' + str(posterSize) + '\nAnzahl Cover:\t' + str(coverCount) + '\tGröße:\t' + str(coverSize) + '\nAnzahl Previews:\t' + str(previewCount) + '\tGröße:\t' + str(previewSize) + '\nAnzahl Trailer: \t'+ str(trailers)  + '\nDatenbankgröße: \t'+ str(dbSize)  + ' kB\nEinträge:\t' + str(titleCount)  + ' | '+ str(blackListCount) + ' | ' + str(percent) + '\tExtradaten:\t' + str(liveTVtitleCount)  + ' | '+ str(liveTVidtitleCount) + ' | ' + str(percentTV) + '\nSpeicherplatz:\t' + str(size) + ' / ' + str(int(maxSize.value*1024.0)) + ' MB' + '\tbenutzte Inodes\t' + str(usedInodes)
+				size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
+				self.statistic = 'Statistik letzter Suchlauf:\nAnzahl Poster | Cover | Vorschaubilder:\t' + str(lastposterCount) + ' | ' + str(lastcoverCount) + ' | ' + str(lastpreviewImageCount) + '\ngesuchte Event-Informationen:\t' + str(lasteventInfoCount) + '\tgefunden:\t' + str(lasteventInfoCountSuccsess) + ' | ' + str(percentlIC) + '\ngesuchte Extradaten:     \t' + str(lastadditionalDataCount) + '\tgefunden:\t' + str(lastadditionalDataCountSuccess) + ' | ' + str(percentlaC) + str(self.getlastUpdateInfo(self.db))
+				self.statistic += '\n\nStatistik gesamt:\nAnzahl Poster:\t' + str(posterCount) + '\tGröße:\t' + str(posterSize) + '\nAnzahl Cover:\t' + str(coverCount) + '\tGröße:\t' + str(coverSize) + '\nAnzahl Previews:\t' + str(previewCount) + '\tGröße:\t' + str(previewSize) + '\nAnzahl Trailer: \t' + str(trailers) + '\nDatenbankgröße: \t' + str(dbSize) + ' kB\nEinträge:\t' + str(titleCount) + ' | ' + str(blackListCount) + ' | ' + str(percent) + '\tExtradaten:\t' + str(liveTVtitleCount) + ' | ' + str(liveTVidtitleCount) + ' | ' + str(percentTV) + '\nSpeicherplatz:\t' + str(size) + ' / ' + str(int(maxSize.value * 1024.0)) + ' MB' + '\tbenutzte Inodes\t' + str(usedInodes)
 				self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))
 				self.memInfo += str(self.getMemInfo('Mem'))
 				self.memInfo += '\nMountpoints :\n' + self.getDiskInfo()
@@ -224,7 +229,7 @@ class AELMenu(Screen):
 			write_log(ex)
 
 	def getMemInfo(self, value):
-		result = [0,0,0,0]	# (size, used, avail, use%)
+		result = [0, 0, 0, 0]  # (size, used, avail, use%)
 		try:
 			check = 0
 			fd = open("/proc/meminfo")
@@ -237,8 +242,8 @@ class AELMenu(Screen):
 					result[2] = int(line.split()[1]) * 1024		# avail
 				if check > 1:
 					if result[0] > 0:
-						result[1] = result[0] - result[2]	# used
-						result[3] = result[1] * 100 / result[0]	# use%
+						result[1] = result[0] - result[2]  # used
+						result[3] = result[1] * 100 / result[0]  # use%
 					break
 			fd.close()
 		except:
@@ -272,16 +277,16 @@ class AELMenu(Screen):
 			except:
 				st = None
 			if not st is None and not 0 in (st.f_bsize, st.f_blocks):
-				result = [0,0,0,0, mountPoint.replace('/media/net/autonet','/...').replace('/media/net','/...')]	# (size, used, avail, use%)
-				result[0] = st.f_bsize * st.f_blocks	# size
-				result[2] = st.f_bsize * st.f_bavail	# avail
-				result[1] = result[0] - result[2]	# used
-				result[3] = result[1] * 100 / result[0]	# use%
+				result = [0, 0, 0, 0, mountPoint.replace('/media/net/autonet', '/...').replace('/media/net', '/...')]  # (size, used, avail, use%)
+				result[0] = st.f_bsize * st.f_blocks  # size
+				result[2] = st.f_bsize * st.f_bavail  # avail
+				result[1] = result[0] - result[2]  # used
+				result[3] = result[1] * 100 / result[0]  # use%
 				resultList.append(result)
 		res = ""
 		for result in resultList:
 			res += "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % (result[4], self.getSizeStr(result[0]), self.getSizeStr(result[2]), self.getSizeStr(result[1]), result[3])
-		return res.replace('/ :','Flash :')
+		return res.replace('/ :', 'Flash :')
 
 	def getSizeStr(self, value, u=0):
 		fractal = 0
@@ -298,7 +303,7 @@ class AELMenu(Screen):
 	def getlastUpdateInfo(self, db):
 		try:
 			lastUpdateStart = self.convertTimestamp(db.parameter(PARAMETER_GET, 'laststart', None, 0))
-			lastUpdateDuration = self.convertDuration(float(db.parameter(PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(PARAMETER_GET, 'laststart', None, 0))- 3600)
+			lastUpdateDuration = self.convertDuration(float(db.parameter(PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(PARAMETER_GET, 'laststart', None, 0)) - 3600)
 			return '\nausgeführt am:\t' + str(lastUpdateStart) + '\tDauer:\t' + str(lastUpdateDuration)
 		except:
 			return '\n'
@@ -346,12 +351,12 @@ class AELMenu(Screen):
 	def createDirs(self, path):
 		if not os.path.exists(path):
 			os.makedirs(path)
-		if not os.path.exists(path+'poster/'):
-			os.makedirs(path+'poster/')
-		if not os.path.exists(path+'cover/'):
-			os.makedirs(path+'cover/')
-		if not os.path.exists(path+'preview/'):
-			os.makedirs(path+'preview/')
+		if not os.path.exists(path + 'poster/'):
+			os.makedirs(path + 'poster/')
+		if not os.path.exists(path + 'cover/'):
+			os.makedirs(path + 'cover/')
+		if not os.path.exists(path + 'preview/'):
+			os.makedirs(path + 'preview/')
 
 	def getStatus(self):
 		if AEL.STATUS:
@@ -464,6 +469,7 @@ class AELMenu(Screen):
 class setup(Screen, ConfigListScreen):
 	ALLOW_SUSPEND = True
 	skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
+
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.session = session
@@ -475,36 +481,36 @@ class setup(Screen, ConfigListScreen):
 		self["key_yellow"] = StaticText("TVS-Setup")
 		self["key_blue"] = StaticText("")
 
-		bestmount = defaultRecordingLocation().replace('movie/','') + 'AdvancedEventLibrary/'
+		bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default = bestmount)
-		self.backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default = "/media/hdd/AdvancedEventLibraryBackup/")
+		self.mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
+		self.backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
 		self.maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
 		self.previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-		self.showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default = False)
-		self.useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default = False)
-		self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default = True)
-		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default = False)
-		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default = False)
-		self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = True)
-		self.coverquality = config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices = [("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
-		self.posterquality = config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices = [("w185", "185x280"),("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
-		self.dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices = ["Datenverzeichnis", "Flash"])
-		self.maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices = [("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
+		self.showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
+		self.useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
+		self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
+		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
+		self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
+		self.coverquality = config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
+		self.posterquality = config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
+		self.dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
+		self.maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
 		self.maxCompression = config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
-		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default = '')
-		self.tmdbKey = config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default = 'intern')
-		self.tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default = 'unbenutzt')
-		self.tvdbKey = config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default = 'intern')
-		self.omdbKey = config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default = 'intern')
-		self.searchfor = config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default = "Extradaten und Bilder", choices = [ "Extradaten und Bilder", "nur Extradaten" ])
-		self.delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default = True)
-		self.closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default = True)
-		self.refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default = True)
-		self.searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default = True)
+		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
+		self.tmdbKey = config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default='intern')
+		self.tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default='unbenutzt')
+		self.tvdbKey = config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default='intern')
+		self.omdbKey = config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
+		self.searchfor = config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
+		self.delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
+		self.closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
+		self.refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
+		self.searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 		self.maxUsedInodes = config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
-		self.createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default = False)
-		self.updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default = True)
+		self.createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
+		self.updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 		self.searchOptions = {}
 
 		if self.searchPlaces.value != '':
@@ -513,11 +519,11 @@ class setup(Screen, ConfigListScreen):
 			except:
 				pass
 		if self.searchOptions:
-			self.vtidb = ConfigYesNo(default = self.searchOptions.get("VTiDB", False))
-			self.usePictures = ConfigYesNo(default = self.searchOptions.get("Pictures", True))
+			self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
+			self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True))
 		else:
-			self.vtidb = ConfigYesNo(default = True)
-			self.usePictures = ConfigYesNo(default = True)
+			self.vtidb = ConfigYesNo(default=True)
+			self.usePictures = ConfigYesNo(default=True)
 
 		inhibitDirs = ["/bin", "/boot", "/dev", "/home", "/lib", "/config", "/proc", "/sbin", "/share", "/sys", "/tmp", "/usr", "/var", "/media/VMC", "/media/VMC5", "/.cache", "/.local", "/autofs", "/mnt", "/run"]
 		for root, directories, files in os.walk("/etc"):
@@ -529,7 +535,7 @@ class setup(Screen, ConfigListScreen):
 
 		self.configlist = []
 		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -559,11 +565,11 @@ class setup(Screen, ConfigListScreen):
 		except Exception as ex:
 			write_log("Setup - keyok : " + str(ex))
 
-	def updatePath(self,confirmed=False,cur=""):
+	def updatePath(self, confirmed=False, cur=""):
 		if self["myFileList"].getSelection():
 			cur = self['config'].getCurrent()
 			path = self["myFileList"].getSelection()[0]
-			path = str(path).replace('poster/','').replace('cover/','')
+			path = str(path).replace('poster/', '').replace('cover/', '')
 			if not path.endswith('/'):
 				path = path + '/'
 			if cur[0] == 'Daten-Verzeichnis (OK drücken)':
@@ -585,10 +591,10 @@ class setup(Screen, ConfigListScreen):
 	def createDirs(self, path):
 		if not os.path.exists(path):
 			os.makedirs(path)
-		if not os.path.exists(path+'poster/'):
-			os.makedirs(path+'poster/')
-		if not os.path.exists(path+'cover/'):
-			os.makedirs(path+'cover/')
+		if not os.path.exists(path + 'poster/'):
+			os.makedirs(path + 'poster/')
+		if not os.path.exists(path + 'cover/'):
+			os.makedirs(path + 'cover/')
 
 	def key_up_handler(self):
 		if self.myFileListActive:
@@ -617,7 +623,6 @@ class setup(Screen, ConfigListScreen):
 
 	def return_from_setup(self):
 		pass
-
 
 	def buildConfigList(self):
 		try:
@@ -668,15 +673,15 @@ class setup(Screen, ConfigListScreen):
 			serviceHandler = eServiceCenter.getInstance()
 			tvbouquets = serviceHandler.list(root).getContent("SN", True)
 			for bouquet in tvbouquets:
-				bpath = ConfigYesNo(default = self.searchOptions.get(bouquet[1], True))
+				bpath = ConfigYesNo(default=self.searchOptions.get(bouquet[1], True))
 				self.configlist.append(getConfigListEntry("suche in Bouquet " + str(bouquet[1]), bpath))
 
 			recordPaths = config.movielist.videodirs.value
 			if recordPaths:
 				for dir in recordPaths:
 					if os.path.isdir(dir):
-						rpath = ConfigYesNo(default = self.searchOptions.get(dir, False))
-						subpaths = ConfigYesNo(default = self.searchOptions.get('subpaths_' + dir, False))
+						rpath = ConfigYesNo(default=self.searchOptions.get(dir, False))
+						subpaths = ConfigYesNo(default=self.searchOptions.get('subpaths_' + dir, False))
 
 						self.configlist.append(getConfigListEntry("suche in " + str(dir), rpath))
 						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(dir), subpaths))
@@ -687,7 +692,7 @@ class setup(Screen, ConfigListScreen):
 	def changedEntry(self):
 		cur = self["config"].getCurrent()
 		if cur and cur is not None:
-			if not "suche in"  in cur[0]:
+			if not "suche in" in cur[0]:
 				self.buildConfigList()
 		self["config"].setList(self.configlist)
 		if cur and cur is not None:
@@ -704,7 +709,7 @@ class setup(Screen, ConfigListScreen):
 			self["config"].updateConfigListView(cur)
 
 	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI,MessageBox,_("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
+		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
 	def restartGUI(self, answer):
@@ -716,12 +721,12 @@ class setup(Screen, ConfigListScreen):
 						x[1].save()
 					else:
 						if 'suche in Unterverzeichnissen von ' in str(x[0]):
-							for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ','')):
-								if str(x[0]).replace('suche in Unterverzeichnissen von ','') != str(root):
+							for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
+								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
 									self.searchOptions[str(root)] = x[1].value
-							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ","subpaths_")] = x[1].value
+							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
 						else:
-							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen","Pictures").replace("suche in Bouquet ","").replace("suche in ","")] = x[1].value
+							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
 				self.searchPlaces.value = str(self.searchOptions)
 				self.searchPlaces.save()
 				self.session.open(TryQuitMainloop, 3)
@@ -734,6 +739,8 @@ class setup(Screen, ConfigListScreen):
 		self.close()
 
 ####################################################################################
+
+
 class TVSSetup(Screen, ConfigListScreen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
@@ -749,7 +756,7 @@ class TVSSetup(Screen, ConfigListScreen):
 		self["key_green"] = StaticText("Speichern")
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default = '')
+		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
 
 		sPDict = {}
 		if self.searchPlaces.value != '':
@@ -791,7 +798,7 @@ class TVSSetup(Screen, ConfigListScreen):
 		self.tvsKeys = lists[1]
 		self.configlist = []
 		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -813,19 +820,19 @@ class TVSSetup(Screen, ConfigListScreen):
 							list.append(itm)
 							break
 				list.insert(0, ("unbenutzt", ""))
-				choices, idx = (list,0)
-				keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
-				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title = 'Referenz auswählen', keys = keys, list = choices, selection = idx )
+				choices, idx = (list, 0)
+				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Referenz auswählen', keys=keys, list=choices, selection=idx)
 		except Exception as ex:
 			write_log("Setup - keyok : " + str(ex))
 
-	def menuCallBack(self, ret = None):
+	def menuCallBack(self, ret=None):
 		if ret and self.cur:
 			self.cur[1].value = ret[1]
 
 	def load_json(self, filename):
-		f = open(filename,'r')
-		data=f.read().replace('null', '""')
+		f = open(filename, 'r')
+		data = f.read().replace('null', '""')
 		f.close()
 		return eval(data)
 
@@ -859,7 +866,7 @@ class TVSSetup(Screen, ConfigListScreen):
 				for sender in sorted(self.senderlist):
 					for k, v in self.senderdict.items():
 						if str(v) == str(sender):
-							entry = ConfigText(default = self.tvsref.get(k, ""))
+							entry = ConfigText(default=self.tvsref.get(k, ""))
 							self.configlist.append(getConfigListEntry(sender, entry))
 							break
 		except Exception as ex:
@@ -873,7 +880,7 @@ class TVSSetup(Screen, ConfigListScreen):
 			self["config"].updateConfigListView(cur)
 
 	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI,MessageBox,_("Sollen die Einstellungen gespeichert werden ?"), MessageBox.TYPE_YESNO)
+		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("Sollen die Einstellungen gespeichert werden ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("Einstellungen speichern"))
 
 	def restartGUI(self, answer):
@@ -885,17 +892,20 @@ class TVSSetup(Screen, ConfigListScreen):
 						if str(v) == str(x[0]):
 							ref[k] = x[1].value
 							break
-			self.save_json(ref,'/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
+			self.save_json(ref, '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
 			self.close()
 		else:
 			self.close()
 
 ####################################################################################
+
+
 class Editor(Screen, ConfigListScreen):
 	ALLOW_SUSPEND = True
 	skin = str(loadskin("AdvancedEventLibraryEditor.xml"))
+
 	def __init__(self, session, service=None, parent=None, servicelist=None, eventname=None, args=0):
-		Screen.__init__(self, session, parent = parent)
+		Screen.__init__(self, session, parent=parent)
 		self.session = session
 		self.skinName = 'Advanced-Event-Library-Editor'
 		self.title = "Advanced-Event-Library-Editor"
@@ -914,7 +924,7 @@ class Editor(Screen, ConfigListScreen):
 		self.cSource = 1
 		self.db = getDB()
 		if service:
-			self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__',' ').replace('_',' ')
+			self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')
 			self.fileName = service.getPath()
 			if self.fileName.endswith("/"):
 				name = self.fileName[:-1]
@@ -924,13 +934,13 @@ class Editor(Screen, ConfigListScreen):
 				name = info.getName(service)
 				if name:
 					self.ptr = self.removeExtension(name)
-				ptr=info.getEvent(service)
+				ptr = info.getEvent(service)
 				if ptr:
 					self.ptr2 = ptr.getEventName()
 		elif eventname:
 			self.ptr = eventname[0]
 			self.ptr2 = eventname[0]
-			self.evt = self.db.getliveTV(eventname[1],eventname[0])
+			self.evt = self.db.getliveTV(eventname[1], eventname[0])
 			if self.evt:
 				self.eid = self.evt[0][0]
 				if self.evt[0][3] != '':
@@ -951,16 +961,16 @@ class Editor(Screen, ConfigListScreen):
 			ref = self.session.nav.getCurrentlyPlayingServiceReference().toString()
 			if '/' in ref:
 				self.ptr = info.getName()
-				ptr=info.getEvent(0)
+				ptr = info.getEvent(0)
 				if ptr:
 					self.ptr2 = ptr.getEventName()
 			else:
-				ptr=info.getEvent(0)
+				ptr = info.getEvent(0)
 				if ptr:
 					self.ptr = ptr.getEventName()
 					self.ptr2 = self.ptr
 					write_log('ptr.getEventName() ' + str(self.ptr))
-					self.evt = self.db.getliveTV(ptr.getEventId(),str(self.ptr))
+					self.evt = self.db.getliveTV(ptr.getEventId(), str(self.ptr))
 					if self.evt:
 						self.eid = self.evt[0][0]
 						if self.evt[0][3] != '':
@@ -1001,16 +1011,16 @@ class Editor(Screen, ConfigListScreen):
 		self["poster"].hide()
 		self["sList"].hide()
 
-		self.eventTitle = ConfigText(default = "")
-		self.eventGenre = ConfigText(default = "")
-		self.eventYear = ConfigText(default = "")
-		self.eventRating = ConfigText(default = "")
-		self.eventFSK = ConfigText(default = "")
-		self.eventCountry = ConfigText(default = "")
+		self.eventTitle = ConfigText(default="")
+		self.eventGenre = ConfigText(default="")
+		self.eventYear = ConfigText(default="")
+		self.eventRating = ConfigText(default="")
+		self.eventFSK = ConfigText(default="")
+		self.eventCountry = ConfigText(default="")
 		self.eventOverview = None
 
 		self.configlist = []
-		ConfigListScreen.__init__(self, self.configlist, session = self.session, on_change = self.changedEntry)
+		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 
 		self.onShow.append(self.checkDoupleNames)
 
@@ -1030,7 +1040,7 @@ class Editor(Screen, ConfigListScreen):
 		}, -1)
 
 	def removeExtension(self, ext):
-		ext = ext.replace('.wmv','').replace('.mpeg2','').replace('.ts','').replace('.m2ts','').replace('.mkv','').replace('.avi','').replace('.mpeg','').replace('.mpg','').replace('.iso','').replace('.mp4','')
+		ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
 		return ext
 
 	def checkPositions(self):
@@ -1074,9 +1084,9 @@ class Editor(Screen, ConfigListScreen):
 					write_log("Fehler in key_ok_handler " + str(ex))
 			elif self.activeList == 'editor':
 				if self['config'].getCurrent()[0] == 'Event Name (suche mit OK)':
-					self.session.openWithCallback(self.searchEvents, VirtualKeyBoard, title="Eventsuche...", text = self['config'].getCurrent()[1].value)
+					self.session.openWithCallback(self.searchEvents, VirtualKeyBoard, title="Eventsuche...", text=self['config'].getCurrent()[1].value)
 				else:
-					self.session.openWithCallback(self.donothing, VirtualKeyBoard, title="Daten bearbeiten...", text = self['config'].getCurrent()[1].value)
+					self.session.openWithCallback(self.donothing, VirtualKeyBoard, title="Daten bearbeiten...", text=self['config'].getCurrent()[1].value)
 			elif self.activeList == 'poster':
 				try:
 					selection = self['pList'].l.getCurrentSelection()[0]
@@ -1084,11 +1094,11 @@ class Editor(Screen, ConfigListScreen):
 						if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != "lade Daten, bitte warten...":
 							if self.pSource == 1:
 								write_log('Selection to move : ' + str(selection))
-								AEL.createSingleThumbnail('/tmp/'+selection[5], selection[4])
-								if int(os.path.getsize('/tmp/'+selection[5])/1024.0) > int(maxImageSize.value):
-									AEL.reduceSigleImageSize('/tmp/'+selection[5], selection[4])
+								AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
+								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(maxImageSize.value):
+									AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 								else:
-									shutil.copy('/tmp/'+selection[5], selection[4])
+									shutil.copy('/tmp/' + selection[5], selection[4])
 				except Exception as ex:
 					write_log('copy poster : ' + str(ex))
 			elif self.activeList == 'cover':
@@ -1098,11 +1108,11 @@ class Editor(Screen, ConfigListScreen):
 						if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != "lade Daten, bitte warten...":
 							if self.cSource == 1:
 								write_log('Selection to move : ' + str(selection))
-								AEL.createSingleThumbnail('/tmp/'+selection[5], selection[4])
-								if int(os.path.getsize('/tmp/'+selection[5])/1024.0) > int(maxImageSize.value):
-									AEL.reduceSigleImageSize('/tmp/'+selection[5], selection[4])
+								AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
+								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(maxImageSize.value):
+									AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 								else:
-									shutil.copy('/tmp/'+selection[5], selection[4])
+									shutil.copy('/tmp/' + selection[5], selection[4])
 				except Exception as ex:
 					write_log('copy poster : ' + str(ex))
 			elif "screenshot" in self.activeList:
@@ -1120,20 +1130,19 @@ class Editor(Screen, ConfigListScreen):
 						else:
 							typ = "cover/"
 
-						AEL.createSingleThumbnail('/tmp/'+fname, os.path.join(getPictureDir()+typ, fname))
-						if int(os.path.getsize('/tmp/'+fname)/1024.0) > int(maxImageSize.value):
-							AEL.reduceSigleImageSize('/tmp/'+fname, os.path.join(getPictureDir()+typ, fname))
+						AEL.createSingleThumbnail('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
+						if int(os.path.getsize('/tmp/' + fname) / 1024.0) > int(maxImageSize.value):
+							AEL.reduceSigleImageSize('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
 						else:
-							shutil.copy('/tmp/'+fname, os.path.join(getPictureDir()+typ, fname))
-						self.session.open(MessageBox,'AEL - Screenshot\nNeues Bild für ' + self.ptr + ' erfolgreich erstellt.', MessageBox.TYPE_INFO, timeout=10)
+							shutil.copy('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
+						self.session.open(MessageBox, 'AEL - Screenshot\nNeues Bild für ' + self.ptr + ' erfolgreich erstellt.', MessageBox.TYPE_INFO, timeout=10)
 					else:
-						self.session.open(MessageBox,'AEL - Screenshot\nBild ' + self.ptr + ' konnte nicht erstellt werden.', MessageBox.TYPE_INFO, timeout=10)
+						self.session.open(MessageBox, 'AEL - Screenshot\nBild ' + self.ptr + ' konnte nicht erstellt werden.', MessageBox.TYPE_INFO, timeout=10)
 				except Exception as ex:
 					write_log('screenshot : ' + str(ex))
-					self.session.open(MessageBox,'AEL - Screenshot\n' + str(ex), MessageBox.TYPE_INFO, timeout=10)
+					self.session.open(MessageBox, 'AEL - Screenshot\n' + str(ex), MessageBox.TYPE_INFO, timeout=10)
 #				self.session.nav.playService(self.currentServiceService)
 				self.doClose()
-
 
 	def donothing(self, text):
 		if text:
@@ -1167,32 +1176,32 @@ class Editor(Screen, ConfigListScreen):
 		if self.ptr != 'nothing found':
 			lastDownload = self.db.parameter(PARAMETER_GET, 'lastimagedownload', None, 0)
 			acceptDownload = False
-			if float(lastDownload) < float(time()-86400.0):
+			if float(lastDownload) < float(time() - 86400.0):
 				acceptDownload = True
 
 			if useAELIS.value and not "/etc" in str(mypath.value) and acceptDownload:
 				if self.cSource == 0 and self.activeList == 'cover':
-					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 				elif self.pSource == 0 and self.activeList == 'poster':
-					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 				else:
-					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 			else:
 				if self.cSource == 0 and self.activeList == 'cover':
-					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 				elif self.pSource == 0 and self.activeList == 'poster':
-					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 				else:
-					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
-			keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
-			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title = 'Bearbeiten', keys = keys, list = choices, selection = idx )
+					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
+			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Bearbeiten', keys=keys, list=choices, selection=idx)
 
-	def menuCallBack(self, ret = None):
+	def menuCallBack(self, ret=None):
 		if ret:
 			if ret[0] == 'Sprachauswahl':
-				choices, idx = ([('Deutsch','de'), ('Englisch','en'), ('Französisch','fr'), ('Spanisch','es'), ('Italienisch','it'), ('Alle Sprachen','')],0)
-				keys = [ "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
-				self.session.openWithCallback(self.languageCallBack, ChoiceBox, title = 'benutzte Sprache für Suche', keys = keys, list = choices, selection = idx )
+				choices, idx = ([('Deutsch', 'de'), ('Englisch', 'en'), ('Französisch', 'fr'), ('Spanisch', 'es'), ('Italienisch', 'it'), ('Alle Sprachen', '')], 0)
+				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+				self.session.openWithCallback(self.languageCallBack, ChoiceBox, title='benutzte Sprache für Suche', keys=keys, list=choices, selection=idx)
 			if ret[0] == 'Eintrag löschen':
 				self.db.cleanDB(AEL.convertSearchName(AEL.convert2base64(self.ptr)))
 				if self.eid is not None:
@@ -1201,7 +1210,7 @@ class Editor(Screen, ConfigListScreen):
 					for file in self['cList'].getList():
 						try:
 							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/cover/','/cover/thumbnails/'))
+							os.remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
 						except Exception as ex:
 							write_log('remove images : ' + str(ex))
 							continue
@@ -1209,7 +1218,7 @@ class Editor(Screen, ConfigListScreen):
 					for file in self['pList'].getList():
 						try:
 							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/poster/','/poster/thumbnails/'))
+							os.remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
 						except Exception as ex:
 							write_log('remove images : ' + str(ex))
 							continue
@@ -1227,7 +1236,7 @@ class Editor(Screen, ConfigListScreen):
 					for file in self['cList'].getList():
 						try:
 							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/cover/','/cover/thumbnails/'))
+							os.remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
 						except Exception as ex:
 							write_log('remove images : ' + str(ex))
 							continue
@@ -1235,7 +1244,7 @@ class Editor(Screen, ConfigListScreen):
 					for file in self['pList'].getList():
 						try:
 							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/poster/','/poster/thumbnails/'))
+							os.remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
 						except Exception as ex:
 							write_log('remove images : ' + str(ex))
 							continue
@@ -1251,8 +1260,8 @@ class Editor(Screen, ConfigListScreen):
 					if selection:
 						if os.path.isfile(selection[3]):
 							os.remove(selection[3])
-							os.remove(selection[3].replace('/poster/','/poster/thumbnails/'))
-							self.afterInit(True,False)
+							os.remove(selection[3].replace('/poster/', '/poster/thumbnails/'))
+							self.afterInit(True, False)
 				except Exception as ex:
 					write_log('remove image : ' + str(ex))
 			elif ret[0] == 'Cover löschen':
@@ -1261,8 +1270,8 @@ class Editor(Screen, ConfigListScreen):
 					if selection:
 						if os.path.isfile(selection[3]):
 							os.remove(selection[3])
-							os.remove(selection[3].replace('/cover/','/cover/thumbnails/').replace('/preview/','/preview/thumbnails/'))
-							self.afterInit(False,True)
+							os.remove(selection[3].replace('/cover/', '/cover/thumbnails/').replace('/preview/', '/preview/thumbnails/'))
+							self.afterInit(False, True)
 				except Exception as ex:
 					write_log('remove image : ' + str(ex))
 			elif ret[0] == 'BlackList löschen':
@@ -1287,11 +1296,11 @@ class Editor(Screen, ConfigListScreen):
 						os.remove(f)
 					del filelist
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (nicht vorhandene)':
-				start_new_thread(AEL.downloadAllImagesfromAELImageServer,())
+				start_new_thread(AEL.downloadAllImagesfromAELImageServer, ())
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (ersetzen)':
-				start_new_thread(AEL.downloadAllImagesfromAELImageServer,(True,))
+				start_new_thread(AEL.downloadAllImagesfromAELImageServer, (True,))
 			elif ret[0] == 'Bilder überprüfen':
-				start_new_thread(AEL.checkAllImages,())
+				start_new_thread(AEL.checkAllImages, ())
 			elif ret[0] == 'lade Cover':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
@@ -1319,7 +1328,7 @@ class Editor(Screen, ConfigListScreen):
 
 			write_log('Menü : ' + str(ret[0]) + ' - ' + str(self.ptr))
 
-	def languageCallBack(self, ret = None):
+	def languageCallBack(self, ret=None):
 		if ret:
 			write_log('current language: ' + str(ret[0]))
 			self.language = str(ret[1])
@@ -1368,9 +1377,9 @@ class Editor(Screen, ConfigListScreen):
 		if not self.isInit:
 			self.isInit = True
 			if self.ptr2 and str(self.ptr2) != str(self.ptr):
-				choices, idx = ([(self.ptr,), (self.ptr2,)],0)
-				keys = [ "1", "2"]
-				self.session.openWithCallback(self.correctNames, ChoiceBox, title = 'Welchen Titel möchtest Du bearbeiten?', keys = keys, list = choices, selection = idx )
+				choices, idx = ([(self.ptr,), (self.ptr2,)], 0)
+				keys = ["1", "2"]
+				self.session.openWithCallback(self.correctNames, ChoiceBox, title='Welchen Titel möchtest Du bearbeiten?', keys=keys, list=choices, selection=idx)
 			else:
 				self.correctNames(None)
 
@@ -1394,7 +1403,7 @@ class Editor(Screen, ConfigListScreen):
 				self.db.addTitleInfo(AEL.convertSearchName(AEL.convert2base64(self.ptr)), self.ptr, '', '', '', '', '')
 
 		self.eventData = [AEL.convertSearchName(AEL.convert2base64(self.ptr)), self.ptr, '', '', '', '', '']
-		if self.evt: #genre
+		if self.evt:  # genre
 			if len(str(self.evt[0][14]).strip()) > 0:
 				self.eventData[2] = self.evt[0][14]
 			else:
@@ -1402,7 +1411,7 @@ class Editor(Screen, ConfigListScreen):
 		else:
 			self.eventData[2] = eventData[2]
 
-		if self.evt: #year
+		if self.evt:  # year
 			if len(str(self.evt[0][4]).strip()) > 0:
 				self.eventData[3] = self.evt[0][4]
 			else:
@@ -1410,7 +1419,7 @@ class Editor(Screen, ConfigListScreen):
 		else:
 			self.eventData[3] = eventData[3]
 
-		if self.evt: #rating
+		if self.evt:  # rating
 			if len(str(self.evt[0][6]).strip()) > 0:
 				self.eventData[4] = self.evt[0][6]
 			else:
@@ -1418,17 +1427,17 @@ class Editor(Screen, ConfigListScreen):
 		else:
 			self.eventData[4] = eventData[4]
 
-		if self.evt: #fsk
+		if self.evt:  # fsk
 			if len(str(self.evt[0][5]).strip()) > 0:
 				try:
 					tmp = int(str(self.evt[0][5]).strip())
-					if tmp in range(0,6):
+					if tmp in range(0, 6):
 						self.eventData[5] = str(0)
-					elif tmp in range(6,12):
+					elif tmp in range(6, 12):
 						self.eventData[5] = str(6)
-					elif tmp in range(12,16):
+					elif tmp in range(12, 16):
 						self.eventData[5] = str(12)
-					elif tmp in range(16,18):
+					elif tmp in range(16, 18):
 						self.eventData[5] = str(16)
 					elif tmp >= 18:
 						self.eventData[5] = str(18)
@@ -1437,7 +1446,7 @@ class Editor(Screen, ConfigListScreen):
 				except:
 					if tmp.find('Ohne Altersbe') > 0:
 						self.eventData[5] = str(0)
-					elif(tmp == 'KeineJugendfreigabe' or tmp == 'KeineJugendfreige'):
+					elif (tmp == 'KeineJugendfreigabe' or tmp == 'KeineJugendfreige'):
 						self.eventData[5] = str(18)
 					else:
 						self.eventData[5] = eventData[5]
@@ -1446,14 +1455,13 @@ class Editor(Screen, ConfigListScreen):
 		else:
 			self.eventData[5] = eventData[5]
 
-		if self.evt: #country
+		if self.evt:  # country
 			if len(str(self.evt[0][15]).strip()) > 0:
 				self.eventData[6] = self.evt[0][15]
 			else:
 				self.eventData[6] = eventData[6]
 		else:
 			self.eventData[6] = eventData[6]
-
 
 		self.eventTitle.value = self.eventData[1]
 		self.eventGenre.value = self.eventData[2]
@@ -1482,13 +1490,13 @@ class Editor(Screen, ConfigListScreen):
 					write_log('found 1. possible cover : ' + str(pName1))
 				if os.path.isfile(os.path.join(mypath.value + 'cover/', pName2)) and pName1 != pName2:
 					write_log('found 2. possible cover : ' + str(pName2))
-				if os.path.isfile(os.path.join(mypath.value + 'cover/', pName3))and pName2 != pName3:
+				if os.path.isfile(os.path.join(mypath.value + 'cover/', pName3)) and pName2 != pName3:
 					write_log('found 3. possible cover : ' + str(pName3))
 				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName1)):
 					write_log('found 1. possible poster : ' + str(pName1))
-				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName2))and pName1 != pName2:
+				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName2)) and pName1 != pName2:
 					write_log('found 2. possible poster: ' + str(pName2))
-				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName3))and pName2 != pName3:
+				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName3)) and pName2 != pName3:
 					write_log('found 3. possible poster : ' + str(pName3))
 
 			self.coverList = []
@@ -1533,11 +1541,11 @@ class Editor(Screen, ConfigListScreen):
 							coverFiles.append(coverFile)
 
 				for files in coverFiles:
-					name = os.path.basename(files).replace('.jpg','')
+					name = os.path.basename(files).replace('.jpg', '')
 					try:
-						fn= base64.b64decode(os.path.basename(files).replace('.jpg',''))
+						fn = base64.b64decode(os.path.basename(files).replace('.jpg', ''))
 					except:
-						fn = os.path.basename(files).replace('.jpg','')
+						fn = os.path.basename(files).replace('.jpg', '')
 					if 'cover' in files:
 						itm = [fn, 'Cover', name, files]
 					elif 'preview' in files:
@@ -1549,7 +1557,7 @@ class Editor(Screen, ConfigListScreen):
 				if self.coverList:
 					self.coverList.sort(key=lambda x: x[0], reverse=False)
 					self.cSource = 0
-					self['cList'].setList(self.coverList,0)
+					self['cList'].setList(self.coverList, 0)
 					i = 0
 					for name in self.coverList:
 						if name[0][0] == self.eventTitle.value.lower():
@@ -1598,18 +1606,18 @@ class Editor(Screen, ConfigListScreen):
 							posterFiles.append(posterFile)
 
 				for files in posterFiles:
-					name = os.path.basename(files).replace('.jpg','')
+					name = os.path.basename(files).replace('.jpg', '')
 					try:
-						fn= base64.b64decode(os.path.basename(files).replace('.jpg',''))
+						fn = base64.b64decode(os.path.basename(files).replace('.jpg', ''))
 					except:
-						fn = os.path.basename(files).replace('.jpg','')
+						fn = os.path.basename(files).replace('.jpg', '')
 					itm = [fn, 'Poster', name, files]
 					self.posterList.append((itm,))
 
 				if self.posterList:
 					self.posterList.sort(key=lambda x: x[0], reverse=False)
 					self.pSource = 0
-					self['pList'].setList(self.posterList,0)
+					self['pList'].setList(self.posterList, 0)
 					i = 0
 					for name in self.posterList:
 						if name[0][0] == self.eventTitle.value.lower():
@@ -1656,7 +1664,7 @@ class Editor(Screen, ConfigListScreen):
 						size = self["poster"].instance.size()
 						picloader = PicLoader(size.width(), size.height())
 						if self.pSource == 1:
-							self["poster"].instance.setPixmap(picloader.load('/tmp/'+selection[5]))
+							self["poster"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
 						else:
 							self["poster"].instance.setPixmap(picloader.load(selection[3]))
 						picloader.destroy()
@@ -1667,7 +1675,7 @@ class Editor(Screen, ConfigListScreen):
 						size = self["cover"].instance.size()
 						picloader = PicLoader(size.width(), size.height())
 						if self.cSource == 1:
-							self["cover"].instance.setPixmap(picloader.load('/tmp/'+selection[5]))
+							self["cover"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
 						else:
 							self["cover"].instance.setPixmap(picloader.load(selection[3]))
 						picloader.destroy()
@@ -1675,22 +1683,21 @@ class Editor(Screen, ConfigListScreen):
 			except Exception as ex:
 				write_log("showPreview " + str(ex))
 
-
 	def key_red_handler(self):
 		if self.ptr != 'nothing found':
 			if self.eid:
-				self.db.updateliveTVInfo(self.eventTitle.value, self.eventGenre.value,self.eventYear.value,self.eventRating.value,self.eventFSK.value,self.eventCountry.value,self.eid)
+				self.db.updateliveTVInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eid)
 			if self.db.checkTitle(self.eventData[0]):
-				self.db.updateTitleInfo(self.eventTitle.value,self.eventGenre.value,self.eventYear.value,self.eventRating.value,self.eventFSK.value,self.eventCountry.value,self.eventData[0])
+				self.db.updateTitleInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eventData[0])
 				if createMetaData.value:
-					if self.fileName and not os.path.isfile(self.fileName.replace('.ts','.eit').replace('.mkv','.eit').replace('.avi','.eit').replace('.mpg','.eit').replace('.mp4','.eit')):
+					if self.fileName and not os.path.isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
 						if self.eventOverview:
-							txt = open(self.fileName + ".txt","w")
+							txt = open(self.fileName + ".txt", "w")
 							txt.write(self.eventOverview)
 							txt.close()
 					if self.fileName and not os.path.isfile(self.fileName + ".meta"):
 						filedt = int(os.stat(self.fileName).st_mtime)
-						txt = open(self.fileName + ".meta","w")
+						txt = open(self.fileName + ".meta", "w")
 						minfo = "1:0:0:0:B:0:C00000:0:0:0:\n" + str(self.eventTitle.value) + "\n"
 						if str(self.eventGenre.value) != "":
 							minfo += str(self.eventGenre.value) + ", "
