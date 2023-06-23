@@ -739,7 +739,7 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 		}, -1)
 
 #	check TMDb
-	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyo'):
+	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 		#config.plugins.tmdb = ConfigSubsection()
 		if self.type != EPG_TYPE_MULTI and config.plugins.tmdb.keyyellow.value:
 			write_log('Overwrite TMDb Key Yellow')
@@ -759,7 +759,7 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 			self["key_yellow"].text = "TMDb Infos..."
 
 #	check EPGSearch
-	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyo'):
+	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
 		if self.type != EPG_TYPE_MULTI and config.plugins.epgsearch.add_search_to_epg.value:
 			from Plugins.Extensions.EPGSearch import EPGSearch
 			from Components.Sources.StaticText import StaticText
@@ -1039,7 +1039,7 @@ def main(session, **kwargs):
 def iBshowMovies(session, **kwargs):
 	global gSession
 #	check MediaInfo
-	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/MediaInfo/plugin.pyo'):
+	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/MediaInfo/plugin.pyc'):
 		MoviePlayer.openEventView = openMoviePlayerEventViewMI
 	if useMW:
 		open_moviewall(gSession)
@@ -1256,7 +1256,7 @@ def autostart(reason, **kwargs):
 	if reason == 0:
 		try:
 		#	check EPGSearch
-			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyo'):
+			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
 				from Plugins.Extensions.EPGSearch import plugin as epgS
 				from Plugins.Extensions.EPGSearch import EPGSearch
 				epgS.autostart = EPGSelectionInit
@@ -1266,7 +1266,7 @@ def autostart(reason, **kwargs):
 			write_log('Fehler in EPGSearch EPGSelectionInit : ' + str(ex))
 		try:
 		#	check TMDb
-			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyo'):
+			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 				#config.plugins.tmdb = ConfigSubsection()
 				#if config.plugins.tmdb.keyyellow.value:
 				from Plugins.Extensions.tmdb import plugin as tmdbP

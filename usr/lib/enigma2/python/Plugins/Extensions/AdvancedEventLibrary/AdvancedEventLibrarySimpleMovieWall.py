@@ -45,7 +45,7 @@ global saving
 saving = False
 
 isTMDb = False
-if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyo'):
+if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 	from Plugins.Extensions.tmdb import tmdb
 	isTMDb = True
 
