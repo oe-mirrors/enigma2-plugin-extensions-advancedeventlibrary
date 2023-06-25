@@ -45,7 +45,6 @@ htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/'
 imgpath = '/usr/share/enigma2/AELImages/'
-piconpaths = [config.usage.servicelist_picon_dir.value, config.usage.picon_dir.value]
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 global active
@@ -731,15 +730,13 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, service + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		if serviceName is not None:
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, serviceName + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		return None
 
 ####################################################################################

@@ -44,7 +44,6 @@ htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/'
 imgpath = '/usr/share/enigma2/AELImages/'
-piconpaths = [config.usage.servicelist_picon_dir.value, config.usage.picon_dir.value]
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 Movies = ["Abenteuer", "Abenteuerfilm", "Abenteuerkom�die", "Action", "Action Abenteuer", "Action-Abenteuer", "Action-Fantasyfilm", "Actionabenteuer", "Actiondrama", "Actionfilm", "Actionkom�die", "Actionkrimi", "Actionthriller", "Agentenfilm", "Agentenkom�die", "Agententhriller", "Beziehungsdrama", "Beziehungskom�die", "Bibelverfilmung", "Bollywoodfilm", "Comicverfilmung", "Crime", "Deutsche Kom�die", "Drama", "Dramedy", "Ehedrama", "Ehekom�die", "Episodenfilm", "Erotikdrama", "Erotikfilm", "Erotikkom�die", "Familie", "Familiendrama", "Familienfilm", "Familienkom�die", "Familiensaga", "Fantasy", "Fantasy-Abenteuer", "Fantasy-Abenteuerfilm", "Fantasy-Action", "Fantasyabenteuer", "Fantasyaction", "Fantasydrama", "Fantasyfilm", "Fantasykom�die", "Fernsehfilm", "Gangsterdrama", "Gangsterkom�die", "Gangsterthriller", "Gaunerkom�die", "Gef�ngnisdrama", "Geschichtliches Drama", "Gesellschaftsdrama", "Gesellschaftskom�die", "Gesellschaftssatire", "Gruselfilm", "Gruselkom�die", "Heimatdrama", "Heimatfilm", "Heimatkom�die", "Historienabenteuer", "Historiendrama", "Historienfilm", "Historisches Drama", "Horror", "Horror-Actionfilm", "Horrorfilm", "Horrorkom�die", "Horrorthriller", "Italo-Western", "Jugenddrama", "Jugendfilm", "Jugendkom�die", "Justizdrama", "Justizthriller", "Katastrophendrama", "Katastrophenfilm", "Kriegsdrama", "Kom�die", "Kriegsfilm", "Krimi", "Krimidrama", "Krimikom�die", "Krimik�m�die", "Kriminalfilm", "Krimiparodie", "Liebesdrama", "Liebesdram�die", "Liebesfilm", "Liebesgeschichte", "Liebeskom�die", "Liebesmelodram", "Literaturverfilmung", "Mediensatire", "Melodram", "Monumentalfilm", "Mystery", "Mysterydrama", "Mysteryfilm", "Mysterythriller", "Psychodrama", "Psychokrimi", "Psychothriller", "Revuefilm", "Politdrama", "Politkom�die", "Politsatire", "Politthriller", "Road Movie", "Romance", "Romantic Comedy", "Romantikkom�die", "Romantische Kom�die", "Romanverfilmung", "Romanze", "Satire", "Schwarze Kom�die", "Sci-Fi-Fantasy", "Science-Fiction", "Science-Fiction-Abenteuer", "Science-Fiction-Action", "Science-Fiction-Film", "Science-Fiction-Horror", "Science-Fiction-Kom�die", "Science-Fiction-Thriller", "Spielfilm", "Spionagethriller", "Sportfilm", "Sportlerkom�die", "Tanzfilm", "Teenagerfilm", "Teenagerkom�die", "Teeniekom�die", "Thriller", "Thrillerkom�die", "Tierfilm", "Tragikom�die", "TV-Movie", "Vampirfilm", "Vampirkom�die", "Western", "Westerndrama", "Westernkom�die"]
@@ -893,15 +892,13 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, service + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		if serviceName is not None:
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, serviceName + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		return None
 
 ####################################################################################

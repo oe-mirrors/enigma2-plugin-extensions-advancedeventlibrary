@@ -45,7 +45,6 @@ htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/'
-piconpaths = [config.usage.servicelist_picon_dir.value, config.usage.picon_dir.value]
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 
@@ -374,7 +373,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][2], self.channelParameter[17][3], self.channelParameter[17][2], self.channelParameter[17][3], image, None, None, BT_SCALE))
 			#for covering in self.channelListCoverings:
 			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, covering[0], covering[1], covering[0], covering[1], covering[2], covering[3], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
-			r#et.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
+			r  # et.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
 			#ret.append((eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], skin.parseColor(self.channelParameter[9]).argb(), skin.parseColor(self.channelParameter[11]).argb(), skin.parseColor(self.channelParameter[10]).argb(), skin.parseColor(self.channelParameter[12]).argb()))
 			#if entrys.hasTimer and fileExists(self.channelParameter[15]):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + str(entrys.servicename), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
@@ -431,15 +430,13 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, service + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		if serviceName is not None:
-			for piconpath in piconpaths:
-				pngname = os.path.join(piconpath, serviceName + ".png")
-				if os.path.isfile(pngname):
-					return pngname
+			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
+			if os.path.isfile(pngname):
+				return pngname
 		return None
 
 	def key_pvr_handler(self):
