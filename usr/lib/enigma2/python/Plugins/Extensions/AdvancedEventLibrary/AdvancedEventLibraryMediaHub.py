@@ -35,7 +35,7 @@ from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
     ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing, ConfigDescription
+    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibrarySimpleMovieWall
@@ -1178,7 +1178,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigDescription()))
+			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
 			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
 			self.configlist.append(getConfigListEntry("Startansicht im Kanalbereich", self.channelStartType))
 			self.configlist.append(getConfigListEntry("EPG-Taste öffnet", self.epgViewType))

@@ -32,7 +32,7 @@ from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
     ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing, ConfigDescription
+    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
@@ -930,7 +930,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigDescription()))
+			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
 			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
 			self.configlist.append(getConfigListEntry("EPG-Taste �ffnet", self.epgViewType))
 			self.configlist.append(getConfigListEntry("Event-List Dauer (Stunden)", self.channelSelectionEventListDuration))

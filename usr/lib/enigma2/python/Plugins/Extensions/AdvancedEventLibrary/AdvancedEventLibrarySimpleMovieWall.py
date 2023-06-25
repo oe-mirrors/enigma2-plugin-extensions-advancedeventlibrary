@@ -19,7 +19,7 @@ from enigma import iServiceInformation, eServiceReference, eServiceCenter, ePixm
 from ServiceReference import ServiceReference
 from enigma import eTimer, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
 from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile, ConfigDescription
+from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile
 from Tools.Directories import fileExists
 from glob import glob
 from . import AdvancedEventLibrarySystem
@@ -1271,7 +1271,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigDescription()))
+			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
 			self.configlist.append(getConfigListEntry("Sortierung", self.sortType))
 			if self.paths:
 				self.configlist.append(getConfigListEntry("Startpfad", self.startPath))
