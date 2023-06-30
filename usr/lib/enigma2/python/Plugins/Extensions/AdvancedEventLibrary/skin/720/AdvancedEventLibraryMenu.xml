@@ -1,0 +1,32 @@
+<screen name="AdvancedEventLibraryMenu" size="1280,720" position="0,0" title="AEL Auswahl" backgroundColor="#FF000000" resolution="1280,720">
+	<eLabel backgroundColor="#00101010" position="0,0" size="1280,720" zPosition="-20" />
+	<eLabel backgroundColor="#00050505" position="0,0" size="1280,150" zPosition="-10" />
+	<widget source="Title" render="Label" position="95,50" size="1110,100" font="Normal;35" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+	<ePixmap pixmap="AELImages/info.png" scale="1" position="20,20" size="80,80" zPosition="2" alphatest="blend" />
+	<widget backgroundColor="background" font="Normal; 30" foregroundColor="foreground" halign="center" position="1000,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+		<convert type="ClockToText">Format: %H:%M</convert>
+	</widget>
+	<widget source="info" render="Label" position="500,140" size="1100,620" zPosition="1" valign="top" halign="left" font="Small;22" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
+	<widget source="status" render="Label" position="20,580" size="1240,100" zPosition="1" valign="center" halign="left" font="Small;25" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
+	<widget source="menulist" render="Listbox" position="25,140" size="460,520" zPosition="1" scrollbarMode="showOnDemand" transparent="1" foregroundColor="foreground" backgroundColor="black" foregroundColorSelected="background" backgroundColorSelected="foreground" enableWrapAround="1">
+		<convert type="TemplatedMultiContent">
+			{"template": [
+					MultiContentEntryText(pos = (70, 1), size = (400, 29), font=0, flags = RT_HALIGN_LEFT, text = 0), # Screen
+					MultiContentEntryText(pos = (70, 39), size = (400, 29), font=1, flags = RT_HALIGN_LEFT, text = 1), # Description
+					MultiContentEntryPixmapAlphaTest(pos = (8,8), size = (44, 44), png = 2, flags = BT_SCALE), # pixmap
+				],
+			"fonts": [gFont("Normal", 25),gFont("Small", 18)],
+			"itemHeight": 55
+			}
+		</convert>
+	</widget>
+	<!-- Button Bar -->
+	<ePixmap pixmap="buttons/red.png" position="90,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_red" render="Label" position="130,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/green.png" position="380,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_green" render="Label" position="420,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/yellow.png" position="670,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_yellow" render="Label" position="710,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<eLabel position="1000,686" size="100,25" text="OK" font="Regular;20" halign="left" valign="center" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd" transparent="1" zPosition="1" />
+	<eLabel position="1100,686" size="100,25" text="Exit " font="Regular;20" halign="left" valign="center" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd" transparent="1" zPosition="1" />
+</screen>

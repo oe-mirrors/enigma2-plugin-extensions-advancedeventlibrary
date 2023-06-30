@@ -12,8 +12,6 @@ from Components.Converter.Converter import Converter
 from Components.Element import cached
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
 from Components.Sources.Event import Event
-from Components.Sources.ExtEvent import ExtEvent
-from Components.Sources.extEventInfo import extEventInfo
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from enigma import iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
@@ -22,7 +20,7 @@ from ServiceReference import ServiceReference
 from time import localtime
 import glob
 import json
-import HTMLParser
+from html.parser import HTMLParser
 import re
 import os
 import linecache
@@ -118,7 +116,7 @@ class AdvancedEventLibraryInfo(Converter, object):
 							_('(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
 							_('[(](\d+)[.](\d+)[)]')]
 
-	htmlParser = HTMLParser.HTMLParser()
+	htmlParser = HTMLParser()
 
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE = 0
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE = 1
@@ -182,10 +180,8 @@ class AdvancedEventLibraryInfo(Converter, object):
 		event = None
 		try:
 			if hasattr(self.source, 'getEvent'):
-				# source is 'extEventInfo'
 				event = self.source.getEvent()
-			else:#			hasattr(self.source, 'event'):
-				# source is 'ServiceEvent' / 'ExtEvent'
+			else:
 				event = self.source.event
 				if hasattr(self.source, 'service'):
 					path = None

@@ -2,7 +2,7 @@
 	<eLabel backgroundColor="#00101010" position="0,0" size="1920,1080" zPosition="-20" />
 	<eLabel backgroundColor="#00050505" position="0,0" size="1920,140" zPosition="-10" />
 	<widget source="Title" render="Label" position="95,50" size="1730,100" font="Normal;50" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
-	<ePixmap pixmap="AELImages/settings.png" scale="40" position="40,40" size="100,100" zPosition="2" alphatest="blend" />
+	<ePixmap pixmap="AELImages/settings.png" scale="1" position="40,40" size="100,100" zPosition="2" alphatest="blend" />
 	<widget backgroundColor="background" font="Normal; 50" foregroundColor="foreground" halign="center" position="1540,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
 		<convert type="ClockToText">Format: %H:%M</convert>
 	</widget>

@@ -1028,18 +1028,11 @@ def EPGSelection_askTimerPath(self, ret=None):
 
 
 def mlist(session, service, **kwargs):
-	try:
-		session.open(AdvancedEventLibrarySystem.Editor, service, session.current_dialog, None, **kwargs)
-	except Exception as ex:
-		write_log('MovieList ' + str(ex))
+	session.open(AdvancedEventLibrarySystem.Editor, service, session.current_dialog, None, **kwargs)
 
 
 def main(session, **kwargs):
-#	reload(AdvancedEventLibrarySystem)
-	try:
-		session.open(AdvancedEventLibrarySystem.Editor)
-	except Exception as ex:
-		write_log('Main ' + str(ex))
+	session.open(AdvancedEventLibrarySystem.Editor)
 
 
 def iBshowMovies(session, **kwargs):
@@ -1055,64 +1048,37 @@ def iBshowMovies(session, **kwargs):
 
 def open_moviewall(session, **kwargs):
 	global gSession
-#	reload(AdvancedEventLibrarySimpleMovieWall)
-	try:
-		while AdvancedEventLibrarySimpleMovieWall.saving:
-			pass
+	while AdvancedEventLibrarySimpleMovieWall.saving:
+		pass
 		if gSession:
 			gSession.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
 		else:
 			session.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
-	except Exception as ex:
-		write_log('MovieWall ' + str(ex))
 
 
 def open_primetime(session, **kwargs):
-#	reload(AdvancedEventLibraryPrimeTime)
-	try:
-		session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, viewType.value)
-	except Exception as ex:
-		write_log('Prime-Time-Planer ' + str(ex))
+	session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, viewType.value)
 
 
 def open_serienstarts(session, **kwargs):
-#	reload(AdvancedEventLibrarySerienStarts)
-	try:
-		session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, viewType.value)
-	except Exception as ex:
-		write_log('Serien-Starts-Planer ' + str(ex))
+	session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, viewType.value)
 
 
 def open_favourites(session, **kwargs):
-#	reload(AdvancedEventLibraryRecommendations)
-	try:
-		session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, viewType.value)
-	except Exception as ex:
-		write_log('Recommendations ' + str(ex))
+	session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, viewType.value)
 
 
 def open_channelselection(session, **kwargs):
-#	reload(AdvancedEventLibraryChannelSelection)
-	try:
-		session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
-	except Exception as ex:
-		write_log('ChannelSelection ' + str(ex))
+	session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
 
 
 def open_mediaHub(session, **kwargs):
-#	reload(AdvancedEventLibraryMediaHub)
-	try:
-		session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
-	except Exception as ex:
-		write_log('MediaHub ' + str(ex))
+	session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 
 
 def open_aelMenu(session, **kwargs):
-#	reload(AdvancedEventLibrarySystem)
-	try:
-		session.open(AdvancedEventLibrarySystem.AELMenu)
-	except Exception as ex:
-		write_log('AELMenu ' + str(ex))
+	session.open(AdvancedEventLibrarySystem.AELMenu)
+
 
 
 def aelMenu_in_mainmenu(menuid, **kwargs):

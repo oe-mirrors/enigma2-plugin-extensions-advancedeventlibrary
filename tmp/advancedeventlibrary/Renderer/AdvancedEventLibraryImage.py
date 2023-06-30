@@ -18,19 +18,16 @@ import re
 import datetime
 from time import localtime, mktime, sleep
 from enigma import eLabel, ePixmap, ePicLoad, ePoint, eSize, eTimer, eWidget, loadPNG
-from Renderer import Renderer
-from skin import parseColor, parseFont
-from Components.AVSwitch import AVSwitch
+from Components.Renderer.Renderer import Renderer
+from skin import parseColor, parseColor
 from Components.Sources.Event import Event
-from Components.Sources.ExtEvent import ExtEvent
-from Components.Sources.extEventInfo import extEventInfo
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from Components.config import config, ConfigText, ConfigSubsection, ConfigYesNo
 from enigma import iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter, eServiceReference
 from ServiceReference import ServiceReference
 from Tools import AdvancedEventLibrary
-from thread import start_new_thread
+import threading
 from datetime import datetime
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
@@ -230,7 +227,8 @@ class AdvancedEventLibraryImage(Renderer):
 #				write_log('eventName : ' + str(eventName))
 
 				if self.lastName != eventName:
-					start_new_thread(self.setthePixmap, (eventName,))
+					thread = threading.Thread(target=self.setthePixmap, args=(eventName,))
+					thread.start()
 #					self.setthePixmap(eventName)
 		except Exception as e:
 			self.hideimage()

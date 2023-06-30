@@ -15,7 +15,7 @@ from Components.Sources.ServiceEvent import ServiceEvent
 from Components.FileTransfer import FileTransferJob
 from Components.Task import job_manager
 from time import time, localtime
-from enigma import iServiceInformation, eServiceReference, eServiceCenter, ePixmap
+from enigma import getDesktop ,iServiceInformation, eServiceReference, eServiceCenter, ePixmap
 from ServiceReference import ServiceReference
 from enigma import eTimer, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
 from Components.ConfigList import ConfigListScreen
@@ -36,7 +36,11 @@ import linecache
 import pickle
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-skinpath = pluginpath + 'skin/'
+desktopSize = getDesktop(0).size()
+if desktopSize.width() == 1920:
+	skinpath = pluginpath + 'skin/1080/'
+else:
+	skinpath = pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 

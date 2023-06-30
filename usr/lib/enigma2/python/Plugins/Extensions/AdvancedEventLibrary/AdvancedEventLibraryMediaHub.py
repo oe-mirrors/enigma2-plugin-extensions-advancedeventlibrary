@@ -28,7 +28,7 @@ import pickle
 import struct
 from datetime import timedelta
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
+from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
@@ -47,7 +47,11 @@ from Tools.LoadPixmap import LoadPixmap
 htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-skinpath = pluginpath + 'skin/'
+desktopSize = getDesktop(0).size()
+if desktopSize.width() == 1920:
+	skinpath = pluginpath + 'skin/1080/'
+else:
+	skinpath = pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 

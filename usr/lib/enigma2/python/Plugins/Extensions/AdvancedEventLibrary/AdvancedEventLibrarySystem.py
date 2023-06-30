@@ -31,7 +31,7 @@ from time import localtime, time
 from Tools import AdvancedEventLibrary as AEL
 from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, createBackup, convertTitle, setStatus, startUpdate, clearMem
 from Tools.Bytes2Human import bytes2human
-from enigma import eTimer, ePixmap, ePicLoad, eServiceReference, eServiceCenter, iServiceInformation
+from enigma import getDesktop, eTimer, ePixmap, ePicLoad, eServiceReference, eServiceCenter, iServiceInformation
 from Tools.Directories import defaultRecordingLocation
 from Components.FileList import FileList
 import threading
@@ -47,7 +47,6 @@ import shutil
 import linecache
 import base64
 import glob
-from . import skin
 import json
 import requests
 from . import AdvancedEventLibraryPrimeTime
@@ -68,7 +67,12 @@ global saving
 saving = False
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-skinpath = os.path.join(pluginpath, "skin/")
+desktopSize = getDesktop(0).size()
+if desktopSize.width() == 1920:
+	skinpath = pluginpath + 'skin/1080/'
+else:
+	skinpath = pluginpath + 'skin/720/'
+
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
@@ -114,7 +118,7 @@ class AELMenu(Screen):
 		self.session = session
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = "Advanced-Event-Library Menüauswahl: (R" + str(currentVersion) + ")"
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		imgpath = "/usr/share/enigma2/AELImages/"
 		self.menulist = [('Einstellungen', 'Grundeinstellungen von AEL vornehmen', LoadPixmap(imgpath + 'settings.png'), 'setup'), ('Editor', 'Eventinformationen bearbeiten', LoadPixmap(imgpath + 'keyboard.png'), 'editor'), ('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'), ('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'), ('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'), ('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'), ('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'), ('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')]
 		self["menulist"] = List(self.menulist, enableWrapAround=True)
 
@@ -245,7 +249,7 @@ class AELMenu(Screen):
 				if check > 1:
 					if result[0] > 0:
 						result[1] = result[0] - result[2]  # used
-						result[3] = result[1] * 100 / result[0]  # use%
+						result[3] = result[1] * 100 // result[0]  # use%
 					break
 			fd.close()
 		except:
@@ -283,7 +287,7 @@ class AELMenu(Screen):
 				result[0] = st.f_bsize * st.f_blocks  # size
 				result[2] = st.f_bsize * st.f_bavail  # avail
 				result[1] = result[0] - result[2]  # used
-				result[3] = result[1] * 100 / result[0]  # use%
+				result[3] = result[1] * 100 // result[0]  # use%
 				resultList.append(result)
 		res = ""
 		for result in resultList:
@@ -296,7 +300,7 @@ class AELMenu(Screen):
 			fmt = "%(size)u.%(frac)d %(unit)s"
 			while (value >= 1024) and (u < len(SIZE_UNITS)):
 				(value, mod) = divmod(value, 1024)
-				fractal = mod * 10 / 1024
+				fractal = mod * 10 // 1024
 				u += 1
 		else:
 			fmt = "%(size)u %(unit)s"
@@ -348,7 +352,8 @@ class AELMenu(Screen):
 		startUpdate()
 
 	def key_yellow_handler(self):
-		threading.start_new_thread(createBackup, ())
+		thread = threading.Thread(target=createBackup, args=())
+		thread.start()
 
 	def createDirs(self, path):
 		if not os.path.exists(path):
@@ -378,69 +383,41 @@ class AELMenu(Screen):
 		self.close()
 
 	def open_serienstarts(self):
-#		reload(AdvancedEventLibrarySerienStarts)
-		try:
-			self.viewType = self.vtype.value
-			self.screenType = 0
-			self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, self.viewType)
-		except Exception as ex:
-			write_log(ex)
+		self.viewType = self.vtype.value
+		self.screenType = 0
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, self.viewType)
+
 
 	def open_primetime(self):
-#		reload(AdvancedEventLibraryPrimeTime)
-		try:
-			self.viewType = self.vtype.value
-			self.screenType = 1
-			self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, self.viewType)
-		except Exception as ex:
-			write_log(ex)
+		self.viewType = self.vtype.value
+		self.screenType = 1
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, self.viewType)
 
 	def open_moviewall(self):
-#		reload(AdvancedEventLibrarySimpleMovieWall)
-		try:
-			global saving
-			while saving:
-				pass
-			self.viewType = self.vtype.value
-			self.screenType = 2
-			self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, self.viewType)
-		except Exception as ex:
-			write_log(ex)
+		global saving
+		while saving:
+			pass
+		self.viewType = self.vtype.value
+		self.screenType = 2
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, self.viewType)
 
 	def open_favourites(self):
-		reload(AdvancedEventLibraryRecommendations)
-		try:
-			self.viewType = self.vtype.value
-			self.screenType = 3
-			self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, self.viewType)
-		except Exception as ex:
-			write_log(ex)
+		#reload_module(AdvancedEventLibraryRecommendations)
+		self.viewType = self.vtype.value
+		self.screenType = 3
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, self.viewType)
 
 	def open_channelSelection(self):
-#		reload(AdvancedEventLibraryChannelSelection)
-		try:
-			self.session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
-		except Exception as ex:
-			write_log(ex)
+		self.session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
 
 	def open_mediaHub(self):
-#		reload(AdvancedEventLibraryMediaHub)
-		try:
-			self.session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
-		except Exception as ex:
-			write_log(ex)
+		self.session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 
 	def main(self):
-		try:
-			self.session.open(setup)
-		except Exception as ex:
-			write_log(ex)
+		self.session.open(setup)
 
 	def editor(self):
-		try:
-			self.session.open(Editor)
-		except Exception as ex:
-			write_log(ex)
+		self.session.open(Editor)
 
 	def goRestart(self, ret=None):
 		try:
@@ -1081,7 +1058,8 @@ class Editor(Screen, ConfigListScreen):
 					self['pList'].setList(waitList)
 					self.cSource = 1
 					self.pSource = 1
-					threading.start_new_thread(self.searchPics, ())
+					thread = threading.Thread(target=self.searchPics, args=())
+					thread.start()
 				except Exception as ex:
 					write_log("Fehler in key_ok_handler " + str(ex))
 			elif self.activeList == 'editor':
@@ -1169,7 +1147,8 @@ class Editor(Screen, ConfigListScreen):
 			self['sList'].show()
 			self.activeList = 'choiceBox'
 			self.text = text
-			threading.start_new_thread(self.searchAll, ())
+			thread = threading.Thread(target=self.searchAll, args=())
+			thread.start()
 
 	def searchAll(self):
 		self['sList'].setList(AEL.get_searchResults(self.text, self.language))
@@ -1298,25 +1277,30 @@ class Editor(Screen, ConfigListScreen):
 						os.remove(f)
 					del filelist
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (nicht vorhandene)':
-				threading.start_new_thread(AEL.downloadAllImagesfromAELImageServer, ())
+				thread = threading.Thread(target=AEL.downloadAllImagesfromAELImageServer, args=())
+				thread.start()
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (ersetzen)':
-				threading.start_new_thread(AEL.downloadAllImagesfromAELImageServer, (True,))
+				thread = threading.Thread(target=AEL.downloadAllImagesfromAELImageServer, args=(True,))
+				thread.start()
 			elif ret[0] == 'Bilder überprüfen':
-				threading.start_new_thread(AEL.checkAllImages, ())
+				thread = threading.Thread(target=AEL.checkAllImages, args=())
+				thread.start()
 			elif ret[0] == 'lade Cover':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.cSource = 1
 				self['cList'].setList(waitList)
-				threading.start_new_thread(self.searchPics, (False, True))
+				thread = threading.Thread(target=self.searchPics, args=(False, True))
+				thread.start()
 			elif ret[0] == 'lade Poster':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.pSource = 1
 				self['pList'].setList(waitList)
-				threading.start_new_thread(self.searchPics, (True, False))
+				thread = threading.Thread(target=self.searchPics, args=(False, True))
+				thread.start()
 			elif 'Screenshot' in ret[0]:
 				if self.activeList == "cover":
 					self.activeList = 'screenshot cover'
@@ -1499,7 +1483,7 @@ class Editor(Screen, ConfigListScreen):
 				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName2)) and pName1 != pName2:
 					write_log('found 2. possible poster: ' + str(pName2))
 				if os.path.isfile(os.path.join(mypath.value + 'poster/', pName3)) and pName2 != pName3:
-					write_log('found 3. possible poster : ' + str(pName3))
+					write_log('found 3. possible poster : ' + pName3)
 
 			self.coverList = []
 			self.posterList = []
@@ -1569,7 +1553,8 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.cSource = 1
 					self['cList'].setList(waitList)
-					threading.start_new_thread(self.searchPics, (False, True))
+					thread = threading.Thread(target=self.searchPics, args=(False, True))
+					thread.start()
 				del coverFiles
 
 			if refreshPoster:
@@ -1629,7 +1614,8 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.pSource = 1
 					self['pList'].setList(waitList)
-					threading.start_new_thread(self.searchPics, (True, False))
+					thread = threading.Thread(target=self.searchPics, args=(False, True))
+					thread.start()
 				del posterFiles
 
 			self['sList'].setList(waitList)

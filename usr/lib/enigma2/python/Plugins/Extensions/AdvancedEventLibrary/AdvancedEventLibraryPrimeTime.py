@@ -23,7 +23,7 @@ import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
+from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
@@ -42,7 +42,11 @@ from Tools.LoadPixmap import LoadPixmap
 htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-skinpath = pluginpath + 'skin/'
+desktopSize = getDesktop(0).size()
+if desktopSize.width() == 1920:
+	skinpath = pluginpath + 'skin/1080/'
+else:
+	skinpath = pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 
@@ -57,14 +61,12 @@ Sport = ["Sport", "Fu�ball", "Bundesliga", "PL:", "Handball", "Champions-Leagu
 global active
 active = False
 
-
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
 	AdvancedEventLibrary_log = open(log, "a")
 	AdvancedEventLibrary_log.write(str(logtime) + " : [PrimeTimeScreen] : " + str(svalue) + "\n")
 	AdvancedEventLibrary_log.close()
-
 
 class EventEntry():
 	def __init__(self, name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer):
@@ -229,7 +231,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.sel_changed()
 
 	def buildGenreList(self):
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		imgpath = "/usr/share/enigma2/AELImages/"
 		genreTypes = (["Filme", imgpath + "filme.png"], ["Serien", imgpath + "serien.png"], ["Dokus", imgpath + "dokus.png"], ["Kinder", imgpath + "kinder.png"], ["Shows", imgpath + "shows.png"], ["Sport", imgpath + "sport.png"], ["Music", imgpath + "music.png"], ["Sonstiges", imgpath + "sonstiges.png"])
 		genrelist = []
 		for genre in genreTypes:

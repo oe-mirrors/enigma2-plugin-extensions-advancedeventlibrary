@@ -1,0 +1,21 @@
+<screen name="Advanced-Event-Library-Setup" size="1280,720" position="0,0" title="Advanced-Event-Library" backgroundColor="#FF000000" resolution="1280,720">
+	<eLabel backgroundColor="#00101010" position="0,0" size="1280,720" zPosition="-20" />
+	<eLabel backgroundColor="#00050505" position="0,0" size="1280,150" zPosition="-10" />
+	<widget source="Title" render="Label" position="95,50" size="1110,100" font="Normal;35" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
+	<ePixmap pixmap="AELImages/settings.png" scale="1" position="40,40" size="80,80" zPosition="2" alphatest="blend" />
+	<widget backgroundColor="background" font="Normal; 30" foregroundColor="foreground" halign="center" position="1000,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+		<convert type="ClockToText">Format: %H:%M</convert>
+	</widget>
+	<widget name="HelpWindow" pixmap="buttons/vkey_icon.png" position="450,540" zPosition="1" size="1,1" transparent="1" alphatest="on"/>
+	<widget name="config" position="50,140" size="1200,520" itemHeight="40" font="Normal;20" valign="center" scrollbarMode="showOnDemand" transparent="1" backgroundColor="background" scrollbarForegroundColor="#00dddddd" scrollbarBorderColor="#00ddddff" scrollbarBorderWidth="1" scrollbarWidth="5" enableWrapAround="1" backgroundColorSelected="#00484848" foregroundColorSelected="foreground" />
+	<widget name="myFileList" position="1200,200" size="570,720" zPosition="6" font="Normal;26" scrollbarMode="showOnDemand" scrollbarForegroundColor="#00dddddd" scrollbarBorderColor="#00ddddff" scrollbarBorderWidth="1" scrollbarWidth="5" enableWrapAround="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="#00dddddd" transparent="0" />
+	<!-- Button Bar -->
+	<ePixmap pixmap="buttons/red.png" position="90,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_red" render="Label" position="130,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/green.png" position="380,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_green" render="Label" position="420,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/yellow.png" position="670,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_yellow" render="Label" position="710,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/blue.png" position="960,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_blue" render="Label" position="1000,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+</screen>

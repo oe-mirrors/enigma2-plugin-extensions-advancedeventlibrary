@@ -11,11 +11,11 @@ from Components.Sources.CurrentService import CurrentService
 from enigma import eEPGCache, eServiceReference, iServiceInformation, iPlayableService
 from time import localtime, strftime, mktime, time
 from datetime import datetime, timedelta
-import HTMLParser
+from html.parser import HTMLParser
 
 
 class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
-	htmlParser = HTMLParser.HTMLParser()
+	htmlParser = HTMLParser()
 
 	def __init__(self, type):
 		Converter.__init__(self, type)

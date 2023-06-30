@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 # Coded by tsiegel (c) 2020
-from Renderer import Renderer
+from Components.Renderer.Renderer import Renderer
 from enigma import ePixmap, eTimer, loadJPG
 from Tools.AdvancedEventLibrary import getPictureDir
 import os

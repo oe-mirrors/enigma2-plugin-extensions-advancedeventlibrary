@@ -6,7 +6,7 @@ from __future__ import print_function
 from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from Components.HTMLComponent import HTMLComponent
-from enigma import eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from skin import parseColor
 from collections import OrderedDict
 from Components.AVSwitch import AVSwitch
@@ -18,7 +18,7 @@ from Tools.LoadPixmap import LoadPixmap
 from html.parser import HTMLParser
 import glob
 import os
-from . import skin
+import skin
 import datetime
 
 piconpath = config.usage.picon_dir.value
@@ -40,9 +40,15 @@ class ImageList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		ffont, fsize = skin.parameters.get("EventLibraryPictureListsFirstFont", ('Regular', 30))
-		sfont, ssize = skin.parameters.get("EventLibraryPictureListsSecondFont", ('Regular', 26))
-		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPictureListsItemHeight", (108,))[0]))
+		desktopSize = getDesktop(0).size()
+		if desktopSize.width() == 1920:
+			ffont, fsize = skin.fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 30))
+			sfont, ssize = skin.fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 26))
+			self.l.setItemHeight(int(skin.parameters.get("EventLibraryPictureListsItemHeight", (108,))[0]))
+		else:
+			ffont, fsize = skin.fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 20))
+			sfont, ssize = skin.fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 16))
+			self.l.setItemHeight(int(skin.parameters.get("EventLibraryPictureListsItemHeight", (80,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		self.l.setBuildFunc(self.buildEntry)
@@ -82,18 +88,32 @@ class ImageList(GUIComponent, object):
 
 	def buildEntry(self, data):
 		try:
-			xcp, ycp, wcp, hcp = skin.parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 192, 108))
-			x1c, y1c, w1c, h1c = skin.parameters.get("EventLibraryCoverListFirstLine", (220, 0, 700, 54))
-			x2c, y2c, w2c, h2c = skin.parameters.get("EventLibraryCoverListSecondLine", (220, 54, 700, 54))
-			xpp, ypp, wpp, hpp = skin.parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 108))
-			x1p, y1p, w1p, h1p = skin.parameters.get("EventLibraryPosterListFirstLine", (100, 0, 700, 54))
-			x2p, y2p, w2p, h2p = skin.parameters.get("EventLibraryPosterListSecondLine", (100, 54, 700, 54))
+			desktopSize = getDesktop(0).size()
+			if desktopSize.width() == 1920:
+				xcp, ycp, wcp, hcp = skin.parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 192, 108))
+				x1c, y1c, w1c, h1c = skin.parameters.get("EventLibraryCoverListFirstLine", (220, 0, 700, 54))
+				x2c, y2c, w2c, h2c = skin.parameters.get("EventLibraryCoverListSecondLine", (220, 54, 700, 54))
+				xpp, ypp, wpp, hpp = skin.parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 108))
+				x1p, y1p, w1p, h1p = skin.parameters.get("EventLibraryPosterListFirstLine", (100, 0, 700, 54))
+				x2p, y2p, w2p, h2p = skin.parameters.get("EventLibraryPosterListSecondLine", (100, 54, 700, 54))
+			else:
+				xcp, ycp, wcp, hcp = skin.parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 142, 80))
+				x1c, y1c, w1c, h1c = skin.parameters.get("EventLibraryCoverListFirstLine", (160, 0, 500, 40))
+				x2c, y2c, w2c, h2c = skin.parameters.get("EventLibraryCoverListSecondLine", (160, 30, 500, 40))
+				xpp, ypp, wpp, hpp = skin.parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 80))
+				x1p, y1p, w1p, h1p = skin.parameters.get("EventLibraryPosterListFirstLine", (80, 0, 500, 40))
+				x2p, y2p, w2p, h2p = skin.parameters.get("EventLibraryPosterListSecondLine", (80, 30, 500, 40))
+
 			nDp = int(x1p) - int(wpp)
 			nDc = int(x1c) - int(wcp)
 			if self.how == 1:
 				if data[1] == 'Cover':
 					if data[5]:
-						self.picloader = PicLoader(192, 108)
+						desktopSize = getDesktop(0).size()
+						if desktopSize.width() == 1920:
+							self.picloader = PicLoader(192, 108)
+						else:
+							self.picloader = PicLoader(142, 80)
 						picon = self.picloader.load('/tmp/' + data[5])
 						self.picloader.destroy()
 						fSize = round(float(os.path.getsize('/tmp/' + data[5]) / 1024.0), 1)
@@ -263,8 +283,8 @@ class SearchResultsList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		ffont, fsize = skin.parameters.get("EventLibrarySearchListFirstFont", ('Regular', 32))
-		sfont, ssize = skin.parameters.get("EventLibrarySearchListSecondFont", ('Regular', 28))
+		ffont, fsize = skin.fonts.get("EventLibrarySearchListFirstFont", ('Regular', 32))
+		sfont, ssize = skin.fonts.get("EventLibrarySearchListSecondFont", ('Regular', 28))
 		self.l.setItemHeight(int(skin.parameters.get("EventLibrarySearchListItemHeight", (80,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
@@ -276,7 +296,7 @@ class SearchResultsList(GUIComponent, object):
 			self.onsel_changed.append(sel_changedCB)
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
-		self.htmlParser = HTMLParser.HTMLParser()
+		self.htmlParser = HTMLParser()
 		return
 
 	def applySkin(self, desktop, parent):
@@ -432,8 +452,8 @@ class MovieList(GUIComponent, object):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
 		self.recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
-		ffont, fsize = skin.parameters.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
-		sfont, ssize = skin.parameters.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
+		ffont, fsize = skin.fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
+		sfont, ssize = skin.fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		sel_changedCB = None
@@ -727,8 +747,8 @@ class AELBaseWall(GUIComponent, object):
 		self.l.setFont(1, gFont('Regular', 22))
 		self.onselectionchanged = []
 		self.l.setSelectableFunc(self.isselectable)
-		self.l.setViewMode(eListboxPythonMultiContent.MODE_WALL)
-		self.l.setScrollMode(eListboxPythonMultiContent.SCROLLMODE_PAGE)
+		#self.l.setViewMode(eListboxPythonMultiContent.MODE_WALL)
+		#self.l.setScrollMode(eListboxPythonMultiContent.SCROLLMODE_PAGE)
 		self.list = []
 		self.selectedItem = None
 		self.instance = None
@@ -861,24 +881,24 @@ class AELBaseWall(GUIComponent, object):
 					else:
 						self.l.setItemScale_V(int(value))
 						self.l.setItemScale_H(int(value))
-				elif attrib == "viewMode":
-					self.l.setViewMode(
-						{"wall": eListboxPythonMultiContent.MODE_WALL,
-						 "list_horizontal": eListboxPythonMultiContent.MODE_LIST_HORIZONTAL,
-							"list_vertical": eListboxPythonMultiContent.MODE_LIST_VERTICAL,
-						 }[value])
-				elif attrib == "aspectRatio":
-					self.l.setAspectRatio(
-						{"dvd": eListboxPythonMultiContent.ASPECT_DVD,
-						 "cd": eListboxPythonMultiContent.ASPECT_CD,
-							"screen": eListboxPythonMultiContent.ASPECT_SCREEN,
-							"banner": eListboxPythonMultiContent.ASPECT_BANNER,
-						 }[value])
-				elif attrib == "scrollMode":
-					self.l.setScrollMode(
-						{"page": eListboxPythonMultiContent.SCROLLMODE_PAGE,
-						 "flow": eListboxPythonMultiContent.SCROLLMODE_FLOW,
-						 }[value])
+				#elif attrib == "viewMode":
+				#	self.l.setViewMode(
+				#		{"wall": eListboxPythonMultiContent.MODE_WALL,
+				#		 "list_horizontal": eListboxPythonMultiContent.MODE_LIST_HORIZONTAL,
+				#			"list_vertical": eListboxPythonMultiContent.MODE_LIST_VERTICAL,
+				#		 }[value])
+				#elif attrib == "aspectRatio":
+				#	self.l.setAspectRatio(
+				#		{"dvd": eListboxPythonMultiContent.ASPECT_DVD,
+				#		 "cd": eListboxPythonMultiContent.ASPECT_CD,
+				#			"screen": eListboxPythonMultiContent.ASPECT_SCREEN,
+				#			"banner": eListboxPythonMultiContent.ASPECT_BANNER,
+				#		 }[value])
+				#elif attrib == "scrollMode":
+				#	self.l.setScrollMode(
+				#		{"page": eListboxPythonMultiContent.SCROLLMODE_PAGE,
+				#		 "flow": eListboxPythonMultiContent.SCROLLMODE_FLOW,
+				#		 }[value])
 				elif attrib == "dimensions":
 					self.l.setColumnCount(int(value.split(',')[0]))
 					self.l.setRowCount(int(value.split(',')[1]))
@@ -1070,8 +1090,8 @@ class EPGList(GUIComponent, object):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
 		self.recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
-		ffont, fsize = skin.parameters.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
-		sfont, ssize = skin.parameters.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
+		ffont, fsize = skin.fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
+		sfont, ssize = skin.fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
 		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersEventListItemHeight", (70,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
@@ -1255,7 +1275,7 @@ class MenuList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		ffont, fsize = skin.parameters.get("EventLibraryPlanersGenreListFont", ('Regular', 28))
+		ffont, fsize = skin.fonts.get("EventLibraryPlanersGenreListFont", ('Regular', 28))
 		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersGenreListItemHeight", (100,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setBuildFunc(self.buildEntry)

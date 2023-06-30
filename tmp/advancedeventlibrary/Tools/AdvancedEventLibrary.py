@@ -1103,8 +1103,8 @@ def get_TVDb():
 
 def convert2base64(title):
 	if title.find('(') > 1:
-		return base64.b64encode(title.decode('utf-8').lower().split('(')[0].strip()).replace('/', '')
-	return base64.b64encode(title.decode('utf-8').lower().strip()).replace('/', '')
+		return base64.b64encode(title.lower().encode().split(b'(')[0].strip()).replace(b'/', b'').decode('utf-8')
+	return base64.b64encode(title.lower().strip().encode()).replace(b'/', b'').decode('utf-8')
 
 
 def convertSigns(text):
@@ -1373,7 +1373,7 @@ def createMovieInfo(db):
 									foundOnTMDbTV = False
 									foundOnTVDb = False
 									if (filename.endswith('.ts') or filename.endswith('.mkv') or filename.endswith('.avi') or filename.endswith('.mpg') or filename.endswith('.mp4') or filename.endswith('.iso') or filename.endswith('.mpeg2')):
-										if not db.getimageBlackList(removeExtension(str(filename).decode('utf8'))):
+										if not db.getimageBlackList(removeExtension(str(filename))):
 											if not fileExists(os.path.join(root, filename + '.meta')):
 												title = convertSearchName(convertDateInFileName(((filename.split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')))
 												mtitle = title
@@ -1615,9 +1615,9 @@ def createMovieInfo(db):
 															txt.close()
 															write_log('create meta-Info for ' + str(os.path.join(root, filename)))
 														else:
-															db.addimageBlackList(removeExtension(str(filename).decode('utf8')))
+															db.addimageBlackList(removeExtension(str(filename)))
 													else:
-														db.addimageBlackList(removeExtension(str(filename).decode('utf8')))
+														db.addimageBlackList(removeExtension(str(filename)))
 														write_log('nothing found for ' + str(os.path.join(root, filename)))
 								except Exception as ex:
 									write_log('Fehler in createMovieInfo : ' + str(ex))
@@ -1899,7 +1899,7 @@ def getallEventsfromEPG():
 				tvname = re.sub('\\(.*?\\)', '', tvname).strip()
 				tvname = re.sub(' +', ' ', tvname)
 				if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
-						record = (eid, 'in progress', '', '', '', '', '', tvname.decode('utf8'), begin, '', '', '', '', '', '', '', '', serviceref)
+						record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
 						liveTVRecords.append(record)
 
 				foundInBl = False
@@ -2401,9 +2401,9 @@ def findEpisode(title):
 
 def convertSearchName(eventName):
 	try:
-		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'').encode('utf-8', 'ignore')
+		text = eventName.replace('\x86', '').replace('\x87', '')
 	except:
-		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'')
+		text = eventName.replace(b'\x86', b'').replace(b'\x87', b'')
 	return text
 
 
@@ -3716,7 +3716,7 @@ def createStatistics(db):
 		DIR = getPictureDir() + 'poster/'
 		posterCount = len([name for name in os.listdir(DIR) if fileExists(os.path.join(DIR, name))])
 		try:
-			posterSize = subprocess.check_output(['du', '-sh', DIR]).split()[0].decode('utf-8')
+			posterSize = subprocess.check_output(['du', '-sh', DIR]).split()[0]
 		except subprocess.CalledProcessError as e:
 			write_log("Fehler in createStatistics getposterSize : " + str(e.returncode))
 			posterSize = get_size(DIR)
@@ -3728,13 +3728,13 @@ def createStatistics(db):
 
 		DIR = getPictureDir() + 'cover/'
 		try:
-			coverSize = subprocess.check_output(['du', '-sh', DIR]).split()[0].decode('utf-8')
+			coverSize = subprocess.check_output(['du', '-sh', DIR]).split()[0]
 		except subprocess.CalledProcessError as e:
 			write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
 			coverSize = get_size(DIR)
 		DIR = getPictureDir() + 'preview/'
 		try:
-			previewSize = subprocess.check_output(['du', '-sh', DIR]).split()[0].decode('utf-8')
+			previewSize = subprocess.check_output(['du', '-sh', DIR]).split()[0]
 		except subprocess.CalledProcessError as e:
 			write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
 			previewSize = get_size(DIR)
@@ -4784,7 +4784,7 @@ class DB_Functions(object):
 			now = str(time())
 			cur = self.conn.cursor()
 			query = "insert or ignore into eventInfo (base64title,title,genre,year,rating,fsk,country,gDate,trailer) values (?,?,?,?,?,?,?,?,?);"
-			cur.execute(query, (base64title, str(title).decode('utf8'), str(genre).decode('utf8'), year, rating, fsk, str(country).decode('utf8'), now, trailer))
+			cur.execute(query, (base64title, str(title), str(genre), year, rating, fsk, str(country), now, trailer))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in addTitleInfo : " + str(ex))
@@ -4804,7 +4804,7 @@ class DB_Functions(object):
 			now = str(time())
 			cur = self.conn.cursor()
 			query = "update eventInfo set title = ?, genre = ?, year = ?, rating = ?, fsk = ?, country = ?, gDate = " + now + " where base64title = ?;"
-			cur.execute(query, (str(title).decode('utf8'), str(genre).decode('utf8'), year, rating, fsk, str(country).decode('utf8'), base64title))
+			cur.execute(query, (str(title), str(genre), year, rating, fsk, str(country), base64title))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateTitleInfo : " + str(ex))
@@ -4813,7 +4813,7 @@ class DB_Functions(object):
 		try:
 			cur = self.conn.cursor()
 			query = "update eventInfo set " + str(col) + "= ? where base64title = ?;"
-			cur.execute(query, (str(val).decode('utf8'), base64title))
+			cur.execute(query, (str(val), base64title))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateSingleEventInfo : " + str(ex))
@@ -4822,7 +4822,7 @@ class DB_Functions(object):
 		try:
 			cur = self.conn.cursor()
 			query = "update eventInfo set trailer = ? where base64title = ?;"
-			cur.execute(query, (str(trailer).decode('utf8'), base64title))
+			cur.execute(query, (str(trailer), base64title))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateTrailer : " + str(ex))
@@ -4831,7 +4831,7 @@ class DB_Functions(object):
 		try:
 			cur = self.conn.cursor()
 			query = "update liveOnTV set image = ?, genre = ?, year = ?, rating = ?, fsk = ?, country = ? where eid = ?;"
-			cur.execute(query, (str(image).decode('utf8'), str(genre).decode('utf8'), year, rating, fsk, str(country).decode('utf8'), eid))
+			cur.execute(query, (str(image), str(genre), year, rating, fsk, str(country), eid))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTVInfo : " + str(ex))
@@ -4842,7 +4842,7 @@ class DB_Functions(object):
 			high = airtime + 360
 			cur = self.conn.cursor()
 			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where title = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
-			cur.execute(query, (id, str(subtitle).decode('utf8'), image.decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, imdb, str(title).decode('utf8'), low, high))
+			cur.execute(query, (id, str(subtitle), image, year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, imdb, str(title), low, high))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTV : " + str(ex))
@@ -4853,7 +4853,7 @@ class DB_Functions(object):
 			high = airtime + 150
 			cur = self.conn.cursor()
 			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
-			cur.execute(query, (id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(sref).decode('utf8'), low, high))
+			cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, str(imdb), str(sref), low, high))
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTVS : " + str(ex))
@@ -4876,18 +4876,19 @@ class DB_Functions(object):
 			cur.execute(query, (str(base64title),))
 			row = cur.fetchall()
 			if row:
-				return [row[0][0], row[0][1].decode('utf8'), row[0][2].decode('utf8'), row[0][3], row[0][4], row[0][5], row[0][6].decode('utf8'), str(row[0][7]).decode('utf8')]
+				return [row[0][0], row[0][1], row[0][2], row[0][3], row[0][4], row[0][5], row[0][6], str(row[0][7])]
 			else:
 				return []
 		except Error as ex:
 			write_log("Fehler in getTitleInfo : " + str(ex) + ' - ' + str(base64title))
 			return []
 
+
 	def getliveTV(self, eid, name=None, beginTime=None):
 		try:
 			cur = self.conn.cursor()
 			if name:
-				tvname = name.decode('utf8')
+				tvname = name
 				tvname = re.sub('\\(.*?\\)', '', tvname).strip()
 				tvname = re.sub(' +', ' ', tvname)
 				query = "SELECT * FROM liveOnTV WHERE eid = ? AND title = ?"
@@ -5040,7 +5041,7 @@ class DB_Functions(object):
 			rows = cur.fetchall()
 			if rows:
 				for row in rows:
-					itm = [row[0].decode('utf8')]
+					itm = [row[0]]
 					titleList.append(itm)
 			return titleList
 		except Error as ex:
@@ -5057,7 +5058,7 @@ class DB_Functions(object):
 			rows = cur.fetchall()
 			if rows:
 				for row in rows:
-					itm = [row[0].decode('utf8')]
+					itm = [row[0]]
 					titleList.append(itm)
 			return titleList
 		except Error as ex:
@@ -5347,7 +5348,7 @@ class DB_Functions(object):
 		try:
 			cur = self.conn.cursor()
 			query = "SELECT Max(airtime) FROM liveOnTV WHERE title = ?"
-			cur.execute(query, (str(title).decode('utf8'),))
+			cur.execute(query, (str(title),))
 			row = cur.fetchall()
 			if row:
 				return row[0][0]
@@ -5390,7 +5391,7 @@ class DB_Functions(object):
 			rows = cur.fetchall()
 			if rows:
 				for row in rows:
-					itm = [row[0].decode('utf8')]
+					itm = [row[0]]
 					titleList.append(itm)
 			return titleList
 		except Error as ex:
@@ -5423,7 +5424,7 @@ class DB_Functions(object):
 			rows = cur.fetchall()
 			if rows:
 				for row in rows:
-					titleList.append(row[0].decode('utf8'))
+					titleList.append(row[0])
 			return titleList
 		except Error as ex:
 			write_log("Fehler in getGenres : " + str(ex))
