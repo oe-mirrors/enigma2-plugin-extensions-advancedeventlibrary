@@ -1340,7 +1340,8 @@ def removeLogs():
 
 def startUpdate():
 	if isInstalled:
-		threading.start_new_thread(getallEventsfromEPG, ())
+		thread = threading.Thread(target=getallEventsfromEPG, args=())
+		thread.start()
 	else:
 		write_log("AdvancedEventLibrary not installed")
 
