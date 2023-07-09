@@ -869,18 +869,18 @@ class AELBaseWall(GUIComponent, object):
 				elif attrib == "maxTextLength":
 					self.maxTextLength = int(value)
 					lremove = ('maxTextLength', value)
-				elif attrib == "itemSpace":
-					self.l.setItemSpace(int(value))
+				#elif attrib == "itemSpace":
+				#	self.l.setItemSpacing(int(value))
 				elif attrib == "itemSize":
 					self.l.setItemWidth(int(value.split(',')[0]))
 					self.l.setItemHeight(int(value.split(',')[1]))
-				elif attrib == "itemScale":
-					if str(value).find(",") != -1:
-						self.l.setItemScale_H(int(value.split(',')[0]))
-						self.l.setItemScale_V(int(value.split(',')[1]))
-					else:
-						self.l.setItemScale_V(int(value))
-						self.l.setItemScale_H(int(value))
+				#elif attrib == "itemScale":
+				#	if str(value).find(",") != -1:
+				#		self.l.setItemScale_H(int(value.split(',')[0]))
+				#		self.l.setItemScale_V(int(value.split(',')[1]))
+				#	else:
+				#		self.l.setItemScale_V(int(value))
+				#		self.l.setItemScale_H(int(value))
 				#elif attrib == "viewMode":
 				#	self.l.setViewMode(
 				#		{"wall": eListboxPythonMultiContent.MODE_WALL,
@@ -902,14 +902,14 @@ class AELBaseWall(GUIComponent, object):
 				elif attrib == "dimensions":
 					self.l.setColumnCount(int(value.split(',')[0]))
 					self.l.setRowCount(int(value.split(',')[1]))
-				elif attrib == "useShadow":
-					self.l.setShadow(int(value))
+				#elif attrib == "useShadow":
+				#	self.l.setShadow(int(value))
 				elif attrib == "useOverlay":
 					self.l.setOverlay(int(value))
 				elif attrib == "downloadPath":
 					self.l.setDownloadPath(str(value))
-				elif attrib == "backgroundColorGlobal":
-					self.l.setGlobalBackgroundColor(skin.parseColor(str(value)))
+				#elif attrib == "backgroundColorGlobal":
+				#	self.l.setGlobalBackgroundColor(skin.parseColor(str(value)))
 				elif attrib == "borderColor":
 					self.instance.setBorderColor(skin.parseColor(str(value)))
 				elif attrib == "borderWidth":
@@ -959,7 +959,7 @@ class AELBaseWall(GUIComponent, object):
 
 	def getParameter(self):
 		recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
-		return (self.l.getItemSize().width(), self.l.getItemSize().height(), self.maxTextLength, self.imageType, self.folderImage, self.substituteImage, self.fc, self.fcs, self.textHeightPercent, self.progressForegroundColor, self.progressBackgroundColor, self.progressForegroundColorSelected, self.progressBackgroundColorSelected, self.progressBorderWidth, self.getItemsPerPage(), recIcon, self.scrambledImage, self.imagePos, self.recIconPos, self.firstLinePos, self.secondLinePos, self.piconPos, self.control, self.coverings, self.progressPos, self.fontOrientation, self.backgroundColor, self.timeFormat)
+		return (self.l.getItemSize().width(), self.l.getItemSize().height(), self.maxTextLength, self.imageType, self.folderImage, self.substituteImage, self.fc, self.fcs, self.textHeightPercent, self.progressForegroundColor, self.progressBackgroundColor, self.progressForegroundColorSelected, self.progressBackgroundColorSelected, self.progressBorderWidth, recIcon, self.scrambledImage, self.imagePos, self.recIconPos, self.firstLinePos, self.secondLinePos, self.piconPos, self.control, self.coverings, self.progressPos, self.fontOrientation, self.backgroundColor, self.timeFormat)
 
 	def isselectable(self, data):
 		return True
@@ -986,14 +986,14 @@ class AELBaseWall(GUIComponent, object):
 	def itemupdated(self, index):
 		self.l.invalidateEntry(index)
 
-	def getCurrentPage(self):
-		return self.instance.getCurrentPage()
+	#def getCurrentPage(self):
+	#	return self.instance.getCurrentPage()
 
-	def getPageCount(self):
-		return self.instance.getPageCount()
+	#def getPageCount(self):
+	#	return self.instance.getPageCount()
 
-	def getItemsPerPage(self):
-		return self.instance.getItemsPerPage()
+	#def getItemsPerPage(self):
+	#	return self.instance.getItemsPerPage()
 
 	def getcurrentselection(self):
 		try:
@@ -1010,12 +1010,12 @@ class AELBaseWall(GUIComponent, object):
 		self.instance = instance
 		self.instance.setTransparent(1)
 		self.instance.setContent(self.l)
-		self.instance.itemUpdated.get().append(self.itemupdated)
+		self.instance.selectionChanged.get().append(self.itemupdated)
 		self.instance.selectionChanged.get().append(self.selectionchanged)
 		self.instance.setWrapAround(True)
 
 	def preWidgetRemove(self, instance):
-		self.instance.itemUpdated.get().remove(self.itemupdated)
+		self.instance.selectionChanged.get().remove(self.itemupdated)
 		self.instance.selectionChanged.get().remove(self.selectionchanged)
 		self.instance.setContent(None)
 		return
@@ -1024,7 +1024,7 @@ class AELBaseWall(GUIComponent, object):
 		try:
 			if self.instance is not None:
 				self.instance.moveSelectionTo(0)
-			self.l.setWall(l)
+			#self.l.setWall(l)
 			self.list = l
 		except Exception as ex:
 			write_log('set list : ' + str(ex))

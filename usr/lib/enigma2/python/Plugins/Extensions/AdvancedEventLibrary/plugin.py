@@ -28,8 +28,7 @@ from Components.Sources.StaticText import StaticText
 from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger
 from Tools.Directories import fileExists
 from Components.ActionMap import ActionMap, HelpableActionMap
-#missing
-#from Components.FunctionTimer import functionTimer
+from Components.FunctionTimer import functionTimer
 from Components.Label import Label
 from Components.ScrollLabel import ScrollLabel
 from Components.Button import Button
@@ -41,8 +40,7 @@ from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, eTimer, eServiceReference, addFont, eServiceCenter
 from threading import Timer
 import threading
-#missing
-#from Tools.SystemEvents import systemevents
+from Tools.SystemEvents import systemevents
 from Tools.LoadPixmap import LoadPixmap
 from ServiceReference import ServiceReference
 from time import time, localtime
@@ -116,16 +114,16 @@ def sessionstart(reason, **kwargs):
 			gSession = kwargs["session"]
 			foundTimer = False
 			foundBackup = False
-			#fTimers = functionTimer.get()
-			#for fTimer in fTimers:
-			#	if 'AdvancedEventLibraryUpdate' in fTimer:
-			#		foundTimer = True
-			#	if 'AdvancedEventLibraryBackup' in fTimer:
-			#		foundBackup = True
-			#if not foundTimer:
-			#	functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "imports": "Tools.AdvancedEventLibrary", "fnc": "getallEventsfromEPG"}))
-			#if not foundBackup:
-			#	functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
+			fTimers = functionTimer.get()
+			for fTimer in fTimers:
+				if 'AdvancedEventLibraryUpdate' in fTimer:
+					foundTimer = True
+				if 'AdvancedEventLibraryBackup' in fTimer:
+					foundBackup = True
+			if not foundTimer:
+				functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "imports": "Tools.AdvancedEventLibrary", "fnc": "getallEventsfromEPG"}))
+			if not foundBackup:
+				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
 			InfoBarSimpleEventViewInit()
 			EPGSelectionInit()
@@ -138,14 +136,13 @@ def sessionstart(reason, **kwargs):
 			MoviePlayer.setPlayMode = setPlayModeNew
 			MovieSelection.showEventInformation = showEventInformationNew
 			getExtendedMovieDescription = getExtendedMovieDescriptionNew
-			#missing
-			##for evt in systemevents.getSystemEvents():
-#				write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
-			##	if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-			##		if refreshMovieData and refreshMovieWall:
-			##			systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
-			##	if evt == systemevents.SERVICE_START:
-			##		systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
+			for evt in systemevents.getSystemEvents():
+			#	write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
+				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+					if refreshMovieData and refreshMovieWall:
+						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
+				if evt == systemevents.SERVICE_START:
+					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
 	except Exception as ex:
 		write_log('sessionstart ' + str(ex))
 
@@ -278,9 +275,9 @@ def getExtendedMovieDescriptionNew(ref):
 def _refreshMovieWall(evt, *args):
 		if len(args) > 0:
 			write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
-		##if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-		##	refreshData = Timer(30, refreshMovieWallData)
-		##	refreshData.start()
+		if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+			refreshData = Timer(30, refreshMovieWallData)
+			refreshData.start()
 
 
 def refreshMovieWallData():

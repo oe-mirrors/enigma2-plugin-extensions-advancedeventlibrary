@@ -19,6 +19,7 @@ import datetime
 import os
 import re
 import json
+import skin
 import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
@@ -343,11 +344,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].down()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (new_idx + self.parameter[14]) >= self.listlen:
+					print("debug self.parameter",self.parameter)
+					print("debug new_idx",new_idx)
+					print("debug old_idx",old_idx)
+					print("debug self.listlen",self.listlen)
+					if (new_idx + int(self.parameter[13])) >= self.listlen:
 						dest = 0
 					else:
-						dest = new_idx + self.parameter[14]
+						dest = new_idx + int(self.parameter[13])
 					self['eventWall'].movetoIndex(dest)
+					print("debug dest",dest)
+					print("debug dest",type(dest))
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 			self.sel_changed()
@@ -857,31 +864,30 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				picon = LoadPixmap(pic)  # self.picloader.load(entrys.picon)
 
 			ret = [entrys]
-			# rework to grid
-			#if image:
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[17][0], self.parameter[17][1], self.parameter[17][0], self.parameter[17][1], self.parameter[17][2], self.parameter[17][3], self.parameter[17][2], self.parameter[17][3], image, None, None, BT_SCALE))
-			#for covering in self.Coverings:
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, covering[0], covering[1], covering[0], covering[1], covering[2], covering[3], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
-			#if picon:
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
-			#if entrys.hasTimer and fileExists(self.parameter[15]):
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
-			#else:
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+			if image:
+				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[17][0], self.parameter[17][1], self.parameter[17][0], self.parameter[17][1], self.parameter[17][2], self.parameter[17][3], self.parameter[17][2], self.parameter[17][3], image, None, None, BT_SCALE))
+			for covering in self.Coverings:
+				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, covering[0], covering[1], covering[0], covering[1], covering[2], covering[3], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
+			if picon:
+				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
+			if entrys.hasTimer and fileExists(self.parameter[15]):
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
+			else:
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 			return ret
 
 			write_log("error in entrys : " + str(entrys))
-			#return [entrys,
-			#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-			#					]
+			return [entrys,
+								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+								]
 		except Exception as ex:
 			write_log('Fehler in seteventEntry : ' + str(ex))
-			#return [entrys,
-			#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
-			#					]
+			return [entrys,
+								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+								]
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:

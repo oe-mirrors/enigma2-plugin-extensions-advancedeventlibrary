@@ -21,6 +21,7 @@ import re
 import json
 import NavigationInstance
 import pickle
+import skin
 from html.parser import HTMLParser
 from skin import loadSkin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT

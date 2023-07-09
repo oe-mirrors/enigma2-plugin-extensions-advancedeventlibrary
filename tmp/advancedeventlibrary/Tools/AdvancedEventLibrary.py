@@ -1833,98 +1833,98 @@ def cleanPreviewImages(db):
 
 def getallEventsfromEPG():
 	global STATUS
-	try:
-		STATUS = '�berpr�fe Verzeichnisse...'
-		createDirs(dir)
-		STATUS = 'entferne Logfile...'
-		removeLogs()
-		write_log("Update start...")
-		write_log("default image path is " + str(dir)[:-1])
-		write_log("load preview images is: " + str(previewImages) + ' - ' + str(usePreviewImages.value))
-		write_log("searchOptions " + str(sPDict))
-		db = getDB()
-		db.parameter(PARAMETER_SET, 'laststart', str(time()))
-		cVersion = db.parameter(PARAMETER_GET, 'currentVersion', None, 111)
-		if int(cVersion) < 113:
-			db.parameter(PARAMETER_SET, 'currentVersion', '115')
-			db.cleanliveTV(int(time() + (14 * 86400)))
-		STATUS = '�berpr�fe reservierten Speicherplatz...'
-		checkUsedSpace(db)
-		names = getAllRecords(db)
-		STATUS = 'durchsuche aktuelles EPG...'
-		lines = []
-		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
-		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
+	#try:
+	STATUS = '�berpr�fe Verzeichnisse...'
+	createDirs(dir)
+	STATUS = 'entferne Logfile...'
+	removeLogs()
+	write_log("Update start...")
+	write_log("default image path is " + str(dir)[:-1])
+	write_log("load preview images is: " + str(previewImages) + ' - ' + str(usePreviewImages.value))
+	write_log("searchOptions " + str(sPDict))
+	db = getDB()
+	db.parameter(PARAMETER_SET, 'laststart', str(time()))
+	cVersion = db.parameter(PARAMETER_GET, 'currentVersion', None, 111)
+	if int(cVersion) < 113:
+		db.parameter(PARAMETER_SET, 'currentVersion', '115')
+		db.cleanliveTV(int(time() + (14 * 86400)))
+	STATUS = '�berpr�fe reservierten Speicherplatz...'
+	checkUsedSpace(db)
+	names = getAllRecords(db)
+	STATUS = 'durchsuche aktuelles EPG...'
+	lines = []
+	mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
+	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
+	serviceHandler = eServiceCenter.getInstance()
+	tvbouquets = serviceHandler.list(root).getContent("SN", True)
+	tvsref = {}
+	if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data'):
+		tvsref = load_json('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
+
+	for bouquet in tvbouquets:
+		root = eServiceReference(str(bouquet[0]))
 		serviceHandler = eServiceCenter.getInstance()
-		tvbouquets = serviceHandler.list(root).getContent("SN", True)
-		tvsref = {}
-		if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data'):
-			tvsref = load_json('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
-
-		for bouquet in tvbouquets:
-			root = eServiceReference(str(bouquet[0]))
-			serviceHandler = eServiceCenter.getInstance()
-			ret = serviceHandler.list(root).getContent("SN", True)
-			doIt = False
-			if str(bouquet[1]) in sPDict:
-				if sPDict[str(bouquet[1])]:
-					doIt = True
-			else:
+		ret = serviceHandler.list(root).getContent("SN", True)
+		doIt = False
+		if str(bouquet[1]) in sPDict:
+			if sPDict[str(bouquet[1])]:
 				doIt = True
-			if doIt:
-				for (serviceref, servicename) in ret:
-					playable = not (eServiceReference(serviceref).flags & mask)
-					if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
-						if serviceref not in tvsref:
-							write_log(servicename + ' mit der Referenz ' + serviceref + ' konnte nicht in der TVS Referenzliste gefunden werden!')
-						line = [serviceref, servicename]
-						if line not in lines:
-							lines.append(line)
+		else:
+			doIt = True
+		if doIt:
+			for (serviceref, servicename) in ret:
+				playable = not (eServiceReference(serviceref).flags & mask)
+				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
+					if serviceref not in tvsref:
+						write_log(servicename + ' mit der Referenz ' + serviceref + ' konnte nicht in der TVS Referenzliste gefunden werden!')
+					line = [serviceref, servicename]
+					if line not in lines:
+						lines.append(line)
 
-		acttime = time() + 1000
-		test = ['RITB']
-		for line in lines:
-			test.append((line[0], 0, acttime, -1))
+	acttime = time() + 1000
+	test = ['RITB']
+	for line in lines:
+		test.append((line[0], 0, int(acttime), -1))
+	print("debug test:",test)
+	epgcache = eEPGCache.getInstance()
+	allevents = epgcache.lookupEvent(test) or []
+	write_log('found ' + str(len(allevents)) + ' Events in EPG')
+	evt = 0
 
-		epgcache = eEPGCache.getInstance()
-		allevents = epgcache.lookupEvent(test) or []
-		write_log('found ' + str(len(allevents)) + ' Events in EPG')
-		evt = 0
+	liveTVRecords = []
+	for serviceref, eid, name, begin in allevents:
+		#try:
+		evt += 1
+		STATUS = 'durchsuche aktuelles EPG... (' + str(evt) + '/' + str(len(allevents)) + ')'
+		tvname = name
+		tvname = re.sub('\\(.*?\\)', '', tvname).strip()
+		tvname = re.sub(' +', ' ', tvname)
+		if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
+				record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
+				liveTVRecords.append(record)
 
-		liveTVRecords = []
-		for serviceref, eid, name, begin in allevents:
-			try:
-				evt += 1
-				STATUS = 'durchsuche aktuelles EPG... (' + str(evt) + '/' + str(len(allevents)) + ')'
-				tvname = name
-				tvname = re.sub('\\(.*?\\)', '', tvname).strip()
-				tvname = re.sub(' +', ' ', tvname)
-				if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
-						record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
-						liveTVRecords.append(record)
-
-				foundInBl = False
-				name = convertTitle(name)
-				if db.getblackList(convert2base64(name)):
-					name = convertTitle2(name)
-					if db.getblackList(convert2base64(name)):
-						foundInBl = True
-				if not db.checkTitle(convert2base64(name)) and not foundInBl:
-					names.add(name)
-			except Exception as ex:
-				write_log('Fehler in get_allEventsfromEPG : ' + str(ex))
-				continue
-		write_log('check ' + str(len(names)) + ' new events')
-		limgs = True
-		if str(searchfor.value) == "nur Extradaten":
-			limgs = False
-		get_titleInfo(names, None, limgs, db, liveTVRecords, tvsref)
-		del names
-		del lines
-		del allevents
-		del liveTVRecords
-	except Exception as ex:
-		write_log("Fehler in get_allEventsfromEPG : " + str(ex))
+		foundInBl = False
+		name = convertTitle(name)
+		if db.getblackList(convert2base64(name)):
+			name = convertTitle2(name)
+			if db.getblackList(convert2base64(name)):
+				foundInBl = True
+		if not db.checkTitle(convert2base64(name)) and not foundInBl:
+			names.add(name)
+		#except Exception as ex:
+		#	write_log('Fehler in get_allEventsfromEPG : ' + str(ex))
+		#	continue
+	write_log('check ' + str(len(names)) + ' new events')
+	limgs = True
+	if str(searchfor.value) == "nur Extradaten":
+		limgs = False
+	get_titleInfo(names, None, limgs, db, liveTVRecords, tvsref)
+	del names
+	del lines
+	del allevents
+	del liveTVRecords
+	#except Exception as ex:
+	#	write_log("Fehler in get_allEventsfromEPG : " + str(ex))
 
 
 def getTVSpielfilm(db, tvsref):
