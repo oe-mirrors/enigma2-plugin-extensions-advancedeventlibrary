@@ -23,7 +23,7 @@ from Screens.MovieSelection import MovieSelection
 from Screens.HelpMenu import HelpableScreen
 from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_INFOBAR
 from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.ExtEvent import ExtEvent
+#from Components.Sources.ExtEvent import ExtEvent
 from Components.Sources.StaticText import StaticText
 from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger
 from Tools.Directories import fileExists
@@ -45,7 +45,7 @@ from Tools.LoadPixmap import LoadPixmap
 from ServiceReference import ServiceReference
 from time import time, localtime
 import Tools.AutoTimerHook as AutoTimerHook
-from Tools.MovieInfoParser import getExtendedMovieDescription
+#from Tools.MovieInfoParser import getExtendedMovieDescription
 import os
 import re
 from . import skin
@@ -125,24 +125,24 @@ def sessionstart(reason, **kwargs):
 			if not foundBackup:
 				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
-			InfoBarSimpleEventViewInit()
-			EPGSelectionInit()
-			EventViewInit()
-			EventViewMovieEventInit()
-			InfoBar.showMovies_org = InfoBar.showMovies
-			InfoBar.showMovies = iBshowMovies
-			MoviePlayer.handleLeave = handleLeaveNew
-			MoviePlayer.showMovies = showMoviesNew
-			MoviePlayer.setPlayMode = setPlayModeNew
-			MovieSelection.showEventInformation = showEventInformationNew
-			getExtendedMovieDescription = getExtendedMovieDescriptionNew
-			for evt in systemevents.getSystemEvents():
+			# InfoBarSimpleEventViewInit()
+			# EPGSelectionInit()
+			# EventViewInit()
+			# EventViewMovieEventInit()
+			# InfoBar.showMovies_org = InfoBar.showMovies
+			# InfoBar.showMovies = iBshowMovies
+			# MoviePlayer.handleLeave = handleLeaveNew
+			# MoviePlayer.showMovies = showMoviesNew
+			# MoviePlayer.setPlayMode = setPlayModeNew
+			# MovieSelection.showEventInformation = showEventInformationNew
+			# getExtendedMovieDescription = getExtendedMovieDescriptionNew
+#			for evt in systemevents.getSystemEvents():
 			#	write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
-				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-					if refreshMovieData and refreshMovieWall:
-						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
-				if evt == systemevents.SERVICE_START:
-					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
+#				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+#					if refreshMovieData and refreshMovieWall:
+#						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
+#				if evt == systemevents.SERVICE_START:
+#					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_" + evt, evt)
 	except Exception as ex:
 		write_log('sessionstart ' + str(ex))
 
@@ -1077,7 +1077,6 @@ def open_aelMenu(session, **kwargs):
 	session.open(AdvancedEventLibrarySystem.AELMenu)
 
 
-
 def aelMenu_in_mainmenu(menuid, **kwargs):
 	if menuid == 'mainmenu':
 		return [('Advanced-Event-Library',
@@ -1249,32 +1248,32 @@ def Plugins(**kwargs):
 	epgSearch = PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, fnc=autostart, needsRestart=False, weight=100)
 	desc_pluginmenu = PluginDescriptor(name='AEL-Übersicht', description="AEL Menü & Statistik", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_aelMenu)
 	desc_pluginmenued = PluginDescriptor(name='AEL-Editor', description="Eventinformationen bearbeiten", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=main)
-	desc_pluginmenumw = PluginDescriptor(name='AEL-Movie-Lists', description="Advanced-Event-Library-MovieLists", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_moviewall)
+	#desc_pluginmenumw = PluginDescriptor(name='AEL-Movie-Lists', description="Advanced-Event-Library-MovieLists", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_moviewall)
 	desc_pluginmenupt = PluginDescriptor(name='AEL-Prime-Time-Planer', description="Advanced-Event-Library-Prime-Time-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_primetime)
 	desc_pluginmenuss = PluginDescriptor(name='AEL-Serien-Starts-Planer', description="Advanced-Event-Library-Serien-Starts-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_serienstarts)
 	desc_pluginmenufav = PluginDescriptor(name='AEL-Favoriten-Planer', description="Advanced-Event-Library-Favourites-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_favourites)
 	desc_pluginmenucs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_channelselection)
 	desc_pluginmenuhb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_mediaHub)
-	desc_eventinfocs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_channelselection)
-	desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_mediaHub)
-	desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description=pdesc, where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
+	#desc_eventinfocs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_channelselection)
+	#desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_mediaHub)
+	#desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description=pdesc, where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
 	desc_sessionstart = PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=sessionstart)
 	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description=pdesc, where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
 	list = []
 	list.append(epgSearch)
 	list.append(desc_pluginmenu)
 	list.append(desc_pluginmenued)
-	list.append(desc_pluginmenumw)
+	#list.append(desc_pluginmenumw)
 	list.append(desc_pluginmenupt)
 	list.append(desc_pluginmenuss)
 	list.append(desc_pluginmenucs)
 	list.append(desc_pluginmenuhb)
 	list.append(desc_pluginmenufav)
-	list.append(desc_movielist)
+	#list.append(desc_movielist)
 	list.append(desc_sessionstart)
 	list.append(desc_aelmenumainmenu)
-	list.append(desc_eventinfocs)
-	list.append(desc_eventinfohb)
+	#list.append(desc_eventinfocs)
+	#list.append(desc_eventinfohb)
 	return list
 
 

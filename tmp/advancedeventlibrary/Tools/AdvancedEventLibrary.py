@@ -36,7 +36,7 @@ from PIL import Image
 from Tools.Alternatives import GetWithAlternative
 from Tools.Bytes2Human import bytes2human
 from Components.Sources.Event import Event
-from Components.Sources.ExtEvent import ExtEvent
+#from Components.Sources.ExtEvent import ExtEvent
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from Tools.Directories import defaultRecordingLocation
@@ -46,7 +46,8 @@ from datetime import datetime
 from twisted.web import client
 from twisted.internet import reactor, defer, ssl
 from twisted.python import failure
-from twisted.internet._sslverify import ClientTLSOptions
+
+from Tools.Downloader import DownloadWithProgress
 
 import tmdbsimple as tmdb
 import tvdbsimple as tvdb
@@ -1885,7 +1886,7 @@ def getallEventsfromEPG():
 	test = ['RITB']
 	for line in lines:
 		test.append((line[0], 0, int(acttime), -1))
-	print("debug test:",test)
+	print("debug test:", test)
 	epgcache = eEPGCache.getInstance()
 	allevents = epgcache.lookupEvent(test) or []
 	write_log('found ' + str(len(allevents)) + ' Events in EPG')
@@ -2568,7 +2569,7 @@ def downloadAllImagesfromAELImageServer(overwrite=False):
 			global filename
 			write_log("try to download all " + str(what) + "s from AEL-Image-Server")
 			STATUS = 'lade ' + str(what) + ' vom AEL-Image-Server herunter...'
-			download = downloadWithProgress(url, filename)
+			download = DownloadWithProgress(url, filename)
 			download.addProgress(downloadProgress)
 			download.start().addCallback(downloadFinished).addErrback(downloadFailed)
 		except Exception as ex:
@@ -4884,7 +4885,6 @@ class DB_Functions(object):
 			write_log("Fehler in getTitleInfo : " + str(ex) + ' - ' + str(base64title))
 			return []
 
-
 	def getliveTV(self, eid, name=None, beginTime=None):
 		try:
 			cur = self.conn.cursor()
@@ -5439,39 +5439,6 @@ class DB_Functions(object):
 ########################################### Download Helper Class #######################################################
 
 
-class HTTPProgressDownloader(client.HTTPDownloader):
-	def __init__(self, url, outfile, headers=None):
-		client.HTTPDownloader.__init__(self, url, outfile, headers=headers, agent="AEL-Image-Server Downloader")
-		self.status = None
-		self.progress_callback = None
-		self.deferred = defer.Deferred()
-
-	def noPage(self, reason):
-		if self.status == "304":
-			client.HTTPDownloader.page(self, "")
-		else:
-			client.HTTPDownloader.noPage(self, reason)
-
-	def gotHeaders(self, headers):
-		if self.status == "200":
-			if "content-length" in headers:
-				self.totalbytes = int(headers["content-length"][0])
-			else:
-				self.totalbytes = 0
-			self.currentbytes = 0.0
-		return client.HTTPDownloader.gotHeaders(self, headers)
-
-	def pagePart(self, packet):
-		if self.status == "200":
-			self.currentbytes += len(packet)
-		if self.progress_callback:
-			self.progress_callback(self.currentbytes, self.totalbytes)
-		return client.HTTPDownloader.pagePart(self, packet)
-
-	def pageEnd(self):
-		return client.HTTPDownloader.pageEnd(self)
-
-
 from urllib.parse import urlparse, urlunparse
 
 
@@ -5489,33 +5456,6 @@ def url_parse(url, defaultPort=None):
 		host, port = host.split(':')
 		port = int(port)
 	return scheme, host, port, path
-
-
-class downloadWithProgress:
-	def __init__(self, url, outputfile, contextFactory=None, *args, **kwargs):
-		scheme, host, port, path = url_parse(url)
-		self.factory = HTTPProgressDownloader(url, outputfile, *args, **kwargs)
-		if scheme == 'https':
-			if contextFactory is None:
-				class TLSSNIContextFactory(ssl.ClientContextFactory):
-					def getContext(self, hostname=None, port=None):
-						ctx = ssl.ClientContextFactory.getContext(self)
-						ClientTLSOptions(host, ctx)
-						return ctx
-				contextFactory = TLSSNIContextFactory()
-				self.connection = reactor.connectSSL(host, port, self.factory, contextFactory)
-		else:
-			self.connection = reactor.connectTCP(host, port, self.factory)
-
-	def start(self):
-		return self.factory.deferred
-
-	def stop(self):
-		if hasattr(self, "connection") and self.connection:
-			self.connection.disconnect()
-
-	def addProgress(self, progress_callback):
-		self.factory.progress_callback = progress_callback
 
 
 class BingImageSearch:
