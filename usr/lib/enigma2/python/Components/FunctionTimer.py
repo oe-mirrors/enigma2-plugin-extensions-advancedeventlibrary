@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 class FunctionTimer:
 	def __init__(self):
 		self.fnclist = {}
@@ -17,5 +15,6 @@ class FunctionTimer:
 
 	def get(self):
 		return self.fnclist
+
 
 functionTimer = FunctionTimer()
