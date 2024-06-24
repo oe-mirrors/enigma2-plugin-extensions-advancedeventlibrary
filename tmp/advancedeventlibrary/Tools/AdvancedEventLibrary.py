@@ -36,7 +36,6 @@ from PIL import Image
 from Tools.Alternatives import GetWithAlternative
 from Tools.Bytes2Human import bytes2human
 from Components.Sources.Event import Event
-#from Components.Sources.ExtEvent import ExtEvent
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from Tools.Directories import defaultRecordingLocation

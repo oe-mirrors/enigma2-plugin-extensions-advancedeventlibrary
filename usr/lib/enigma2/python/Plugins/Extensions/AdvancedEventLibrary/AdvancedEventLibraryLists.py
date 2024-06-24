@@ -869,24 +869,30 @@ class AELBaseWall(GUIComponent, object):
 				elif attrib == "maxTextLength":
 					self.maxTextLength = int(value)
 					lremove = ('maxTextLength', value)
-				#elif attrib == "itemSpace":
-				#	self.l.setItemSpacing(int(value))
-				elif attrib == "itemSize":
-					self.l.setItemWidth(int(value.split(',')[0]))
-					self.l.setItemHeight(int(value.split(',')[1]))
-				#elif attrib == "itemScale":
 				#	if str(value).find(",") != -1:
 				#		self.l.setItemScale_H(int(value.split(',')[0]))
 				#		self.l.setItemScale_V(int(value.split(',')[1]))
 				#	else:
 				#		self.l.setItemScale_V(int(value))
 				#		self.l.setItemScale_H(int(value))
-				#elif attrib == "viewMode":
-				#	self.l.setViewMode(
-				#		{"wall": eListboxPythonMultiContent.MODE_WALL,
-				#		 "list_horizontal": eListboxPythonMultiContent.MODE_LIST_HORIZONTAL,
-				#			"list_vertical": eListboxPythonMultiContent.MODE_LIST_VERTICAL,
-				#		 }[value])
+				elif attrib == "viewMode":
+					self.instance.setOrientation(
+						{"wall": eListbox.orGrid,
+						 "list_horizontal": eListbox.orHorizontal,
+							"list_vertical": eListbox.orVertical,
+						 }[value])
+				elif attrib == "itemSize":
+					self.l.setItemWidth(int(value.split(',')[0]))
+					self.l.setItemHeight(int(value.split(',')[1]))
+				elif attrib == "itemScale":
+					self.instance.setSelectionZoom(float(value))
+				elif attrib == "itemSpace":
+					if str(value).find(",") != -1:
+						h = int(value.split(',')[0])
+						v = int(value.split(',')[0])
+					else:
+						h = v = int(value)
+					self.instance.setItemSpacing(ePoint(h, v))
 				#elif attrib == "aspectRatio":
 				#	self.l.setAspectRatio(
 				#		{"dvd": eListboxPythonMultiContent.ASPECT_DVD,
@@ -965,7 +971,9 @@ class AELBaseWall(GUIComponent, object):
 		return True
 
 	def refresh(self):
-		self.instance.refresh()
+		#TODO add refresh function
+		# self.l.refresh()
+		return
 
 	def connectSelChanged(self, fnc):
 		if fnc not in self.onselectionchanged:
@@ -983,7 +991,7 @@ class AELBaseWall(GUIComponent, object):
 		except Exception as ex:
 			write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex))
 
-	def itemupdated(self, index):
+	def itemupdated(self, index=0):
 		self.l.invalidateEntry(index)
 
 	#def getCurrentPage(self):
@@ -1024,7 +1032,7 @@ class AELBaseWall(GUIComponent, object):
 		try:
 			if self.instance is not None:
 				self.instance.moveSelectionTo(0)
-			#self.l.setWall(l)
+			self.l.setList(l)
 			self.list = l
 		except Exception as ex:
 			write_log('set list : ' + str(ex))
@@ -1075,6 +1083,7 @@ class AELBaseWall(GUIComponent, object):
 
 	def setentry(self, data):
 		res = [None]
+		print(data)
 		return res
 
 	def setSelectionEnable(self, how):

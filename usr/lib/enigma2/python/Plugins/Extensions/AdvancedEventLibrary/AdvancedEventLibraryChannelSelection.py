@@ -14,6 +14,7 @@ from Components.Sources.StaticText import StaticText
 from Components.GUIComponent import GUIComponent
 from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
+from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress, MultiContentEntryRectangle, MultiContentEntryPixmap, MultiContentEntryPixmapAlphaBlend, MultiContentEntryLinearGradient
 from Components.Sources.ServiceEvent import ServiceEvent
 from Tools.Alternatives import GetWithAlternative
 from time import time, localtime, mktime
@@ -24,6 +25,7 @@ import json
 import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
+import skin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
@@ -96,7 +98,7 @@ class ChannelEntry():
 			self.hasTimer = value
 
 	def __repr__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.items()))
 
 
 class AdvancedEventLibraryChannelSelection(Screen):
@@ -233,17 +235,18 @@ class AdvancedEventLibraryChannelSelection(Screen):
 	def refreshAll(self):
 		if not self.isinit:
 			self.channelParameter = self["channelList"].getParameter()
+			print(self.channelParameter, len(self.channelParameter))
 			self.channelImageType = str(self.channelParameter[3])
 			self.channelSubstituteImage = str(self.channelParameter[5])
-			self.channelListControl = eval(self.channelParameter[22])
-			self.channelListCoverings = eval(str(self.channelParameter[23]))
-			self.channelListFontOrientation = self.getFontOrientation(self.channelParameter[25])
+			self.channelListControl = eval(str(self.channelParameter[21]))
+			self.channelListCoverings = eval(str(self.channelParameter[22]))
+			self.channelListFontOrientation = self.getFontOrientation(self.channelParameter[24])
 			self.eventParameter = self["eventList"].getParameter()
 			self.eventImageType = str(self.eventParameter[3])
 			self.eventSubstituteImage = str(self.eventParameter[5])
-			self.eventListControl = eval(self.eventParameter[22])
+			self.eventListControl = eval(str(self.eventParameter[21]))
 			self.eventListCoverings = eval(str(self.eventParameter[23]))
-			self.eventListFontOrientation = self.getFontOrientation(self.eventParameter[25])
+			self.eventListFontOrientation = self.getFontOrientation(self.eventParameter[24])
 
 			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
@@ -295,15 +298,15 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					endTime = datetime.datetime.fromtimestamp(events[0][2] + events[0][3])
 					duration = int((events[0][3] - (int(time()) - events[0][2])) / 60)
 					_timespan = ""
-					if "weekday" in self.channelParameter[27]:
+					if "weekday" in self.channelParameter[26]:
 						_timespan += beginTime.strftime("%a. ")
-					if "date" in self.channelParameter[27]:
+					if "date" in self.channelParameter[26]:
 						_timespan += beginTime.strftime("%d.%m. ")
-					if "start" in self.channelParameter[27]:
+					if "start" in self.channelParameter[26]:
 						_timespan += beginTime.strftime("%H:%M")
-					if "end" in self.channelParameter[27]:
+					if "end" in self.channelParameter[26]:
 						_timespan += endTime.strftime("-%H:%M")
-					if "duration" in self.channelParameter[27]:
+					if "duration" in self.channelParameter[26]:
 						_timespan += '  ' + str(duration) + ' Min.'
 					_duration = str(duration) + ' Min.'
 					if int(events[0][3]) > 0:
@@ -353,6 +356,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 	def buildChannelList(self, entrys):
 		try:
+			print(entrys)
 			maxLength = self.channelParameter[2]
 			textHeight = int(self.channelParameter[8])
 			textBegin = 100 - textHeight
@@ -375,10 +379,12 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 			ret = [entrys]
 			#rework
-			#ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][2], self.channelParameter[17][3], self.channelParameter[17][2], self.channelParameter[17][3], image, None, None, BT_SCALE))
+			print(self.channelParameter)
+			ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[16][0], self.channelParameter[16][1]), size=(self.channelParameter[16][2], self.channelParameter[16][3]), png=image, flags=BT_SCALE))
+			# ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][2], self.channelParameter[17][3], self.channelParameter[17][2], self.channelParameter[17][3], image, None, None, BT_SCALE))
 			#for covering in self.channelListCoverings:
 			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, covering[0], covering[1], covering[0], covering[1], covering[2], covering[3], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
-			r  # et.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
+			#r  # et.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
 			#ret.append((eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], skin.parseColor(self.channelParameter[9]).argb(), skin.parseColor(self.channelParameter[11]).argb(), skin.parseColor(self.channelParameter[10]).argb(), skin.parseColor(self.channelParameter[12]).argb()))
 			#if entrys.hasTimer and fileExists(self.channelParameter[15]):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + str(entrys.servicename), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
@@ -783,7 +789,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				eit = int(selected_channel.eit)
 				self.current_event = self.epgcache.lookupEventId(eServiceReference(sRef), eit)
 				self["Event"].newEvent(self.current_event)
-				self["Service"].newService(eServiceReference(sRef), self.current_event)
+				self["Service"].newService(eServiceReference(sRef))
 				if selected_channel.hasTrailer:
 					self["trailer"].show()
 				else:
@@ -795,15 +801,15 @@ class AdvancedEventLibraryChannelSelection(Screen):
 						endTime = datetime.datetime.fromtimestamp(event[2] + event[3])
 						duration = int(event[3] / 60)
 						_timespan = ""
-						if "weekday" in self.eventParameter[27]:
+						if "weekday" in self.eventParameter[26]:
 							_timespan += beginTime.strftime("%a ")
-						if "date" in self.eventParameter[27]:
+						if "date" in self.eventParameter[26]:
 							_timespan += beginTime.strftime("%d.%m. ")
-						if "start" in self.eventParameter[27]:
+						if "start" in self.eventParameter[26]:
 							_timespan += beginTime.strftime("%H:%M")
-						if "end" in self.eventParameter[27]:
+						if "end" in self.eventParameter[26]:
 							_timespan += endTime.strftime("-%H:%M")
-						if "duration" in self.eventParameter[27]:
+						if "duration" in self.eventParameter[26]:
 							_timespan += '  ' + str(duration) + ' Min.'
 						_duration = str(duration) + ' Min.'
 

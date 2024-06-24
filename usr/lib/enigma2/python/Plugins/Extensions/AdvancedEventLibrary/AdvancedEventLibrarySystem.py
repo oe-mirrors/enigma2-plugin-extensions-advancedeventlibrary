@@ -379,7 +379,7 @@ class AELMenu(Screen):
 	def do_close(self):
 		if self.refreshStatus.isActive():
 			self.refreshStatus.stop()
-		del self.refreshStatus
+		self.refreshStatus = None
 		self.close()
 
 	def open_serienstarts(self):

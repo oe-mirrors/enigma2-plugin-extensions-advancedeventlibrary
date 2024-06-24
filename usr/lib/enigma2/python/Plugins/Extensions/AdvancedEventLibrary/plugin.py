@@ -23,7 +23,6 @@ from Screens.MovieSelection import MovieSelection
 from Screens.HelpMenu import HelpableScreen
 from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_INFOBAR
 from Components.ActionMap import ActionMap, HelpableActionMap
-#from Components.Sources.ExtEvent import ExtEvent
 from Components.Sources.StaticText import StaticText
 from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger
 from Tools.Directories import fileExists
@@ -766,6 +765,7 @@ def EPGSelection__init__(self, session, service, zapFunc=None, eventid=None, bou
 		if self.type != EPG_TYPE_MULTI and config.plugins.epgsearch.add_search_to_epg.value:
 			from Plugins.Extensions.EPGSearch import EPGSearch
 			from Components.Sources.StaticText import StaticText
+			from Components.Sources.ExtEvent import ExtEvent
 
 			def bluePressed():
 				cur = self["list"].getCurrent()
