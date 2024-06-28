@@ -19,7 +19,7 @@ from Screens.MessageBox import MessageBox
 from Tools.Notifications import AddPopup
 from Tools.MovieInfoParser import getExtendedMovieDescription
 from Tools.CoreUtils import getUniqueID
-from Tools.SystemEvents import systemevents
+#from Tools.SystemEvents import systemevents
 has_e2 = True
 lock = threading.Lock()
 
@@ -137,12 +137,12 @@ class databaseTask(Task):
 	def run(self, callback):
 		self.callback = callback
 		self.dbthread.start()
-		systemevents.callEventHook(systemevents.DBTASK_START, self.name)
+		# systemevents.callEventHook(systemevents.DBTASK_START, self.name)
 
 	def stop(self):
 		Task.processFinished(self, 0)
 		self.stop_fnc()
-		systemevents.callEventHook(systemevents.DBTASK_FINISH, self.name)
+		# systemevents.callEventHook(systemevents.DBTASK_FINISH, self.name)
 		debugPrint("job finished", LOGLEVEL.INFO)
 		#from Screens.Standby import inStandby
 		#if not inStandby:
@@ -151,7 +151,7 @@ class databaseTask(Task):
 	def abort(self):
 		self.msgtxt = _("Database update was cancelled")
 		debugPrint("job cancelled", LOGLEVEL.INFO)
-		systemevents.callEventHook(systemevents.DBTASK_CANCEL, self.name)
+		# systemevents.callEventHook(systemevents.DBTASK_CANCEL, self.name)
 		self.stop()
 
 
@@ -1507,7 +1507,7 @@ class MovieDataBase(CommonDataBase):
 					if cue[1] == 5:
 						movie_len = cue[0] / 90000
 						return movie_len
-			except Exception, ex:
+			except Exception as ex:
 				debugPrint("failure at getting movie length from cut list", LOGLEVEL.ERROR)
 		return -1
 
@@ -1524,7 +1524,7 @@ class MovieDataBase(CommonDataBase):
 					packed = packed[12:]
 					cue = struct.unpack('>QI', packedCue)
 					cut_list.append(cue)
-			except Exception, ex:
+			except Exception as ex:
 				debugPrint("failure at downloading cut list", LOGLEVEL.ERROR)
 		last_end_point = None
 		if len(cut_list):
