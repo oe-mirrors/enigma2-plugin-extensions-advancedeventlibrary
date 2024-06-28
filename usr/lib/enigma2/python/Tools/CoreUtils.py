@@ -11,8 +11,8 @@ def getUniqueID(device='eth0'):
 		model = "vustb"
 	model = model.strip()
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	info = fcntl.ioctl(s.fileno(), 0x8927, struct.pack('256s', device[:15]))
-	key = "".join(['%02x' % ord(char) for char in info[18:24]])
+	info = fcntl.ioctl(s.fileno(), 0x8927, struct.pack('256s', bytes(device[:15], 'utf-8')))
+	key = "".join(['%02x' % char for char in info[18:24]])
 	id = ''
 	j = len(key) - 1
 	for i in range(0, len(key)):
