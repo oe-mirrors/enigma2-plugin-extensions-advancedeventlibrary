@@ -1,4 +1,13 @@
 # coding=utf-8
+
+#=================================================
+# R132 by MyFriendVTI
+# usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/AdvancedEventLibrarySerienstarts.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Hinzugefuegt (#1): Aufruf EventView mit Taste EPG
+# Aenderung (#2): shaper.png skinbar
+# ==================================================
+
 from operator import itemgetter
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
@@ -115,7 +124,15 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+			
+			#============== geaendert (#2) ==========================
+			#self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			if fileExists(imgpath + "shaper.png"):
+				self.shaper = LoadPixmap(imgpath + "shaper.png")
+			else:
+				self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+			# ===================================================
 
 		self["trailer"] = Pixmap()
 		self["Event"] = Event()
@@ -139,6 +156,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_menu": self.key_menu_handler,
 			'key_play': self.key_play_handler,
 			"key_ok": self.key_ok_handler,
+			#======= hinzugefuegt (#1) =============
+			"key_info": self.key_info_handler,
+			# ======================================
 		},-1)
 
 		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
@@ -376,6 +396,26 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						self.session.open(MoviePlayer,sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
+			
+	#======= hinzugefuegt (#1) =============
+	def key_info_handler(self):
+		from Screens.EventView import EventViewSimple, EventViewMovieEvent
+		try:
+			sRef = ""
+			if self.viewType == 'Listenansicht':
+				selected_element = self["eventList"].l.getCurrentSelection()[0]
+				sRef = str(selected_element[1])
+			else:
+				selected_element = self["eventWall"].getcurrentselection()
+				sRef = str(selected_element.serviceref)
+
+			if self.current_event and sRef:
+				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
+		
+		except Exception as ex:
+			write_log("call EventView : " + str(ex))
+			
+	# =====================================
 
 	def addtimer(self):
 		try:

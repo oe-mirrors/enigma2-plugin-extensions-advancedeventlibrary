@@ -1,4 +1,12 @@
 # coding=utf-8
+
+#=================================================
+# R132 by MyFriendVTI
+# usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/AdvancedEventLibraryPrimeTime.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): shaper.png skinbar
+# ==================================================
+
 from operator import itemgetter
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
@@ -112,7 +120,16 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.eventListLen = 0
 		self.activeList = "Channels"
 		self.idx = 0
-		self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+		
+		#============== geaendert (#1) ==========================
+		#self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+		if fileExists(imgpath + "shaper.png"):
+			self.shaper = LoadPixmap(imgpath + "shaper.png")
+		else:
+			self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+		# ===================================================
+		
 		self.switchWithPVR = False
 
 		self.userBouquets = []

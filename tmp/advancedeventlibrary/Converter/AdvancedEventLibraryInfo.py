@@ -4,9 +4,20 @@
 #																				#
 #								AdvancedEventLibrary							#
 #																				#
+#						License: this is closed source!							#
+#	you are not allowed to use this or parts of it on any other image than VTi	#
+#		you are not allowed to use this or parts of it on NON VU Hardware		#
+#																				#
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
+
+#=================================================
+# R132 by MyFriendVTI
+# usr/lib/enigma2/python/Tools/AdvancedEventLibrary.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): Fix FindEpisode s0e0
+# ==================================================
 
 from Components.Converter.Converter import Converter
 from Components.Element import cached
@@ -1562,7 +1573,10 @@ class AdvancedEventLibraryInfo(Converter, object):
 			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE|re.DOTALL)
 			ex = regexfinder.findall(str(desc))
 			if ex:
-				SE = ex[0].replace('S','').split('E')
+				#======= geandert (#1) ===============
+				#SE = ex[0].replace('S','').split('E')
+				SE = ex[0].lower().replace('s','').split('e')
+				# =======================================
 				return (SE[0],SE[1])
 			return None
 		except:

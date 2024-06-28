@@ -1,0 +1,31 @@
+#!/bin/sh
+echo ""
+echo "************************************"
+echo "*      Advanced Event Library      *"
+echo "*           Version - R132         *"
+echo "*        for Vu+ from 14.0.X       *"
+echo "*            by tsiegel            *"
+echo "* MOD by MyFriendVTI & satdx62     *"
+echo "************************************"
+echo ""
+echo "copy components"
+cd /tmp/advancedeventlibrary
+if [ -e /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data ]; then
+	echo "TV-Spielfilm RefList exists"
+else
+	cp -pr /tmp/advancedeventlibrary/tvsreflist.data /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data
+fi
+cp -pr /tmp/advancedeventlibrary/Converter/* /usr/lib/enigma2/python/Components/Converter/
+cp -pr /tmp/advancedeventlibrary/Renderer/* /usr/lib/enigma2/python/Components/Renderer/
+cp -pr /tmp/advancedeventlibrary/Tools/* /usr/lib/enigma2/python/Tools/
+cp -pr /tmp/advancedeventlibrary/Components/* /usr/lib/enigma2/python/Components/
+cd /
+rm -rf /tmp/advancedeventlibrary
+echo ""
+echo "Plugin successfully installed!"
+echo ""
+echo "You should restart enigma2 now..."
+echo ""
+echo ""
+echo ""
+exit 0

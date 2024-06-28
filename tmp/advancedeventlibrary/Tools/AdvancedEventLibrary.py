@@ -4,9 +4,28 @@
 #																				#
 #								AdvancedEventLibrary							#
 #																				#
+#																				#
+#						License: this is closed source!							#
+#	you are not allowed to use this or parts of it on any other image than VTi	#
+#		you are not allowed to use this or parts of it on NON VU Hardware		#
+#																				#
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
+
+#=================================================
+# R132 by MyFriendVTI
+# usr/lib/enigma2/python/Tools/AdvancedEventLibrary.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): Fix mp4
+# Hinzugefuegt (#2): Check ReadOnly at CreateMetaInfo
+# Aenderung (#3): Fix FindEpisode s0e0
+# Aenderung (#4): Improvement Extradaten-Preview-Search
+# Enfernt AELImageServer
+# Enfernt Altersfreigaben.de
+# Aenderung (#5): Rating von LiveOnTv entfernt
+# ==================================================
+
 __all__ = ['randbelow']
 
 import urllib2
@@ -69,7 +88,6 @@ config.plugins.AdvancedEventLibrary.Backup = ConfigText(default = "/media/hdd/Ad
 backuppath = config.plugins.AdvancedEventLibrary.Backup.value
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default = False)
 createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default = False)
-useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default = True)
 usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = True)
 previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
 delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default = True)
@@ -1352,6 +1370,10 @@ def createMovieInfo(db):
 						if doIt:
 							for filename in files:
 								try:
+									#== # Hinzugefuegt (#2): Check ReadOnly ==
+									if not os.access(os.path.join(root, filename), os.W_OK):
+										continue
+									# =================================
 									foundAsMovie = False
 									foundOnTMDbTV = False
 									foundOnTVDb = False
@@ -1878,10 +1900,18 @@ def getallEventsfromEPG():
 				tvname = name
 				tvname = re.sub('\\(.*?\\)', '', tvname).strip()
 				tvname = re.sub(' +', ' ', tvname)
-				if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
-						record = (eid,'in progress','','','','','',tvname.decode('utf8'),begin,'','','','','','','','',serviceref)
-						liveTVRecords.append(record)
-
+				#================== geaendert (#4) ====================
+				#if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
+				#		record = (eid,'in progress','','','','','',tvname.decode('utf8'),begin,'','','','','','','','',serviceref)
+				#		liveTVRecords.append(record)
+				minEPGBeginTime = time() - 7200 #-2h
+				maxEPGBeginTime = time() + 1036800 #12Tage
+				if begin > minEPGBeginTime and begin < maxEPGBeginTime:
+					if not db.checkliveTV(eid, serviceref):
+						if str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
+							record = (eid,'in progress','','','','','',tvname.decode('utf8'),begin,'','','','','','','','',serviceref)
+							liveTVRecords.append(record)
+				# =========================
 				foundInBl = False
 				name = convertTitle(name)
 				if db.getblackList(convert2base64(name)):
@@ -1922,7 +1952,10 @@ def getTVSpielfilm(db,tvsref):
 						evt += 1
 						maxDate = db.getMaxAirtimeforUpdate(sRef)
 						curDate = db.getMinAirtimeforUpdate(sRef)
-						while int(curDate) <= int(maxDate)+86400:
+						#======= geaendert (#4) ==================
+						#while int(curDate) <= int(maxDate)+86400:
+						while (int(curDate)-86400) <= int(maxDate)+86400:
+						# ========================================
 							try:
 								url = 'https://live.tvspielfilm.de/static/broadcast/list/' + str(tvsref[sRef]).upper() + '/' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d"))
 								STATUS = '(' + str(evt) + '/' + str(len(refs)) + ') durchsuche ' + tvsref[sRef] + ' für den ' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")) + ' auf TV-Spielfilm ' + " (" + str(founded) + "/" + str(tcount) + " | " + str(imgcount) + ")"
@@ -2003,6 +2036,9 @@ def getTVSpielfilm(db,tvsref):
 													ratings += 1
 											if ratings > 0:
 												rating = str(round(float(ratingCount / ratings),1))
+											#======== hinzugefuegt (#5) ====
+											rating = ""
+											# ==============================
 
 											if 'videos' in event:
 												imdb = event['videos'][0]['video'][0]['url']
@@ -2038,8 +2074,10 @@ def getTVSpielfilm(db,tvsref):
 											else:
 												image = ""
 											success = founded
+											#=== geandert (#4) title hinz. ===
 
-											db.updateliveTVS(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,sRef,airtime)
+											db.updateliveTVS(id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country,imdb,sRef,airtime,title)
+											# ===========================
 											founded = tcount - db.getUpdateCount()
 											if founded == success:
 												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', addlog.value)
@@ -2178,6 +2216,9 @@ def getTVMovie(db, secondRun = False):
 											conclusion = event['conclusion']
 										if 'movieStarValue' in event:
 											rating = str(int(event['movieStarValue'] * 2))
+										#======== hinzugefuegt (#5) ====
+										rating = ""
+										# ==============================
 #										if 'imdbId' in event:
 #											imdb = event['imdbId']
 
@@ -2335,6 +2376,9 @@ def convertTitle(name):
 		name = name[:name.find('Folge')].strip()
 	if name.find('Episode') > 0:
 		name = name[:name.find('Episode')].strip()
+	#=========hinzugefuegt {#3) ==============
+	name = name.strip(" -+&#:_")
+	# ========================================
 	return name
 
 def convertTitle2(name):
@@ -2357,6 +2401,9 @@ def convertTitle2(name):
 		name = name[:name.find('Episode')].strip()
 	if name.find('!') > 0:
 		name = name[:name.find('!')+1].strip()
+	#=========hinzugefuegt {#3) ==============
+	name = name.strip(" -+&#:_")
+	# ========================================
 	return name
 
 def findEpisode(title):
@@ -2368,18 +2415,25 @@ def findEpisode(title):
 			if removedEpisode.find(str(ex[0])) > 0:
 					removedEpisode = removedEpisode[:removedEpisode.find(str(ex[0]))]
 			removedEpisode = convertTitle2(removedEpisode)
-			SE = ex[0].replace('S','').replace('s','').split('E')
+			#======= geandert (#3) ===============
+			#SE = ex[0].replace('S','').replace('s','').split('E')
+			SE = ex[0].lower().replace('s','').split('e')
+			# =======================================
 			return (SE[0],SE[1], removedEpisode.strip())
 		return None
 	except:
 		return None
 
 def convertSearchName(eventName):
+	#==== Aenderung (#1): Fix-mp4 ==============r
 	try:
+		eventName = removeExtension(eventName)
 		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'').encode('utf-8', 'ignore')
 	except:
+		eventName = removeExtension(eventName)
 		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'')
 	return text
+	# ======================================================
 
 def convertDateInFileName(fileName):
 	regexfinder = re.compile('\d{8} - ', re.IGNORECASE)
@@ -2430,130 +2484,6 @@ def downloadImage2(url, filename, timeout=5):
 	except:
 		return False
 
-def downloadImagefromAELImageServer(url, filename, timeout=5):
-	try:
-		if not fileExists(filename):
-			write_log("try to download image from: " + str(url))
-
-			res = requests.get(url, stream=True, timeout=timeout)
-			if res.status_code == 200:
-				with open(filename, 'wb') as f:
-					res.raw.decode_content = True
-					shutil.copyfileobj(res.raw, f)
-					f.close()
-				res = None
-				write_log("found Image : " + str(filename) + ' auf AEL-Image-Server')
-			else:
-				write_log("Fehlerhafter Statuscode beim Download für : " + str(filename) + ' auf ' + str(url))
-		else:
-			write_log("Picture : " + str(base64.b64decode(filename.split('/')[-1].replace('.jpg',''))) + ' exists already ', addlog.value)
-	except Exception as ex:
-		write_log("Fehler in downloadImagefromAELImageServer : " + str(ex))
-
-
-def downloadAllImagesfromAELImageServer(overwrite=False):
-	global STATUS
-	from zipfile import ZipFile
-	global what
-	global url
-	global filename
-	global dooverwrite
-	dooverwrite = overwrite
-	what = 'cover'
-	url='http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download'
-#	url = 'https://timobayl.de/AEL/index.php/s/RfW2ZXiTcfA3z4D/download?path=%2F&files=cover'
-	filename = getPictureDir() + 'cover.zip'
-	def downloadProgress(recvbytes, totalbytes):
-		global STATUS
-		global what
-		if totalbytes:
-			progress = int(100 * recvbytes / float(totalbytes))
-			STATUS = "lade Bilder von AEL-Image-Server ... " + str(int(progress)) + '%'
-		else:
-			progress = int(recvbytes)
-			STATUS = "lade " + str(what) + " von AEL-Image-Server ... " + str(bytes2human(progress,1))
-
-	def downloadFinished(string=''):
-		global STATUS
-		global what
-		global url
-		global filename
-		global dooverwrite
-		write_log("extract files for " + str(what))
-		STATUS = 'Extrahiere Dateien für ' + str(what)
-		cdir = getPictureDir() +'aelDownload/'
-		if not os.path.exists(cdir):
-			os.makedirs(cdir)
-		with ZipFile(filename, 'r') as zip: 
-			zip.extractall(cdir)
-		cf = 0
-		rf = 0
-		STATUS = 'kopiere neue ' + str(what)
-		for root, directories, files in os.walk(cdir + str(what) + '/'):
-			for file in files:
-				if file.endswith('.jpg'):
-					if dooverwrite:
-						shutil.copy2(os.path.join(root, file), os.path.join(dir + str(what).lower() + '/', file))
-						createSingleThumbnail(os.path.join(root, file), os.path.join(dir + str(what).lower(), file))
-						cf += 1
-					else:
-						if not fileExists(os.path.join(dir + str(what).lower() + '/', file)):
-							shutil.copy2(os.path.join(root, file), os.path.join(dir + str(what).lower() + '/', file))
-							createSingleThumbnail(os.path.join(root, file), os.path.join(dir + str(what).lower(), file))
-							cf += 1
-			for file in files:
-				try:
-					os.remove(os.path.join(root, file))
-					rf += 1
-				except:
-					continue
-		os.remove(filename)
-		write_log("found " + str(rf) + ' images. got ' + str(cf) + ' new files')
-		STATUS = None
-		if what == 'poster':
-			db = getDB()
-			if db:
-				db.parameter(PARAMETER_SET, 'lastimagedownload', str(time()))
-		if what != 'poster':
-			what = 'poster'
-			url = 'http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download'
-#			url = 'https://timobayl.de/AEL/index.php/s/RfW2ZXiTcfA3z4D/download?path=%2F&files=poster'
-			filename = getPictureDir() + 'poster.zip'
-			startDownload()
-
-	def downloadFailed(failure_instance=None, error_message=""):
-		global STATUS
-		if error_message == "" and failure_instance is not None:
-			error_message = failure_instance.getErrorMessage()
-			STATUS = None
-			write_log("Fehler beim Download : " + str(error_message))
-
-	def startDownload():
-		try:
-			global STATUS
-			global what
-			global url
-			global filename
-			write_log("try to download all " + str(what) + "s from AEL-Image-Server")
-			STATUS = 'lade ' + str(what) + ' vom AEL-Image-Server herunter...'
-			download = downloadWithProgress(url,filename)
-			download.addProgress(downloadProgress)
-			download.start().addCallback(downloadFinished).addErrback(downloadFailed)
-		except Exception as ex:
-			write_log("Fehler in downloadAllImagesfromAELImageServer : " + str(ex))
-			STATUS = None
-	startDownload()
-
-def checkAELImageServer(url, timeout=5):
-	try:
-		res = requests.get(url, stream=True, timeout=timeout)
-		if res.status_code == 200:
-			return True
-		else:
-			return False
-	except Exception as ex:
-		write_log("Fehler in checkAELImageServer : " + str(ex))
-		return False
 
 def checkAllImages():
 	try:
@@ -3245,19 +3175,6 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						except Exception as ex:
 							write_log('Fehler in get_titleInfo omdb : ' + str(ex))
 
-					if imdb_id and titleinfo['fsk'] == "":
-						try:
-							STATUS = str(position) + '/' + str(len(titles)) + ' : altersfreigaben.de -' + str(title)  + '  (' + str(posters)  + '|' + str(covers)  + '|' + str(entrys)  + '|' + str(blentrys)  + ')'
-							write_log('looking for fsk on altersfreigaben.de', addlog.value)
-							url = "https://altersfreigaben.de/api2/s/%s/de" % (imdb_id)
-							r = requests.get(url, timeout=4)
-							if r.status_code == 200:
-								if r.content not in ['100', '300', '310']:
-									titleinfo['fsk'] = r.content
-									write_log("found FSK " + str(titleinfo['fsk']) + " for " + str(title) + " on altersfreigaben.de", addlog.value)
-						except Exception as ex:
-							write_log('Fehler in get_titleInfo altersfreigaben.de : ' + str(ex), addlog.value)
-
 					filename = convert2base64(title)
 					if filename and filename != '' and filename != ' ':
 						if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
@@ -3323,6 +3240,9 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		if len(liveTVRecords) > 0:
 			write_log('try to insert ' + str(len(liveTVRecords)) + ' events into database')
 			db.addliveTV(liveTVRecords)
+			#======= hinzugeuegt (#4) ========
+			db.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(db.getUpdateCount()))
+			# ================================
 			getTVSpielfilm(db,tvsref)
 			getTVMovie(db)
 			db.updateliveTVProgress()
@@ -3731,61 +3651,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			if not b64title:
 				b64title = convert2base64(title)
 
-#			write_log('################################################### AEL-Image-Server ##############################################')
-			if useAELIS.value:
-				try:
-					if what == 'Poster':
-						aelTitle = convert2base64(title)
-						aelurl='http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-						if checkAELImageServer(aelurl):
-							downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-							itm = [title, what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle +'.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-							pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle(title)):
-							aelTitle = convert2base64(convertTitle(title))
-							aelurl='http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-								itm = [convertTitle(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle +'.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-								pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle2(title)):
-							aelTitle = convert2base64(convertTitle2(title))
-							aelurl='http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-								itm = [convertTitle2(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle +'.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-								pictureList.append((itm,))
-
-					if what == 'Cover':
-						aelTitle = convert2base64(title)
-						aelurl='http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-						if checkAELImageServer(aelurl):
-							downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-							itm = [title, what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle +'.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-							pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle(title)):
-							aelTitle = convert2base64(convertTitle(title))
-							aelurl='http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-								itm = [convertTitle(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle +'.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-								pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle2(title)):
-							aelTitle = convert2base64(convertTitle2(title))
-							aelurl='http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-								itm = [convertTitle2(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle +'.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-								pictureList.append((itm,))
-				except Exception as ex:
-					write_log('Fehler in get_PictureList AEL-Image-Server : ' + str(ex))
-
-
-#			write_log('################################################### thetvdb ##############################################')
+				
 			if True:
 				tvdb.KEYS.API_KEY = get_keys('tvdb')
 				seriesid = None
@@ -4748,7 +4614,9 @@ class DB_Functions(object):
 			cur.executemany('insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);',records)
 			write_log("have inserted " + str(cur.rowcount) + " events into database")
 			self.conn.commit()
-			self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
+			#======= entfernt (#4) nun ueber updateConut ========
+			#self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
+			# ===================================================== 
 		except Error as ex:
 			write_log("Fehler in addliveTV : " + str(ex))
 
@@ -4800,6 +4668,8 @@ class DB_Functions(object):
 		except Error as ex:
 			write_log("Fehler in updateliveTV : " + str(ex))
 
+	#=========== geandert (#4) ======================
+	'''
 	def updateliveTVS(self, id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country, imdb, sref, airtime):
 		try:
 			low = airtime - 150
@@ -4810,6 +4680,33 @@ class DB_Functions(object):
 			self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTVS : " + str(ex))
+	'''		
+	def updateliveTVS(self, id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country, imdb, sref, airtime,title):
+		try:
+			updatetRows = 0
+			low = airtime - 150
+			high = airtime + 150
+			cur = self.conn.cursor()
+			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
+			cur.execute(query,(id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(sref).decode('utf8'), low, high))
+			updatetRows = cur.rowcount
+			self.conn.commit()
+			
+			if updatetRows < 1:
+				#Suche mit titel
+				low = airtime - 2700
+				high = airtime + 2700
+				query = "SELECT sref, airtime FROM liveOnTV WHERE title = ? AND sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress' ORDER BY airtime ASC LIMIT 1;"
+				cur.execute(query,(str(title).decode('utf8'),str(sref).decode('utf8'),low,high))
+				row = cur.fetchone()
+				if row:
+					query = "UPDATE liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime = ? AND  id = 'in progress';"
+					cur.execute(query,(id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(row[0]).decode('utf8'), row[1]))
+					self.conn.commit()
+			
+		except Error as ex:
+			write_log("Fehler in updateliveTVS : " + str(ex))
+	# ==============================================================
 
 	def updateliveTVProgress(self):
 		try:
@@ -4835,7 +4732,7 @@ class DB_Functions(object):
 		except Error as ex:
 			write_log("Fehler in getTitleInfo : " + str(ex) + ' - ' + str(base64title))
 			return []
-
+			
 	def getliveTV(self, eid, name=None, beginTime=None):
 		try:
 			cur = self.conn.cursor()
@@ -4905,7 +4802,11 @@ class DB_Functions(object):
 	def getMinAirtimeforUpdate(self, sref):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT Min(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			#===== geaendert (#4) =======
+			#query = "SELECT Min(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			now = str(int(time()-7200))
+			query = "SELECT Min(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ? and airtime > " + now
+			# ================================
 			cur.execute(query,(str(sref),))
 			row = cur.fetchall()
 			if row:
@@ -4919,7 +4820,11 @@ class DB_Functions(object):
 	def getMaxAirtimeforUpdate(self, sref):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT Max(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			#===== geaendert (#4) =======
+			#query = "SELECT Max(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			now = str(int(time()-7200))
+			query = "SELECT Max(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ? and airtime > " + now
+			# ============================
 			cur.execute(query,(str(sref),))
 			row = cur.fetchall()
 			if row:
@@ -4933,7 +4838,11 @@ class DB_Functions(object):
 	def getUpdateCount(self):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT COUNT(title) FROM liveOnTV WHERE id = 'in progress'"
+			#===== geaendert (#4) =======
+			#query = "SELECT COUNT(title) FROM liveOnTV WHERE id = 'in progress'"
+			now = str(int(time()-7200))
+			query = "SELECT COUNT(title) FROM liveOnTV WHERE id = 'in progress' and airtime > " + now
+			# ============================
 			cur.execute(query)
 			row = cur.fetchall()
 			if row:
@@ -5047,7 +4956,8 @@ class DB_Functions(object):
 		except Error as ex:
 			write_log("Fehler in checkTitle: " + str(ex))
 			return False
-
+			
+	
 	def checkliveTV(self, eid, ref):
 		try:
 			cur = self.conn.cursor()

@@ -4,9 +4,21 @@
 #																				#
 #								AdvancedEventLibrary							#
 #																				#
+#						License: this is closed source!							#
+#	you are not allowed to use this or parts of it on any other image than VTi	#
+#		you are not allowed to use this or parts of it on NON VU Hardware		#
+#																				#
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
+
+#=================================================
+# R131 by MyFriendVTI
+# usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/plugin.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): Added Option Update Moviewall after RecordStart
+# ==================================================
+
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.EventView import EventViewSimple, EventViewBase, EventViewMovieEvent
@@ -76,8 +88,14 @@ useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(def
 useMW = useAELMW.value or useAELMW.value == 'true'
 viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default = "Wallansicht", choices = [ "Listenansicht", "Wallansicht" ])
 favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
-refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default = True)
-refreshMovieData = refreshMW.value or refreshMW.value == 'true'
+#==== Aenderung (#1): Option Update Moviewall after RecordStart =====
+#refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default = True)
+#refreshMovieData = refreshMW.value or refreshMW.value == 'true'
+refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default = True)
+refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default = False)
+refreshMovieDataAtStop = refreshMWAtStop.value
+refreshMovieDataAtStart = refreshMWAtStart.value
+# ====================================================================
 updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default = True)
 refreshMovieWall = updateAELMovieWall.value or updateAELMovieWall.value == 'true'
 
@@ -133,9 +151,14 @@ def sessionstart(reason, **kwargs):
 			getExtendedMovieDescription = getExtendedMovieDescriptionNew
 			for evt in systemevents.getSystemEvents():
 #				write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
-				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
-					if refreshMovieData and refreshMovieWall:
-						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_"+evt, evt)
+				#= Aenderung (#1): Option Update Moviewall after RecordStart =
+				#if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+				#	if refreshMovieData and refreshMovieWall:
+				#		systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_"+evt, evt)
+				if ((refreshMovieDataAtStop and evt == systemevents.RECORD_STOP) or (refreshMovieDataAtStart and evt == systemevents.RECORD_START) or evt == systemevents.PVRDESCRAMBLE_STOP) and refreshMovieWall:
+					systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_"+evt, evt)
+				# ============================================================
+						
 				if evt == systemevents.SERVICE_START:
 					systemevents.addEventHook(evt, _serviceStart, "newServiceStart_"+evt, evt)
 	except Exception as ex:

@@ -1,0 +1,11 @@
+Package: enigma2-plugin-extensions-advancedeventlibrary
+Version: 1.0r132
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: tsiegel MOD by MyFriendVTI & satdx62
+Description: Advanced Event Library Version 1.0r124 for Vu+ ab 14.0.X
+Depends: enigma2-python (>> vti-13.0.9-20180704-r0r1), vti-addon (>> 2.25), enigma2-plugin-systemplugins-exteventinfohandler, python-imaging
+Source: {"Type":"Plugin","Title":"Advanced Event Library Version 1.0r123 for Vu+ ab 14.0.X","PostInstallFlags":"Restart GUI","PostRemoveFlags":"Restart GUI"}
+Homepage: https://ts-myinter.net
+License: GPLv2

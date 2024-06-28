@@ -4,9 +4,22 @@
 #																				#
 #								AdvancedEventLibrary							#
 #																				#
+#						License: this is closed source!							#
+#	you are not allowed to use this or parts of it on any other image than VTi	#
+#		you are not allowed to use this or parts of it on NON VU Hardware		#
+#																				#
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
+
+#=================================================
+# R131 by MyFriendVTI
+# usr/lib/enigma2/python/Components/Renderer/AdvancedEventLibraryImage.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): ePicload Crash verhindern
+# Aenderung (#2): Fehler reRun behoben
+# Aenderung (#3): Fix-Poster (Streaming) [by schomi]
+# ==================================================
 
 import os
 import skin
@@ -155,7 +168,10 @@ class AdvancedEventLibraryImage(Renderer):
 					if isinstance(self.source, ServiceEvent):
 						service = self.source.getCurrentService()
 						sRef = service.toString()
-						if '/' in sRef:
+						#==== Aenderung (#3): Fix-Poster (Streaming) ========r
+						#if '/'  in sRef
+						if '/'  in sRef and not '//' in sRef:
+						# ==================================================
 							self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__',' ').replace('_',' ')
 							self.fileName = service.getPath()
 							if self.fileName.endswith("/"):
@@ -302,21 +318,26 @@ class AdvancedEventLibraryImage(Renderer):
 			if self.pfilename:
 				self.foundPoster = True
 
+		#======== hinzugefuegt (#2) =======
+		isLastRun = self.checkIsLastRun(run, str(eventNames[0]), str(eventNames[1]))
+		# ==============================
+
 		# set alternative falls angegeben und nix gefunden
-		if self.noImage and not self.foundImage and (self.imageType == self.PREFER_IMAGE or self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL):
+		#======== hinzugefuegt Bedingung isLastRun (#2) =======
+		if self.noImage and not self.foundImage and (self.imageType == self.PREFER_IMAGE or self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL) and isLastRun:
 			if (os.path.exists(self.noImage)):
 				self.foundImage = True
 				self.ifilename = self.noImage
-		if self.noImage and not self.foundPoster and (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL):
+		if self.noImage and not self.foundPoster and (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL) and isLastRun:
 			if (os.path.exists(self.noImage)):
 				self.foundPoster = True
 				self.pfilename = self.noImage
+		# ==============================
 
 		if self.ifilename:
 			self.nameCache[eventName + str(self.imageType)] = str(self.ifilename)
 		if self.pfilename:
 			self.nameCache[eventName + str(self.imageType)] = str(self.pfilename)
-
 
 		if (self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL) and self.foundImage:
 			self.loadPic(self.ifilename)
@@ -343,10 +364,20 @@ class AdvancedEventLibraryImage(Renderer):
 			self.sizetype = 'Image'
 			self.loadPic(self.ifilename)
 		else:
-			if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
+			#======== geaendert (#2) =======
+			#if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
+			if not isLastRun:
 				self.setthePixmap(eventNames,1)
 			else:
 				self.hideimage()
+			# ==============================
+	
+	#======== hinzugefuegt (#2) ===========
+	def checkIsLastRun(self,run,eventName0,eventName1):
+		if run == 0 and (eventName0 != eventName1) and (eventName1 != "None"):
+			return False
+		else: return True
+	# =====================================
 
 	def calcSize(self, how):
 		if how == 'Poster':
@@ -396,11 +427,22 @@ class AdvancedEventLibraryImage(Renderer):
 	def showCallback(self, picInfo = None):
 		try:
 			if self.picload:
-				ptr = self.picload.getData()
+				#======== geaendert (#1) =======
+				#ptr = self.picload.getData()
+				#if ptr != None:
+				#	self.image.setPixmap(ptr)
+				#	if self.ishide:
+				#		self.showimage()
+				#del self.picload
+				
+				picload = self.picload
+				ptr = picload.getData()
 				if ptr != None:
 					self.image.setPixmap(ptr)
 					if self.ishide:
 						self.showimage()
-				del self.picload
+				del picload
+				# ==============================
+				
 		except:
 			self.hideimage()
