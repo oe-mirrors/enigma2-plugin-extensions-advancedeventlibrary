@@ -2,14 +2,11 @@
 # -*- encoding: utf-8 -*-
 
 from __future__ import absolute_import
-from __future__ import print_function
 from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
-from Components.HTMLComponent import HTMLComponent
 from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from skin import parseColor
 from collections import OrderedDict
-from Components.AVSwitch import AVSwitch
 from Tools.Directories import fileExists
 from time import time, localtime
 from Components.config import config
@@ -1401,7 +1398,7 @@ class MenuList(GUIComponent, object):
 			self.instance.setSelectionEnable(enabled)
 
 
-class AELLabel(VariableText, HTMLComponent, GUIComponent):
+class AELLabel(VariableText, GUIComponent):
 	def __init__(self, text=""):
 		GUIComponent.__init__(self)
 		VariableText.__init__(self)
@@ -1486,11 +1483,9 @@ class MultiColorNTextLabel(AELLabel):
 
 
 class PicLoader:
-	def __init__(self, width, height, sc=None, color="#ff000000"):
+	def __init__(self, width, height):
 		self.picload = ePicLoad()
-		if not sc:
-			sc = AVSwitch().getFramebufferScale()
-			self.picload.setPara((width, height, sc[0], sc[1], False, 1, color))
+		self.picload.setPara((width, height, 1, 1, False, 1, "#ff000000"))
 
 	def load(self, filename):
 		if fileExists(filename):

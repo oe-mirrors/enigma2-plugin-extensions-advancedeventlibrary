@@ -12,7 +12,6 @@ from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
 from Components.GUIComponent import GUIComponent
-from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
 from time import time, localtime, mktime
 import datetime

@@ -12,7 +12,6 @@ from Components.Label import Label, MultiColorLabel
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
 from Components.GUIComponent import GUIComponent
-from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress, MultiContentEntryRectangle, MultiContentEntryPixmap, MultiContentEntryPixmapAlphaBlend, MultiContentEntryLinearGradient
 from Components.Sources.ServiceEvent import ServiceEvent
@@ -33,7 +32,7 @@ from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiConten
 from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
-    ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
+    ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
     ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event

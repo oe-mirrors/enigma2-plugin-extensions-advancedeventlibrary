@@ -15,7 +15,7 @@ from Components.Sources.Event import Event
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
 from enigma import iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
-from Components.config import config, ConfigText, ConfigSubsection, ConfigYesNo
+from Components.config import config, ConfigSubsection, ConfigYesNo
 from ServiceReference import ServiceReference
 from time import localtime
 import glob
@@ -214,7 +214,7 @@ class AdvancedEventLibraryInfo(Converter, object):
 					if isinstance(service, iPlayableServicePtr):
 						info = service and service.info()
 						ref = None
-					else: # reference
+					else:  # reference
 						info = service and self.source.info
 						ref = service
 					if info != None:
@@ -843,7 +843,7 @@ class AdvancedEventLibraryInfo(Converter, object):
 			maxGenres = genre.split()
 			if maxGenres:
 				if len(maxGenres) >= 1:
-					genre = maxGenres[0]# + ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ' + maxGenres[1]
+					genre = maxGenres[0]  # + ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ' + maxGenres[1]
 
 		prefix = self.getPrefixParser(type)
 		if (genre != None and prefix != None):

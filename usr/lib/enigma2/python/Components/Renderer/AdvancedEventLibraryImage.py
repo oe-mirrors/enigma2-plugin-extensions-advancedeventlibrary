@@ -23,7 +23,7 @@ from skin import parseColor, parseColor
 from Components.Sources.Event import Event
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Components.config import config, ConfigText, ConfigSubsection, ConfigYesNo
+from Components.config import config, ConfigSubsection, ConfigYesNo
 from enigma import iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter, eServiceReference
 from ServiceReference import ServiceReference
 from Tools import AdvancedEventLibrary

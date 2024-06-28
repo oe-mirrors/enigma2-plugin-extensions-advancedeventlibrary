@@ -19,7 +19,6 @@ from Screens.MessageBox import MessageBox
 from Tools.Notifications import AddPopup
 from Tools.MovieInfoParser import getExtendedMovieDescription
 from Tools.CoreUtils import getUniqueID
-#from Tools.SystemEvents import systemevents
 has_e2 = True
 lock = threading.Lock()
 
@@ -137,12 +136,10 @@ class databaseTask(Task):
 	def run(self, callback):
 		self.callback = callback
 		self.dbthread.start()
-		# systemevents.callEventHook(systemevents.DBTASK_START, self.name)
 
 	def stop(self):
 		Task.processFinished(self, 0)
 		self.stop_fnc()
-		# systemevents.callEventHook(systemevents.DBTASK_FINISH, self.name)
 		debugPrint("job finished", LOGLEVEL.INFO)
 		#from Screens.Standby import inStandby
 		#if not inStandby:
@@ -151,7 +148,6 @@ class databaseTask(Task):
 	def abort(self):
 		self.msgtxt = _("Database update was cancelled")
 		debugPrint("job cancelled", LOGLEVEL.INFO)
-		# systemevents.callEventHook(systemevents.DBTASK_CANCEL, self.name)
 		self.stop()
 
 

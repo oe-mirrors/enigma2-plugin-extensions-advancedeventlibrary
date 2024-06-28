@@ -1,14 +1,12 @@
-﻿from HTMLComponent import HTMLComponent
-from GUIComponent import GUIComponent
+﻿from GUIComponent import GUIComponent
 
 from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, \
 	RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, loadJPG, ePixmap, ePicLoad
 
 from Tools.LoadPixmap import LoadPixmap
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
-from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
-from Components.config import config, ConfigText, ConfigSubsection, ConfigYesNo
+from Components.config import config, ConfigSubsection, ConfigYesNo
 from time import localtime, time
 from ServiceReference import ServiceReference
 from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN
@@ -49,7 +47,7 @@ class Rect:
 		return self.w
 
 
-class AEL_EPGList(HTMLComponent, GUIComponent):
+class AEL_EPGList(GUIComponent):
 	def __init__(self, type=EPG_TYPE_SINGLE, selChangedCB=None, timer=None):
 		self.nameCache = {}
 		self.days = (_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun"))
@@ -159,7 +157,7 @@ class AEL_EPGList(HTMLComponent, GUIComponent):
 			xpos += w
 			w = width / 10 * 5
 			self.descr_rect = Rect(xpos, 0, width, height)
-		else: # EPG_TYPE_SIMILAR
+		else:  # EPG_TYPE_SIMILAR
 			self.weekday_rect = Rect(0, 0, width / 20 * 2 - 10, height)
 			self.datetime_rect = Rect(width / 20 * 2, 0, width / 20 * 5 - 15, height)
 			self.service_rect = Rect(width / 20 * 7, 0, width / 20 * 13, height)
@@ -310,7 +308,7 @@ class AEL_EPGList(HTMLComponent, GUIComponent):
 			rec = None
 			picon = None
 
-		res = [None] # no private data needed
+		res = [None]  # no private data needed
 		if rec:
 			res.extend((
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic),
@@ -450,11 +448,9 @@ class AEL_EPGList(HTMLComponent, GUIComponent):
 
 
 class PicLoader:
-	def __init__(self, width, height, sc=None):
+	def __init__(self, width, height):
 		self.picload = ePicLoad()
-		if not sc:
-			sc = AVSwitch().getFramebufferScale()
-			self.picload.setPara((width, height, sc[0], sc[1], False, 1, "#ff000000"))
+		self.picload.setPara((width, height, 1, 1, False, 1, "#ff000000"))
 
 	def load(self, filename):
 		self.picload.startDecode(filename, 0, 0, False)

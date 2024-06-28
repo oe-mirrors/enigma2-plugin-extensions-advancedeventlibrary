@@ -8,15 +8,13 @@
 #																				#
 #################################################################################
 from __future__ import absolute_import
-from __future__ import print_function
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.EventView import EventViewSimple, EventViewBase, EventViewMovieEvent
 from Screens.EpgSelection import EPGSelection
 from Screens.TimerEntry import TimerEntry
-from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Screens.ChoiceBox import ChoiceBox
-from Screens.TimerEdit import TimerSanityConflict, TimerEditList
+from Screens.TimerEdit import TimerSanityConflict
 from Screens.InfoBar import InfoBar, MoviePlayer
 from Screens.InfoBarGenerics import InfoBarSimpleEventView
 from Screens.MovieSelection import MovieSelection
@@ -24,7 +22,7 @@ from Screens.HelpMenu import HelpableScreen
 from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_INFOBAR
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
-from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger
+from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigSelection, ConfigInteger
 from Tools.Directories import fileExists
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.FunctionTimer import functionTimer
@@ -39,7 +37,7 @@ from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import eEPGCache, eTimer, eServiceReference, addFont, eServiceCenter
 from threading import Timer
 import threading
-from Tools.SystemEvents import systemevents
+#from Tools.SystemEvents import systemevents
 from Tools.LoadPixmap import LoadPixmap
 from ServiceReference import ServiceReference
 from time import time, localtime
@@ -47,7 +45,7 @@ import Tools.AutoTimerHook as AutoTimerHook
 #from Tools.MovieInfoParser import getExtendedMovieDescription
 import os
 import re
-from . import skin
+import skin
 import pickle
 import Screens.Standby
 
@@ -124,7 +122,7 @@ def sessionstart(reason, **kwargs):
 			if not foundBackup:
 				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
-			InfoBarSimpleEventViewInit()
+			# InfoBarSimpleEventViewInit()
 			# EPGSelectionInit()
 			# EventViewInit()
 			# EventViewMovieEventInit()
@@ -1128,6 +1126,7 @@ def restartFav(ret=None):
 
 
 def EPGSearch__init__(self, session, *args):
+	from Components.Sources.ExtEvent import ExtEvent
 	from Components.Sources.ServiceEvent import ServiceEvent
 	from Components.Sources.Event import Event
 	from Plugins.Extensions.EPGSearch import EPGSearch

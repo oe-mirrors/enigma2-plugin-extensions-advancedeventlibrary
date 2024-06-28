@@ -12,7 +12,6 @@ from Components.Label import Label, MultiColorLabel
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
 from Components.GUIComponent import GUIComponent
-from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
 from Components.Sources.ServiceEvent import ServiceEvent
 from Tools.Alternatives import GetWithAlternative

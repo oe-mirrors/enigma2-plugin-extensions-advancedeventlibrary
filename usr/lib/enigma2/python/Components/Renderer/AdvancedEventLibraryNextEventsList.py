@@ -2,9 +2,8 @@ from Components.Renderer.Renderer import Renderer
 from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, loadJPG, ePixmap, ePicLoad
 from Tools.LoadPixmap import LoadPixmap
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
-from Components.AVSwitch import AVSwitch
 from Components.Pixmap import Pixmap
-from Components.config import config, ConfigText, ConfigSubsection, ConfigYesNo
+from Components.config import config, ConfigSubsection, ConfigYesNo
 from time import localtime, time
 from ServiceReference import ServiceReference
 from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN
@@ -138,11 +137,9 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 
 class PicLoader:
 
-	def __init__(self, width, height, sc=None):
+	def __init__(self, width, height):
 		self.picload = ePicLoad()
-		if not sc:
-			sc = AVSwitch().getFramebufferScale()
-			self.picload.setPara((width, height, sc[0], sc[1], False, 1, '#ff000000'))
+		self.picload.setPara((width, height, 1, 1, False, 1, '#ff000000'))
 
 	def load(self, filename):
 		self.picload.startDecode(filename, 0, 0, False)
