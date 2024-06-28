@@ -387,7 +387,6 @@ class AELMenu(Screen):
 		self.screenType = 0
 		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, self.viewType)
 
-
 	def open_primetime(self):
 		self.viewType = self.vtype.value
 		self.screenType = 1
@@ -607,7 +606,7 @@ class setup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen Allgemein", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen Allgemein"))
 			self.configlist.append(getConfigListEntry("Daten-Verzeichnis (OK drücken)", self.mypath))
 			self.configlist.append(getConfigListEntry("Datenbank-Verzeichnis", self.dbfolder))
 			self.configlist.append(getConfigListEntry("Backup-Verzeichnis (OK drücken)", self.backuppath))
@@ -620,7 +619,7 @@ class setup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("AEL-Menü automatisch schließen", self.closeMenu))
 			self.configlist.append(getConfigListEntry("schreibe erweitertes Logfile", self.addlog))
 
-			self.configlist.append(getConfigListEntry("Einstellungen Download", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen Download"))
 			self.configlist.append(getConfigListEntry("Art der Suche", self.searchfor))
 			if str(self.searchfor.value) == "Extradaten und Bilder":
 				self.configlist.append(getConfigListEntry("benutze AEL Image-Server", self.useAELIS))
@@ -633,7 +632,7 @@ class setup(Screen, ConfigListScreen):
 				self.configlist.append(getConfigListEntry("minimale JPEG-Qualität (%)", self.maxCompression))
 				self.configlist.append(getConfigListEntry("Anzahl Vorschaubilder im Editor", self.previewCount))
 
-			self.configlist.append(getConfigListEntry("Einstellungen EPG und MovieWall", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen EPG und MovieWall",))
 			self.configlist.append(getConfigListEntry("benutze AEL EPG-Listenstil", self.useAELEPGLists))
 			self.configlist.append(getConfigListEntry("benutze EPG-Taste in EPGSelection für Plugin-Aufruf", self.showinEPG))
 			self.configlist.append(getConfigListEntry("benutze AEL-Movie-Wall", self.updateAELMovieWall))
@@ -642,7 +641,7 @@ class setup(Screen, ConfigListScreen):
 				self.configlist.append(getConfigListEntry("beziehe Symlinks in die Suche nach Aufnahmen ein", self.searchLinks))
 				self.configlist.append(getConfigListEntry("aktualisiere Movie-Wall automatisch nach Aufnahmestop", self.refreshMW))
 
-			self.configlist.append(getConfigListEntry("Einstellungen Suche", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen Suche"))
 			self.configlist.append(getConfigListEntry("erstelle nicht vorhandene Metadaten", self.createMetaData))
 			self.configlist.append(getConfigListEntry("suche vorhandene Bilder in Aufnahmeverzeichnissen", self.usePictures))
 			self.configlist.append(getConfigListEntry("suche in VTiDB", self.vtidb))
@@ -730,6 +729,8 @@ class TVSSetup(Screen, ConfigListScreen):
 
 		self.setup_title = "TV Spielfilm-Setup"
 		self["title"] = StaticText(self.title)
+		self["footnote"] = StaticText("")
+		self["description"] = Label("")
 
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Speichern")
@@ -1729,7 +1730,7 @@ class Editor(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Event-Informationen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Event-Informationen"))
 			self.configlist.append(getConfigListEntry("Event Name (suche mit OK)", self.eventTitle))
 			self.configlist.append(getConfigListEntry("Genre", self.eventGenre))
 			self.configlist.append(getConfigListEntry("Land", self.eventCountry))

@@ -1182,7 +1182,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
 			self.configlist.append(getConfigListEntry("Startansicht im Kanalbereich", self.channelStartType))
 			self.configlist.append(getConfigListEntry("EPG-Taste öffnet", self.epgViewType))

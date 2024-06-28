@@ -719,8 +719,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if picon:
 				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
 			if entrys.hasTimer and fileExists(self.parameter[15]):
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT,  self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT,  self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
 			else:
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
@@ -787,7 +787,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("suche nach", self.startType))
 			self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
 		except Exception as ex:

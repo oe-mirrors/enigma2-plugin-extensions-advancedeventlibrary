@@ -784,13 +784,13 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("entferne Genre/Sendung nach x Tagen nicht gesehen", self.favouritesMaxAge))
 			self.configlist.append(getConfigListEntry("zeige Genre/Sendung mindestens x mal gesehen", self.favouritesViewCount))
 			self.configlist.append(getConfigListEntry("Vorschaudauer der Favoriten innerhalb x Stunden", self.favouritesPreviewDuration))
 			self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
 			if self.genres:
-				self.configlist.append(getConfigListEntry("Ignorelist", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+				self.configlist.append(getConfigListEntry("Ignorelist"))
 				excluded = self.excludedGenres.value.split(',')
 				for genre in self.genres:
 					if genre in excluded:

@@ -15,7 +15,7 @@ from Components.Sources.ServiceEvent import ServiceEvent
 from Components.FileTransfer import FileTransferJob
 from Components.Task import job_manager
 from time import time, localtime
-from enigma import getDesktop ,iServiceInformation, eServiceReference, eServiceCenter, ePixmap
+from enigma import getDesktop, iServiceInformation, eServiceReference, eServiceCenter, ePixmap
 from ServiceReference import ServiceReference
 from enigma import eTimer, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
 from Components.ConfigList import ConfigListScreen
@@ -1275,7 +1275,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("Sortierung", self.sortType))
 			if self.paths:
 				self.configlist.append(getConfigListEntry("Startpfad", self.startPath))

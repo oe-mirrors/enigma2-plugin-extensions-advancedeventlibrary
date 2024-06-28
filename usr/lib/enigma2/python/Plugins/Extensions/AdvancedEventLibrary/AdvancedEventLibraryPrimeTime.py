@@ -62,12 +62,14 @@ Sport = ["Sport", "Fu�ball", "Bundesliga", "PL:", "Handball", "Champions-Leagu
 global active
 active = False
 
+
 def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
 	AdvancedEventLibrary_log = open(log, "a")
 	AdvancedEventLibrary_log.write(str(logtime) + " : [PrimeTimeScreen] : " + str(svalue) + "\n")
 	AdvancedEventLibrary_log.close()
+
 
 class EventEntry():
 	def __init__(self, name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer):
@@ -344,17 +346,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].down()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx <= old_idx:
-					print("debug self.parameter",self.parameter)
-					print("debug new_idx",new_idx)
-					print("debug old_idx",old_idx)
-					print("debug self.listlen",self.listlen)
+					print("debug self.parameter", self.parameter)
+					print("debug new_idx", new_idx)
+					print("debug old_idx", old_idx)
+					print("debug self.listlen", self.listlen)
 					if (new_idx + int(self.parameter[13])) >= self.listlen:
 						dest = 0
 					else:
 						dest = new_idx + int(self.parameter[13])
 					self['eventWall'].movetoIndex(dest)
-					print("debug dest",dest)
-					print("debug dest",type(dest))
+					print("debug dest", dest)
+					print("debug dest", type(dest))
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 			self.sel_changed()
@@ -956,7 +958,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
 			self.configlist.append(getConfigListEntry("nur HD Sender durchsuchen", self.HDonly))
 			self.configlist.append(getConfigListEntry("Startgenre", self.myGenres))

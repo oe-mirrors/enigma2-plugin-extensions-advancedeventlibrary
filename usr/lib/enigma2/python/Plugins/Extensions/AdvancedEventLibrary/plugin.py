@@ -124,7 +124,7 @@ def sessionstart(reason, **kwargs):
 			if not foundBackup:
 				functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "imports": "Tools.AdvancedEventLibrary", "fnc": "createBackup"}))
 
-			# InfoBarSimpleEventViewInit()
+			InfoBarSimpleEventViewInit()
 			# EPGSelectionInit()
 			# EventViewInit()
 			# EventViewMovieEventInit()
@@ -162,6 +162,7 @@ def openMoviePlayerEventViewMI(self):
 		filename = service.info().getName()
 		url = self.session.nav.getCurrentlyPlayingServiceReference().getPath()
 		if re.match('.*?http://', url, re.S):
+			from Plugins.Extensions.MediaInfo.plugin import MediaInfo
 			self.session.open(MediaInfo)
 		else:
 			InfoBarSimpleEventViewBase_openEventView(self)

@@ -941,7 +941,7 @@ class MySetup(Screen, ConfigListScreen):
 		try:
 			if self.configlist:
 				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen", ConfigSelection(choices=[('', '<DUMMYENTRY>')])))
+			self.configlist.append(getConfigListEntry("Einstellungen"))
 			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
 			self.configlist.append(getConfigListEntry("EPG-Taste �ffnet", self.epgViewType))
 			self.configlist.append(getConfigListEntry("Event-List Dauer (Stunden)", self.channelSelectionEventListDuration))
