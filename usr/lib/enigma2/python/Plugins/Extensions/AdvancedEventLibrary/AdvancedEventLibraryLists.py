@@ -6,7 +6,6 @@ from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from skin import parseColor
-from collections import OrderedDict
 from Tools.Directories import fileExists
 from time import time, localtime
 from Components.config import config
@@ -905,13 +904,15 @@ class AELBaseWall(GUIComponent, object):
 				elif attrib == "dimensions":
 					self.l.setColumnCount(int(value.split(',')[0]))
 					self.l.setRowCount(int(value.split(',')[1]))
-				#elif attrib == "useShadow":
+				elif attrib == "useShadow":
+					pass
 				#	self.l.setShadow(int(value))
 				elif attrib == "useOverlay":
 					self.l.setOverlay(int(value))
 				elif attrib == "downloadPath":
 					self.l.setDownloadPath(str(value))
-				#elif attrib == "backgroundColorGlobal":
+				elif attrib == "backgroundColorGlobal":
+					pass
 				#	self.l.setGlobalBackgroundColor(skin.parseColor(str(value)))
 				elif attrib == "borderColor":
 					self.instance.setBorderColor(skin.parseColor(str(value)))

@@ -30,10 +30,6 @@ from Tools import AdvancedEventLibrary
 import threading
 from datetime import datetime
 
-config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
-previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
-
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 screensWithEvent = ["ChannelSelection", "ChannelSelectionHorizontal", "InfoBarZapHistory", "NumberZapWithName", "ChannelSelection_summary", "AdvancedEventLibraryMediaHub", "AdvancedEventLibraryChannelSelection"]

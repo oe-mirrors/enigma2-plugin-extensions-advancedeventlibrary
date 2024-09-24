@@ -66,8 +66,7 @@ backuppath = config.plugins.AdvancedEventLibrary.Backup.value
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
+config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 delpreviewImages = delPreviewImages.value or delPreviewImages.value == 'true'
 searchfor = config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
@@ -1347,6 +1346,7 @@ def startUpdate():
 
 
 def isconnected():
+	return True  # TODO WHY?
 	try:
 		return os.system("ping -c 2 -W 2 -w 4 8.8.8.8")
 	except Exception as ex:
@@ -1840,7 +1840,7 @@ def getallEventsfromEPG():
 	removeLogs()
 	write_log("Update start...")
 	write_log("default image path is " + str(dir)[:-1])
-	write_log("load preview images is: " + str(previewImages) + ' - ' + str(usePreviewImages.value))
+	write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
 	write_log("searchOptions " + str(sPDict))
 	db = getDB()
 	db.parameter(PARAMETER_SET, 'laststart', str(time()))
@@ -2047,7 +2047,7 @@ def getTVSpielfilm(db, tvsref):
 													db.updateSingleEventInfo('country', country, convert2base64(title))
 
 											bld = ""
-											if image != "" and str(searchfor.value) != "nur Extradaten" and previewImages:
+											if image != "" and str(searchfor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 												bld = image
 												imgname = title + ' - '
 												if season != "":
@@ -2067,7 +2067,7 @@ def getTVSpielfilm(db, tvsref):
 												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', addlog.value)
 											if founded > success and imdb != "":
 												trailers += 1
-											if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and previewImages and str(image) != str(lastImage):
+											if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
 												if len(convert2base64(image)) < 255:
 													imgpath = coverDir + convert2base64(image) + '.jpg'
 													if downloadTVSImage(bld, imgpath):
@@ -2219,7 +2219,7 @@ def getTVMovie(db, secondRun=False):
 												db.updateSingleEventInfo('country', country, convert2base64(title[0]))
 
 										bld = ""
-										if image != "" and str(searchfor.value) != "nur Extradaten" and previewImages:
+										if image != "" and str(searchfor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 											bld = image
 											imgname = title[0] + ' - '
 											if season != "":
@@ -2235,7 +2235,7 @@ def getTVMovie(db, secondRun=False):
 
 										db.updateliveTV(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, title[0], airtime)
 										founded = tcount - db.getUpdateCount()
-										if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and previewImages and str(image) != str(lastImage):
+										if founded > success and bld != "" and str(searchfor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
 											if len(convert2base64(image)) < 255:
 												imgpath = coverDir + convert2base64(image) + '.jpg'
 												if downloadTVMovieImage(bld, imgpath):
@@ -4595,7 +4595,7 @@ def getImageFile(path, eventName):
 			imageFileName = os.path.join(path, pictureName)
 			if (os.path.exists(imageFileName)):
 				return imageFileName
-	if 'cover' in path and previewImages:
+	if 'cover' in path and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 		ppath = path.replace('cover', 'preview')
 		imageFileName = getPreviewImageFile(ppath, eventName)
 		if imageFileName:

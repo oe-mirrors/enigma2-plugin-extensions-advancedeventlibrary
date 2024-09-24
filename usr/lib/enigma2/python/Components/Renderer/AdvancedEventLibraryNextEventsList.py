@@ -13,10 +13,6 @@ import os
 import re
 import math
 
-config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
-previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
-
 
 class AdvancedEventLibraryNextEventsList(Renderer):
 
@@ -123,7 +119,7 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		if self.nameCache.get(eventName, '') != '':
 			return self.nameCache.get(eventName, '')
 		else:
-			if previewImages:
+			if config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 				evt = self.db.getliveTV(eventId, eventName)
 				if evt:
 					if evt[0][3] != '' and not str(evt[0][3]).endswith('.jpg'):

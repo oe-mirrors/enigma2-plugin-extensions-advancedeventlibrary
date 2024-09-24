@@ -82,7 +82,7 @@ backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/m
 maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
 previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
+#usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
 useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
@@ -413,7 +413,7 @@ class AELMenu(Screen):
 		self.session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 
 	def main(self):
-		self.session.open(setup)
+		self.session.open(AdvancedEventLibrarySetup)
 
 	def editor(self):
 		self.session.open(Editor)
@@ -443,21 +443,58 @@ class AELMenu(Screen):
 			self.open_favourites()
 
 
+#class AdvancedEventLibrarySetup(Setup):
+#	def __init__(self, session):
+#		Setup.__init__(self, session, "Advanced-Event-Library-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
+#		self["key_yellow"] = StaticText(_("TVS-Setup"))
+#		self["coloractions"] = HelpableActionMap(self, ["ColorActions"], {
+#			"yellow": (self.key_yellow_handler, _(" "))
+#		}, prio=0)
+
+#	def keySelect(self):
+#		if self.getCurrentItem() == config.plugins.MetrixWeather.iconpath:
+#			self.session.openWithCallback(self.keySelectCallback, WeatherSettingsLocationBox, currDir=config.plugins.MetrixWeather.iconpath.value)
+#			return
+#		if self.getCurrentItem() == config.plugins.MetrixWeather.weathercity:
+#			self.checkcity = True
+#		Setup.keySelect(self)
+
+
+#		LocationBox.__init__(
+#			self,
+#			session,
+#			text=_("What do you want to set as the default movie location?"),
+#			# filename="",
+#			currDir=config.usage.default_path.value,
+#			bookmarks=config.movielist.videodirs,
+#			windowTitle=_("Select Playback Location"),
+#			# minFree=None,
+#			autoAdd=True,
+#			editDir=True,
+#			inhibitDirs=DEFAULT_INHIBIT_DIRECTORIES,
+#			# inhibitMounts=None
+#		)
+
+
 ####################################################################################
-class setup(Screen, ConfigListScreen):
+class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 	ALLOW_SUSPEND = True
-	skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
+	#skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
 
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.session = session
-		self.skinName = "Advanced-Event-Library-Setup"
+		self.skinName = ["Setup"]  # "Advanced-Event-Library-Setup"
 		self.title = "Advanced-Event-Library-Setup"
 
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Speichern")
 		self["key_yellow"] = StaticText("TVS-Setup")
-		self["key_blue"] = StaticText("")
+#		self["key_blue"] = StaticText("")
+
+		self["footnote"] = Label()
+		self["footnote"].hide()
+		self["description"] = Label()
 
 		bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
@@ -470,7 +507,7 @@ class setup(Screen, ConfigListScreen):
 		self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
 		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-		self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
+#NEW		# self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 		self.coverquality = config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
 		self.posterquality = config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
 		self.dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
@@ -503,12 +540,12 @@ class setup(Screen, ConfigListScreen):
 			self.vtidb = ConfigYesNo(default=True)
 			self.usePictures = ConfigYesNo(default=True)
 
-		inhibitDirs = ["/bin", "/boot", "/dev", "/home", "/lib", "/config", "/proc", "/sbin", "/share", "/sys", "/tmp", "/usr", "/var", "/media/VMC", "/media/VMC5", "/.cache", "/.local", "/autofs", "/mnt", "/run"]
-		for root, directories, files in os.walk("/etc"):
-			if str(root) != "/etc" and str(root) != "/etc/enigma2":
-				inhibitDirs.append(str(root))
-		self["myFileList"] = FileList("/media/hdd/", showDirectories=True, showFiles=False, inhibitDirs=inhibitDirs)
-		self["myFileList"].hide()
+		#inhibitDirs = ["/bin", "/boot", "/dev", "/home", "/lib", "/config", "/proc", "/sbin", "/share", "/sys", "/tmp", "/usr", "/var", "/media/VMC", "/media/VMC5", "/.cache", "/.local", "/autofs", "/mnt", "/run"]
+		#for root, directories, files in os.walk("/etc"):
+		#	if str(root) != "/etc" and str(root) != "/etc/enigma2":
+		#		inhibitDirs.append(str(root))
+		#self["myFileList"] = FileList("/media/hdd/", showDirectories=True, showFiles=False, inhibitDirs=inhibitDirs)
+		#self["myFileList"].hide()
 		self.myFileListActive = False
 
 		self.configlist = []
@@ -520,14 +557,15 @@ class setup(Screen, ConfigListScreen):
 			"key_cancel": self.normal_close,
 			"key_red": self.normal_close,
 			"key_green": self.do_close,
-			"key_blue": self.key_blue_handler,
+#			"key_blue": self.key_blue_handler,
 			"key_yellow": self.key_yellow_handler,
-			"key_up": self.key_up_handler,
-			"key_down": self.key_down_handler,
-			"key_ok": self.key_ok_handler,
+#			"key_up": self.key_up_handler,
+#			"key_down": self.key_down_handler,
+#			"key_ok": self.key_ok_handler,
 		}, -1)
 
 	def key_ok_handler(self):
+		return
 		try:
 			cur = self['config'].getCurrent()
 			if cur:
@@ -544,6 +582,7 @@ class setup(Screen, ConfigListScreen):
 			write_log("Setup - keyok : " + str(ex))
 
 	def updatePath(self, confirmed=False, cur=""):
+		return
 		if self["myFileList"].getSelection():
 			cur = self['config'].getCurrent()
 			path = self["myFileList"].getSelection()[0]
@@ -563,10 +602,11 @@ class setup(Screen, ConfigListScreen):
 					self.backuppath.value = path
 				self.createDirs(path)
 				cur = self["config"].getCurrent()
-				self["config"].updateConfigListView(cur)
+				#self["config"].updateConfigListView(cur)
 				self.buildConfigList()
 
 	def createDirs(self, path):
+		return
 		if not os.path.exists(path):
 			os.makedirs(path)
 		if not os.path.exists(path + 'poster/'):
@@ -574,27 +614,27 @@ class setup(Screen, ConfigListScreen):
 		if not os.path.exists(path + 'cover/'):
 			os.makedirs(path + 'cover/')
 
-	def key_up_handler(self):
-		if self.myFileListActive:
-			self["myFileList"].up()
-			self.updatePath()
-		else:
-			self["config"].instance.moveSelection(self["config"].instance.moveUp)
+#	def key_up_handler(self):
+#		if self.myFileListActive:
+#			self["myFileList"].up()
+#			self.updatePath()
+#		else:
+#			self["config"].instance.moveSelection(self["config"].instance.moveUp)
 
-	def key_down_handler(self):
-		if self.myFileListActive:
-			self["myFileList"].down()
-			self.updatePath()
-		else:
-			self["config"].instance.moveSelection(self["config"].instance.moveDown)
+#	def key_down_handler(self):
+#		if self.myFileListActive:
+#			self["myFileList"].down()
+#			self.updatePath()
+#		else:
+#			self["config"].instance.moveSelection(self["config"].instance.moveDown)
 
-	def key_blue_handler(self):
-		if self.myFileListActive:
-			self["key_blue"].setText("")
-			self["myFileList"].hide()
-			self.myFileListActive = False
-			self.updatePath(True)
-			self.buildConfigList()
+#	def key_blue_handler(self):
+#		if self.myFileListActive:
+#			self["key_blue"].setText("")
+#			self["myFileList"].hide()
+#			self.myFileListActive = False
+#			self.updatePath(True)
+#			self.buildConfigList()
 
 	def key_yellow_handler(self):
 		self.session.openWithCallback(self.return_from_setup, TVSSetup)
@@ -668,6 +708,7 @@ class setup(Screen, ConfigListScreen):
 			write_log("Fehler in buildConfigList : " + str(ex))
 
 	def changedEntry(self):
+		return
 		cur = self["config"].getCurrent()
 		if cur and cur is not None:
 			if not "suche in" in cur[0]:
@@ -684,7 +725,7 @@ class setup(Screen, ConfigListScreen):
 					cur[1].value = cur[1].value + "AdvancedEventLibraryBackup/"
 					self.buildConfigList()
 					self["config"].setList(self.configlist)
-			self["config"].updateConfigListView(cur)
+			#self["config"].updateConfigListView(cur)
 
 	def do_close(self):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
@@ -694,17 +735,18 @@ class setup(Screen, ConfigListScreen):
 		try:
 			if answer is True:
 				for x in self["config"].list:
-					if not "suche" in x[0] and not "Einstellungen" in x[0] and x[0]:
-						write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value))
-						x[1].save()
-					else:
-						if 'suche in Unterverzeichnissen von ' in str(x[0]):
-							for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
-								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
-									self.searchOptions[str(root)] = x[1].value
-							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
+					if len(x) > 1:
+						if not "suche" in x[0] and not "Einstellungen" in x[0] and x[0]:
+							write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value))
+							x[1].save()
 						else:
-							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
+							if 'suche in Unterverzeichnissen von ' in str(x[0]):
+								for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
+									if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
+										self.searchOptions[str(root)] = x[1].value
+								self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
+							else:
+								self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
 				self.searchPlaces.value = str(self.searchOptions)
 				self.searchPlaces.save()
 				self.session.open(TryQuitMainloop, 3)
@@ -856,8 +898,8 @@ class TVSSetup(Screen, ConfigListScreen):
 #		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
-		if cur and cur is not None:
-			self["config"].updateConfigListView(cur)
+		#if cur and cur is not None:
+		#	self["config"].updateConfigListView(cur)
 
 	def do_close(self):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("Sollen die Einstellungen gespeichert werden ?"), MessageBox.TYPE_YESNO)
@@ -1744,8 +1786,8 @@ class Editor(Screen, ConfigListScreen):
 		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
-		if cur and cur is not None:
-			self["config"].updateConfigListView(cur)
+		#if cur and cur is not None:
+		#	self["config"].updateConfigListView(cur)
 
 	def doClose(self):
 		if self.activeList == 'choiceBox':

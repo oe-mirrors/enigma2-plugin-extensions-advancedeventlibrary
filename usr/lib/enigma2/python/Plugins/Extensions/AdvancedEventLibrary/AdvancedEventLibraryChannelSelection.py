@@ -355,7 +355,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 	def buildChannelList(self, entrys):
 		try:
-			print(entrys)
 			maxLength = self.channelParameter[2]
 			textHeight = int(self.channelParameter[8])
 			textBegin = 100 - textHeight
@@ -378,20 +377,38 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 			ret = [entrys]
 			#rework
+
+#0-4			# self.l.getItemSize().width(), self.l.getItemSize().height(), self.maxTextLength, self.imageType, self.folderImage,
+#5-9			#  self.substituteImage, self.fc, self.fcs, self.textHeightPercent, self.progressForegroundColor,
+#10-14			#  self.progressBackgroundColor, self.progressForegroundColorSelected, self.progressBackgroundColorSelected, self.progressBorderWidth, recIcon,
+#15-19			#  self.scrambledImage, self.imagePos,  self.recIconPos, self.firstLinePos, self.secondLinePos,
+#20-24			# self.piconPos, self.control, self.coverings, self.progressPos, self.fontOrientation,
+#25,26			#  self.backgroundColor, self.timeFormat
+
+
+#(255, 250, 50, 'cover/thumbnails', '/usr/share/enigma2/AELImages/folder.jpg',
+#  'replaceWithPicon', '#00dddddd', '#001663ec', 15, '#00dddddd',
+#  '#00222222', '#001663ec', '#00222222', 1, '/usr/share/enigma2/AELImages/timer.png',
+#  '/usr/share/enigma2/AELImages/scrambled.png', [10, 20, 80, 50], [89, 7, 9, 9], [14, 0, 86, 20, 0, 0],  [0, 70, 100, 27, 0, 1],
+#  [2, 2, 14, 11], "{'left' : 'left', 'right' : 'right', 'up' : 'up', 'down' : 'down', 'pageUp' : 'pageUp', 'pageDown' : 'pageDown', 'switchControl' : True}", [], [0, 96, 100, 3], 'RT_WRAP,RT_HALIGN_CENTER,RT_VALIGN_CENTER',
+#  '#00272727', 'weekday,date,start,end,duration') 27
+
 			print(self.channelParameter)
-			ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[16][0], self.channelParameter[16][1]), size=(self.channelParameter[16][2], self.channelParameter[16][3]), png=image, flags=BT_SCALE))
-			# ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][0], self.channelParameter[17][1], self.channelParameter[17][2], self.channelParameter[17][3], self.channelParameter[17][2], self.channelParameter[17][3], image, None, None, BT_SCALE))
-			#for covering in self.channelListCoverings:
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, covering[0], covering[1], covering[0], covering[1], covering[2], covering[3], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
-			#r  # et.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
+			#ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[16][0], self.channelParameter[16][1]), size=(self.channelParameter[16][2], self.channelParameter[16][3]), png=image, flags=BT_SCALE))
+			ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[17][0], self.channelParameter[17][1]), size=(self.channelParameter[17][2], self.channelParameter[17][3]), png=image, flags=BT_SCALE))
+			for covering in self.channelListCoverings:
+				ret.append(MultiContentEntryPixmapAlphaBlend(pos=(covering[0], covering[1]), size=(covering[2], covering[3]), png=self.shaper, flags=BT_SCALE))
+				ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[21][0], self.channelParameter[21][1]), size=(self.channelParameter[21][2], self.channelParameter[21][3]), png=picon, flags=BT_SCALE))
+			ret.append(MultiContentEntryProgress(pos=(self.channelParameter[23][0], self.channelParameter[23][1]), size=(self.channelParameter[23][2], self.channelParameter[23][3]), percent=int(entrys.progress)))
 			#ret.append((eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], skin.parseColor(self.channelParameter[9]).argb(), skin.parseColor(self.channelParameter[11]).argb(), skin.parseColor(self.channelParameter[10]).argb(), skin.parseColor(self.channelParameter[12]).argb()))
-			#if entrys.hasTimer and fileExists(self.channelParameter[15]):
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + str(entrys.servicename), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, str(title), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[18][0], self.channelParameter[18][1], self.channelParameter[18][0], self.channelParameter[18][1], self.channelParameter[18][2], self.channelParameter[18][3], self.channelParameter[18][2], self.channelParameter[18][3], LoadPixmap(self.channelParameter[15]), None, None, BT_SCALE))
-			#else:
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + str(entrys.servicename), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, str(title), skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
+			if entrys.hasTimer and fileExists(self.channelParameter[14]):
+				ret.append(MultiContentEntryText(pos=(self.channelParameter[18][0] + self.channelParameter[18][4], self.channelParameter[18][1]), size=(self.channelParameter[18][2], self.channelParameter[18][3]), font=self.channelParameter[18][5], text=str(entrys.number) + ' ' + str(entrys.servicename)))
+				ret.append(MultiContentEntryText(pos=(self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1]), size=(self.channelParameter[19][2], self.channelParameter[19][3]), font=self.channelParameter[19][5], text=str(title)))
+				ret.append(MultiContentEntryPixmapAlphaBlend(pos=(self.channelParameter[17][0], self.channelParameter[17][1]), size=(self.channelParameter[17][2], self.channelParameter[17][3]), png=LoadPixmap(self.channelParameter[14]), flags=BT_SCALE))
+			else:
+				ret.append(MultiContentEntryText(pos=(self.channelParameter[18][0], self.channelParameter[18][1]), size=(self.channelParameter[18][2], self.channelParameter[18][3]), font=self.channelParameter[18][5], text=str(entrys.number) + ' ' + str(entrys.servicename)))
+				ret.append(MultiContentEntryText(pos=(self.channelParameter[19][0], self.channelParameter[19][1]), size=(self.channelParameter[19][2], self.channelParameter[19][3]), font=self.channelParameter[19][5], text=str(title)))
+			#print(ret)
 			return ret
 		except Exception as ex:
 			write_log('Fehler in buildChannelList : ' + str(ex))
@@ -951,8 +968,8 @@ class MySetup(Screen, ConfigListScreen):
 		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
-		if cur and cur is not None:
-			self["config"].updateConfigListView(cur)
+		#if cur and cur is not None:
+		#	self["config"].updateConfigListView(cur)
 
 	def do_close(self):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)

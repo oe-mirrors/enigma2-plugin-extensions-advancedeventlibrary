@@ -26,9 +26,6 @@ import os
 import linecache
 
 log = "/var/tmp/AdvancedEventLibrary.log"
-config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
 
 countrys = {
 	'USA': ['United States', 'US', 'USA'],

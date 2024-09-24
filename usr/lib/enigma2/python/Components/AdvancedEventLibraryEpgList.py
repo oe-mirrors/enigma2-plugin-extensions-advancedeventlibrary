@@ -21,10 +21,6 @@ EPG_TYPE_MULTI = 1
 EPG_TYPE_SIMILAR = 2
 EPG_TYPE_INFOBAR = 3
 
-config.plugins.AdvancedEventLibrary = ConfigSubsection()
-usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=False)
-previewImages = usePreviewImages.value or usePreviewImages.value == 'true'
-
 
 class Rect:
 	def __init__(self, x, y, width, height):
@@ -435,7 +431,7 @@ class AEL_EPGList(GUIComponent):
 			if os.path.isfile(niC):
 				return self.nameCache.get(eventName, '')
 		else:
-			if previewImages:
+			if config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 				evt = self.db.getliveTV(eventId, eventName)
 				if evt:
 					if evt[0][3] != '' and not str(evt[0][3]).endswith('.jpg'):

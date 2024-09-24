@@ -1201,8 +1201,8 @@ class MySetup(Screen, ConfigListScreen):
 		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
-		if cur and cur is not None:
-			self["config"].updateConfigListView(cur)
+		#if cur and cur is not None:
+		#	self["config"].updateConfigListView(cur)
 
 	def do_close(self):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
