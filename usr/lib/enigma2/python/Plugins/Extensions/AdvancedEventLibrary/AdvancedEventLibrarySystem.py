@@ -58,7 +58,7 @@ from . import AdvancedEventLibraryMediaHub
 from . import AdvancedEventLibraryRecommendations
 from .AdvancedEventLibrarySimpleMovieWall import saving
 
-currentVersion = 124
+currentVersion = 132
 PARAMETER_SET = 0
 PARAMETER_GET = 1
 SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]
@@ -84,7 +84,7 @@ previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 #usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
-useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+# useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
 closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
 createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
@@ -504,7 +504,7 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 		self.previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
 		self.showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
 		self.useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
-		self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+		# self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
 		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 #NEW		# self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
@@ -522,6 +522,9 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 		self.delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 		self.closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
 		self.refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
+		self.refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default = True)
+		self.refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default = False)
+		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default = False)
 		self.searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 		self.maxUsedInodes = config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
 		self.createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
@@ -662,7 +665,7 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("Einstellungen Download"))
 			self.configlist.append(getConfigListEntry("Art der Suche", self.searchfor))
 			if str(self.searchfor.value) == "Extradaten und Bilder":
-				self.configlist.append(getConfigListEntry("benutze AEL Image-Server", self.useAELIS))
+				# self.configlist.append(getConfigListEntry("benutze AEL Image-Server", self.useAELIS))
 				self.configlist.append(getConfigListEntry("lade Previewbilder", self.usePreviewImages))
 				if self.usePreviewImages.value:
 					self.configlist.append(getConfigListEntry("lösche alte Previewbilder beim Suchlauf", self.delPreviewImages))
@@ -676,10 +679,12 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("benutze AEL EPG-Listenstil", self.useAELEPGLists))
 			self.configlist.append(getConfigListEntry("benutze EPG-Taste in EPGSelection für Plugin-Aufruf", self.showinEPG))
 			self.configlist.append(getConfigListEntry("benutze AEL-Movie-Wall", self.updateAELMovieWall))
+			self.configlist.append(getConfigListEntry("ignoriere die Serienerkennung bei der Sortierung (Movie-Wall)", self.ignoreSortSeriesdetection))
 			if self.updateAELMovieWall.value:
 				self.configlist.append(getConfigListEntry("benutze PVR-Taste zum Start für Movie-Wall", self.useAELMW))
 				self.configlist.append(getConfigListEntry("beziehe Symlinks in die Suche nach Aufnahmen ein", self.searchLinks))
-				self.configlist.append(getConfigListEntry("aktualisiere Movie-Wall automatisch nach Aufnahmestop", self.refreshMW))
+				self.configlist.append(getConfigListEntry("aktualisiere Movie-Wall automatisch nach Aufnahmestop", self.refreshMWAtStop))
+				self.configlist.append(getConfigListEntry("aktualisiere Movie-Wall automatisch nach Aufnahmestart", self.refreshMWAtStart))
 
 			self.configlist.append(getConfigListEntry("Einstellungen Suche"))
 			self.configlist.append(getConfigListEntry("erstelle nicht vorhandene Metadaten", self.createMetaData))
@@ -1048,7 +1053,7 @@ class Editor(Screen, ConfigListScreen):
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
-			"key_cancel": self.key_red_handler,
+			"key_cancel": self.doClose,
 			"key_red": self.key_red_handler,
 			"key_green": self.key_green_handler,
 			"key_yellow": self.key_yellow_handler,
@@ -1198,25 +1203,13 @@ class Editor(Screen, ConfigListScreen):
 
 	def key_menu_handler(self):
 		if self.ptr != 'nothing found':
-			lastDownload = self.db.parameter(PARAMETER_GET, 'lastimagedownload', None, 0)
-			acceptDownload = False
-			if float(lastDownload) < float(time() - 86400.0):
-				acceptDownload = True
 
-			if useAELIS.value and not "/etc" in str(mypath.value) and acceptDownload:
-				if self.cSource == 0 and self.activeList == 'cover':
-					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
-				elif self.pSource == 0 and self.activeList == 'poster':
-					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
-				else:
-					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('lade Bilder von AEL-Image-Server (nicht vorhandene)',), ('lade Bilder von AEL-Image-Server (ersetzen)',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
+			if self.cSource == 0 and self.activeList == 'cover' and not "/etc" in str(mypath.value):
+				choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+			elif self.pSource == 0 and self.activeList == 'poster' and not "/etc" in str(mypath.value):
+				choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
 			else:
-				if self.cSource == 0 and self.activeList == 'cover':
-					choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
-				elif self.pSource == 0 and self.activeList == 'poster':
-					choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
-				else:
-					choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
+				choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
 			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Bearbeiten', keys=keys, list=choices, selection=idx)
 
@@ -1448,13 +1441,13 @@ class Editor(Screen, ConfigListScreen):
 		else:
 			self.eventData[3] = eventData[3]
 
-		if self.evt:  # rating
-			if len(str(self.evt[0][6]).strip()) > 0:
-				self.eventData[4] = self.evt[0][6]
-			else:
-				self.eventData[4] = eventData[4]
-		else:
-			self.eventData[4] = eventData[4]
+		#if self.evt:  # rating
+		#	if len(str(self.evt[0][6]).strip()) > 0:
+		#		self.eventData[4] = self.evt[0][6]
+		#	else:
+		#		self.eventData[4] = eventData[4]
+		#else:
+		#	self.eventData[4] = eventData[4]
 
 		if self.evt:  # fsk
 			if len(str(self.evt[0][5]).strip()) > 0:

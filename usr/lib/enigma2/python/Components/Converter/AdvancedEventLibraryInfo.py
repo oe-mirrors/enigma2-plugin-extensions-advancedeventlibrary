@@ -1555,7 +1555,7 @@ class AdvancedEventLibraryInfo(Converter, object):
 			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE | re.DOTALL)
 			ex = regexfinder.findall(str(desc))
 			if ex:
-				SE = ex[0].replace('S', '').split('E')
+				SE = ex[0].lower().replace('s','').split('e')
 				return (SE[0], SE[1])
 			return None
 		except:

@@ -149,7 +149,7 @@ class AdvancedEventLibraryImage(Renderer):
 					if isinstance(self.source, ServiceEvent):
 						service = self.source.getCurrentService()
 						sRef = service.toString()
-						if '/' in sRef:
+						if '/'  in sRef and not '//' in sRef:
 							self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')
 							self.fileName = service.getPath()
 							if self.fileName.endswith("/"):
@@ -296,12 +296,13 @@ class AdvancedEventLibraryImage(Renderer):
 			if self.pfilename:
 				self.foundPoster = True
 
+		isLastRun = self.checkIsLastRun(run, str(eventNames[0]), str(eventNames[1]))
 		# set alternative falls angegeben und nix gefunden
-		if self.noImage and not self.foundImage and (self.imageType == self.PREFER_IMAGE or self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL):
+		if self.noImage and not self.foundImage and (self.imageType == self.PREFER_IMAGE or self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL) and isLastRun:
 			if (os.path.exists(self.noImage)):
 				self.foundImage = True
 				self.ifilename = self.noImage
-		if self.noImage and not self.foundPoster and (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL):
+		if self.noImage and not self.foundPoster and (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL) and isLastRun:
 			if (os.path.exists(self.noImage)):
 				self.foundPoster = True
 				self.pfilename = self.noImage
@@ -336,10 +337,15 @@ class AdvancedEventLibraryImage(Renderer):
 			self.sizetype = 'Image'
 			self.loadPic(self.ifilename)
 		else:
-			if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
+			#if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
+			if not isLastRun:
 				self.setthePixmap(eventNames, 1)
 			else:
 				self.hideimage()
+	def checkIsLastRun(self,run,eventName0,eventName1):
+		if run == 0 and (eventName0 != eventName1) and (eventName1 != "None"):
+			return False
+		else: return True
 
 	def calcSize(self, how):
 		if how == 'Poster':
@@ -389,11 +395,12 @@ class AdvancedEventLibraryImage(Renderer):
 	def showCallback(self, picInfo=None):
 		try:
 			if self.picload:
-				ptr = self.picload.getData()
+				picload = self.picload
+				ptr = picload.getData()
 				if ptr != None:
 					self.image.setPixmap(ptr)
 					if self.ishide:
 						self.showimage()
-				del self.picload
+				del picload
 		except:
 			self.hideimage()

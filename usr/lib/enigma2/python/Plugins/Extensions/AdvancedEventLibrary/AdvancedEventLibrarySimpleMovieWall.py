@@ -54,6 +54,10 @@ if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 	from Plugins.Extensions.tmdb import tmdb
 	isTMDb = True
 
+isMovieRetitleInstalled = False
+if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/MovieRetitle/plugin.pyo"):
+	from Plugins.Extensions.MovieRetitle.plugin import MovieRetitle
+	isMovieRetitleInstalled = True
 
 class MovieEntry():
 	def __init__(self, filename, date, name, service, image, isFolder, progress, desc, trailer="", mlen=0):
@@ -119,6 +123,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
 		self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigText(default="None")
+		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default = False)
 		sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend"])
 		if sortType.value == "Datum absteigend":
 			self.sortType = 0
@@ -148,7 +153,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self['PageInfo'] = Label('')
 			self['moviewall'] = AELBaseWall()
 			self["moviewall"].l.setBuildFunc(self.setMovieEntry)
-			self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			if fileExists(imgpath + "shaper.png"):
+				self.shaper = LoadPixmap(imgpath + "shaper.png")
+			else:
+				self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 
 		self["trailer"] = Pixmap()
 		self["Service"] = ServiceEvent()
@@ -367,7 +376,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					self.movielist = self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['files']
 
 				if self.movielist:
-					if sorttype != 2:
+					if sorttype != 2 and not self.ignoreSortSeriesdetection.value:
 						foundEpisodes = False
 						for entry in self.movielist:
 							if self.findEpisode(entry[2]):
@@ -571,13 +580,23 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			cs = self['moviewall'].getcurrentselection()
 		if cs.isFolder:
 			if self.currentFolder[0] != "root" and cs.name != "...":
-				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abrechen',)], 0)
+				if os.access(cs.filename[1], os.W_OK): #Check Readonly
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abbrechen',)],0)
+				else:
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('kopiere : ' + cs.filename[1],), ('Abbrechen',)],0)
 				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
 			else:
 				self.menuCallBack(ret=["Einstellungen"])
 		else:
-			if config.usage.movielist_use_moviedb_trash.value:
-				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('lösche (Papierkorb) : ' + cs.name,), ('Abrechen',)], 0)
+			if os.access(cs.filename, os.W_OK):
+				if config.usage.movielist_use_moviedb_trash.value:
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('lösche (Papierkorb) : ' + cs.name,), ('Abrechen',)], 0)
+					if isMovieRetitleInstalled:
+						choices.insert(len(choices)-3,('umbenennen : ' + cs.name,))
+				else:
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abbrechen',)],0)
+					if isMovieRetitleInstalled:
+						choices.insert(len(choices)-2,('umbenennen : ' + cs.name,))
 			else:
 				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abrechen',)], 0)
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
@@ -629,6 +648,14 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.sel_changed()
 				if self.viewType == 'Wallansicht':
 					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
+			elif 'umbenennen : ' in ret[0]:
+				self.session.open(MovieRetitle, cs.service, self)
+	def reloadList(self):
+		self.getList(self.currentFolder, True)
+		self.getMovieList(self.sortType)
+		self.sel_changed()
+		if self.viewType == 'Wallansicht':
+			self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def moveCallBack(self, ret=None):
 		if ret:
@@ -1186,7 +1213,7 @@ def saveList(imageType):
 														service = eServiceReference('4097:0:0:0:0:0:0:0:0:0:' + os.path.join(root, filename))
 													try:
 														info = eServiceCenter.getInstance().info(service)
-														name = info.getName(service)
+														name = removeExtension(info.getName(service))
 														mlen = info.getLength(service)
 														desc = info.getInfoString(service, iServiceInformation.sDescription)
 													except:

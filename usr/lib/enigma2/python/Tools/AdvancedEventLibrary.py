@@ -65,7 +65,7 @@ config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/Adva
 backuppath = config.plugins.AdvancedEventLibrary.Backup.value
 addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
-useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+# useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 delpreviewImages = delPreviewImages.value or delPreviewImages.value == 'true'
@@ -132,7 +132,6 @@ networks = {
 	'Anime Network': 'USA',
 	'ANT1': 'GRC',
 	'Antena 3': 'ESP',
-	'ARY Digital': 'PAK',
 	'ARY Digital': 'PAK',
 	'ARY One World': 'PAK',
 	'ARY Shopping Channel': 'PAK',
@@ -226,7 +225,7 @@ networks = {
 	'France 3': 'FRA',
 	'France 4': 'FRA',
 	'France 5': 'FRA',
-	'France �': 'FRA',
+	'France Ô': 'FRA',
 	'Fred TV': 'USA',
 	'Fuji TV': 'JPN',
 	'FUNimation Channel': 'USA',
@@ -313,11 +312,11 @@ networks = {
 	'Revelation TV': 'GBR',
 	'rmusic TV': 'GBR',
 	'Royal News': 'PAK',
-	'RT� One': 'IRL',
-	'RT� Two': 'IRL',
+	'RTÉ One': 'IRL',
+	'RTÉ Two': 'IRL',
 	'RTL Television': 'DEU',
-	'RTP A�ores': 'PRT',
-	'RTP �frica': 'PRT',
+	'RTP Açores': 'PRT',
+	'RTP África': 'PRT',
 	'RTP Internacional': 'PRT',
 	'RTP Madeira': 'PRT',
 	'RTP N': 'PRT',
@@ -335,9 +334,9 @@ networks = {
 	'Seven Network': 'AUS',
 	'Showtime': 'USA',
 	'SIC': 'PRT',
-	'SIC Com�dia': 'PRT',
+	'SIC Comédia': 'PRT',
 	'SIC Mulher': 'PRT',
-	'SIC Not�cias': 'PRT',
+	'SIC Notícias': 'PRT',
 	'SIC Radical': 'PRT',
 	'SIC Sempre Gold': 'PRT',
 	'Sirasa': 'LKA',
@@ -464,7 +463,7 @@ networks = {
 	'Syndicated': '',
 	'Showcase (CA)': 'CAN',
 	'Teletoon': 'CAN',
-	'T�l�toon': 'FRA',
+	'Télétoon': 'FRA',
 	'TVNZ': 'NZL',
 	'Comedy Central (US)': 'USA',
 	'TLC': 'USA',
@@ -474,7 +473,7 @@ networks = {
 	'History': 'USA',
 	'Encore': 'USA',
 	'Lifetime': 'USA',
-	'��n': 'BEL',
+	'één': 'BEL',
 	'G4': 'USA',
 	'Revision3': 'USA',
 	'Network Ten': 'AUS',
@@ -532,19 +531,19 @@ networks = {
 	'TVA (JP)': 'JPN',
 	'Investigation Discovery': 'USA',
 	'TV Azteca': 'MEX',
-	'S�ries+': 'CAN',
+	'Séries+': 'CAN',
 	'V': 'CAN',
 	'Television Osaka': 'JPN',
 	'SVT': 'SWE',
-	'Zt�l�': 'CAN',
+	'Ztélé': 'CAN',
 	'Vrak.TV': 'CAN',
 	'Casa': 'CAN',
 	'Logo': 'USA',
 	'Disney XD': 'USA',
 	'Prime (NZ)': 'NZL',
-	'2�2': 'RUS',
+	'2×2': 'RUS',
 	'TV Nova': 'CZE',
-	'Cesk� televize': 'CZE',
+	'Ceská televize': 'CZE',
 	'Prima televize': 'CZE',
 	'Science Channel': 'USA',
 	'DIY Network': 'USA',
@@ -587,7 +586,7 @@ networks = {
 	'Kanal 4': 'DNK',
 	'Kanal 5': 'DNK',
 	'dk4': 'DNK',
-	'Magyar Telev�zi�': 'HUN',
+	'Magyar Televízió': 'HUN',
 	'Outdoor Channel': 'USA',
 	'The Sportsman Channel': 'USA',
 	'ATV': 'AUT',
@@ -645,9 +644,9 @@ networks = {
 	'Canal 10 Saeta': 'URY',
 	'Teledoce': 'URY',
 	'Canal 4 Montecarlo': 'URY',
-	'Tev�Ciudad': 'URY',
+	'TevéCiudad': 'URY',
 	'Encuentro': 'ARG',
-	'TV P�blica': 'ARG',
+	'TV Pública': 'ARG',
 	'Einsfestival': 'DEU',
 	'SR': 'DEU',
 	'Kyoto Broadcasting System': 'JPN',
@@ -693,7 +692,7 @@ networks = {
 	'Fuel TV': 'USA',
 	'RT': 'RUS',
 	'Russia Today': 'RUS',
-	'T�l�-Qu�bec': 'CAN',
+	'Télé-Québec': 'CAN',
 	'FOX (FI)': 'FIN',
 	'C31': 'AUS',
 	'La7': 'ITA',
@@ -751,7 +750,7 @@ networks = {
 	'ARTV': 'CAN',
 	'Yahoo! Screen': 'USA',
 	'Duna TV': 'HUN',
-	'H�r TV': 'HUN',
+	'Hír TV': 'HUN',
 	'National Geographic Adventure': 'USA',
 	'Nat Geo Wild': 'USA',
 	'More4': 'GBR',
@@ -767,7 +766,7 @@ networks = {
 	'EinsPlus': 'DEU',
 	'TRT 1': 'TUR',
 	'RTL': 'LUX',
-	'ATV T�rkiye': 'TUR',
+	'ATV Türkiye': 'TUR',
 	'RCN TV': 'COL',
 	'Caracol TV': 'COL',
 	'Venevision': 'VEN',
@@ -793,7 +792,7 @@ networks = {
 	'jTBC': 'KOR',
 	'Hunan TV': 'CHN',
 	'La Cinq': 'FRA',
-	'AlloCin�': 'FRA',
+	'AlloCiné': 'FRA',
 	'FXX': 'USA',
 	'BBC ALBA': 'GBR',
 	'TVGN': 'USA',
@@ -812,7 +811,7 @@ networks = {
 	'Syndication': 'USA',
 	'FOX Sports 1': 'USA',
 	'FOX Sports 2': 'USA',
-	'Ch�rie 25': 'FRA',
+	'Chérie 25': 'FRA',
 	'NOS': 'NLD',
 	'Colors': 'IND',
 	'Omroep MAX': 'NLD',
@@ -845,7 +844,7 @@ networks = {
 	'Aizo TV': 'TWN',
 	'STV (TW)': 'TWN',
 	'Nou 24': 'ESP',
-	'Nou Televisi�': 'ESP',
+	'Nou Televisió': 'ESP',
 	'Teletama': 'JPN',
 	'Toei Channel': 'JPN',
 	'CTV (JP)': 'JPN',
@@ -853,7 +852,7 @@ networks = {
 	'El Rey Network': 'USA',
 	'Sky Living': 'GBR',
 	'Channel 3': 'THA',
-	'Kamp�s TV': 'TUR',
+	'Kampüs TV': 'TUR',
 	'Life OK': 'IND',
 	'Canal Once': 'MEX',
 	'Food Network Canada': 'CAN',
@@ -889,7 +888,7 @@ networks = {
 	'FEARnet': 'USA',
 	'Channel 7': 'THA',
 	'AHC': 'USA',
-	'FOX T�rkiye': 'TUR',
+	'FOX Türkiye': 'TUR',
 	'RTBF': 'BEL',
 	'Ora TV': 'USA',
 	'Discovery MAX': 'ESP',
@@ -898,7 +897,7 @@ networks = {
 	'OCS': 'FRA',
 	'vtmKzoom': 'BEL',
 	'TVO': 'CAN',
-	'Televisi�n de Galicia': 'ESP',
+	'Televisión de Galicia': 'ESP',
 	'RTL Klub': 'HUN',
 	'Showcase (AU)': 'AUS',
 	'Canal Sur': 'ESP',
@@ -912,7 +911,7 @@ networks = {
 	'MusiquePlus': 'CAN',
 	'Spektrum': 'HUN',
 	'Disney Channel (Germany)': 'DEU',
-	'TeleZ�ri': 'CHE',
+	'TeleZüri': 'CHE',
 	'3+': 'CHE',
 	'MBC Every1': 'KOR',
 	'Sportsman Channel': 'USA',
@@ -925,7 +924,7 @@ networks = {
 	'ART TV': 'GRC',
 	'Epsilon TV': 'GRC',
 	'Skai': 'GRC',
-	'TV S�o Carlos': 'BRA',
+	'TV São Carlos': 'BRA',
 	'TBN (Trinity Broadcasting Network)': 'USA',
 	'Bounce TV': 'USA',
 	'HLN': 'USA',
@@ -955,15 +954,15 @@ networks = {
 	'Oprah Winfrey Network': 'USA',
 	'Alpha TV': 'GRC',
 	'TV Net': 'TUR',
-	'TRT Kurd�': 'TUR',
+	'TRT Kurdî': 'TUR',
 	'Kanal A (Turkey)': 'TUR',
 	'TRT HD': 'TUR',
 	'TRT Haber': 'TUR',
 	'TRT Belgesel': 'TUR',
 	'TRT World': 'TUR',
 	'360': 'TUR',
-	'TRT T�rk': 'TUR',
-	'TRT �ocuk': 'TUR',
+	'TRT Türk': 'TUR',
+	'TRT Çocuk': 'TUR',
 	'TRT Avaz': 'TUR',
 	'TRT Arabic': 'TUR',
 	'TRT Diyanet': 'TUR',
@@ -974,26 +973,26 @@ networks = {
 	'Semerkand TV': 'TUR',
 	'A Haber': 'TUR',
 	'Kanal 7': 'TUR',
-	'�lke TV': 'TUR',
+	'Ülke TV': 'TUR',
 	'TGRT Haber': 'TUR',
 	'Beyaz TV': 'TUR',
-	'L�leg�l TV': 'TUR',
+	'Lâlegül TV': 'TUR',
 	'HBO Nordic': 'SWE',
 	'Bandai Channel': 'JPN',
 	'Sixx': 'DEU',
 	'element14': 'USA',
-	'HBO Magyarorsz�g': 'HUN',
+	'HBO Magyarország': 'HUN',
 	'HBO Europe': 'HUN',
 	'HBO Latin America': 'BRA',
 	'Canal Off': 'BRA',
 	'ETV': 'EST',
-	'Super �cran': 'CAN',
+	'Super Écran': 'CAN',
 	'Discovery Life': 'USA',
 	'The Family Channel': 'USA',
 	'Fox Family': 'USA',
 	'Canal 9 (AR)': 'ARG',
 	'B92': 'SRB',
-	'Ceskoslovensk� televize': 'CZE',
+	'Ceskoslovenská televize': 'CZE',
 	'CNNI': 'USA',
 	'Channel 101': 'USA',
 	'Canal 5': 'MEX',
@@ -1002,14 +1001,14 @@ networks = {
 	'WPIX': 'USA',
 	'Canal Famille': 'CAN',
 	'Canal D': 'CAN',
-	'�vasion': 'CAN',
+	'Évasion': 'CAN',
 	'DIY Network Canada': 'CAN',
 	'Much (CA)': 'CAN',
 	'MTV Brazil': 'BRA',
 	'UKTV Yesterday': 'GBR',
 	'Swearnet': 'CAN',
 	'Dailymotion': 'USA',
-	'RMC D�couverte': 'FRA',
+	'RMC Découverte': 'FRA',
 	'Discovery Family': 'USA',
 	'SBS Plus': 'KOR',
 	'Olive': 'KOR',
@@ -1038,11 +1037,11 @@ networks = {
 	'SKY PerfecTV!': 'JPN',
 	'Disney Junior': 'USA',
 	'Mondo TV': 'ITA',
-	't�va': 'FRA',
+	'téva': 'FRA',
 	'MCM': 'FRA',
 	'June': 'FRA',
-	'Com�die !': 'FRA',
-	'Com�die+': 'FRA',
+	'Comédie !': 'FRA',
+	'Comédie+': 'FRA',
 	'Filles TV': 'FRA',
 	'Discovery Channel (Australia)': 'AUS',
 	'FOX (UK)': 'GBR',
@@ -1370,6 +1369,8 @@ def createMovieInfo(db):
 						if doIt:
 							for filename in files:
 								try:
+									if not os.access(os.path.join(root, filename), os.W_OK):
+										continue
 									foundAsMovie = False
 									foundOnTMDbTV = False
 									foundOnTVDb = False
@@ -1899,9 +1900,14 @@ def getallEventsfromEPG():
 		tvname = name
 		tvname = re.sub('\\(.*?\\)', '', tvname).strip()
 		tvname = re.sub(' +', ' ', tvname)
-		if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
-				record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
-				liveTVRecords.append(record)
+		#if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
+		minEPGBeginTime = time() - 7200 #-2h
+		maxEPGBeginTime = time() + 1036800 #12Tage
+		if begin > minEPGBeginTime and begin < maxEPGBeginTime:
+			if not db.checkliveTV(eid, serviceref):
+				if str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
+					record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
+					liveTVRecords.append(record)
 
 		foundInBl = False
 		name = convertTitle(name)
@@ -1944,7 +1950,8 @@ def getTVSpielfilm(db, tvsref):
 						evt += 1
 						maxDate = db.getMaxAirtimeforUpdate(sRef)
 						curDate = db.getMinAirtimeforUpdate(sRef)
-						while int(curDate) <= int(maxDate) + 86400:
+						#while int(curDate) <= int(maxDate) + 86400:
+						while (int(curDate)-86400) <= int(maxDate)+86400:
 							try:
 								url = 'https://live.tvspielfilm.de/static/broadcast/list/' + str(tvsref[sRef]).upper() + '/' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d"))
 								STATUS = '(' + str(evt) + '/' + str(len(refs)) + ') durchsuche ' + tvsref[sRef] + ' f�r den ' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")) + ' auf TV-Spielfilm ' + " (" + str(founded) + "/" + str(tcount) + " | " + str(imgcount) + ")"
@@ -2025,6 +2032,7 @@ def getTVSpielfilm(db, tvsref):
 													ratings += 1
 											if ratings > 0:
 												rating = str(round(float(ratingCount / ratings), 1))
+											rating = ""
 
 											if 'videos' in event:
 												imdb = event['videos'][0]['video'][0]['url']
@@ -2061,7 +2069,7 @@ def getTVSpielfilm(db, tvsref):
 												image = ""
 											success = founded
 
-											db.updateliveTVS(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sRef, airtime)
+											db.updateliveTVS(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sRef, airtime, title)
 											founded = tcount - db.getUpdateCount()
 											if founded == success:
 												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', addlog.value)
@@ -2200,6 +2208,7 @@ def getTVMovie(db, secondRun=False):
 											conclusion = event['conclusion']
 										if 'movieStarValue' in event:
 											rating = str(int(event['movieStarValue'] * 2))
+										rating = ""
 #										if 'imdbId' in event:
 #											imdb = event['imdbId']
 
@@ -2358,6 +2367,7 @@ def convertTitle(name):
 		name = name[:name.find('Folge')].strip()
 	if name.find('Episode') > 0:
 		name = name[:name.find('Episode')].strip()
+	name = name.strip(" -+&#:_")
 	return name
 
 
@@ -2381,6 +2391,7 @@ def convertTitle2(name):
 		name = name[:name.find('Episode')].strip()
 	if name.find('!') > 0:
 		name = name[:name.find('!') + 1].strip()
+	name = name.strip(" -+&#:_")
 	return name
 
 
@@ -2393,7 +2404,7 @@ def findEpisode(title):
 			if removedEpisode.find(str(ex[0])) > 0:
 					removedEpisode = removedEpisode[:removedEpisode.find(str(ex[0]))]
 			removedEpisode = convertTitle2(removedEpisode)
-			SE = ex[0].replace('S', '').replace('s', '').split('E')
+			SE = ex[0].lower().replace('s','').split('e')
 			return (SE[0], SE[1], removedEpisode.strip())
 		return None
 	except:
@@ -2402,8 +2413,10 @@ def findEpisode(title):
 
 def convertSearchName(eventName):
 	try:
+		eventName = removeExtension(eventName)
 		text = eventName.replace('\x86', '').replace('\x87', '')
 	except:
+		eventName = removeExtension(eventName)
 		text = eventName.replace(b'\x86', b'').replace(b'\x87', b'')
 	return text
 
@@ -2458,134 +2471,6 @@ def downloadImage2(url, filename, timeout=5):
 		else:
 			return True
 	except:
-		return False
-
-
-def downloadImagefromAELImageServer(url, filename, timeout=5):
-	try:
-		if not fileExists(filename):
-			write_log("try to download image from: " + str(url))
-
-			res = requests.get(url, stream=True, timeout=timeout)
-			if res.status_code == 200:
-				with open(filename, 'wb') as f:
-					res.raw.decode_content = True
-					shutil.copyfileobj(res.raw, f)
-					f.close()
-				res = None
-				write_log("found Image : " + str(filename) + ' auf AEL-Image-Server')
-			else:
-				write_log("Fehlerhafter Statuscode beim Download f�r : " + str(filename) + ' auf ' + str(url))
-		else:
-			write_log("Picture : " + str(base64.b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', addlog.value)
-	except Exception as ex:
-		write_log("Fehler in downloadImagefromAELImageServer : " + str(ex))
-
-
-def downloadAllImagesfromAELImageServer(overwrite=False):
-	global STATUS
-	from zipfile import ZipFile
-	global what
-	global url
-	global filename
-	global dooverwrite
-	dooverwrite = overwrite
-	what = 'cover'
-	url = 'http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download'
-#	url = 'https://timobayl.de/AEL/index.php/s/RfW2ZXiTcfA3z4D/download?path=%2F&files=cover'
-	filename = getPictureDir() + 'cover.zip'
-
-	def downloadProgress(recvbytes, totalbytes):
-		global STATUS
-		global what
-		if totalbytes:
-			progress = int(100 * recvbytes / float(totalbytes))
-			STATUS = "lade Bilder von AEL-Image-Server ... " + str(int(progress)) + '%'
-		else:
-			progress = int(recvbytes)
-			STATUS = "lade " + str(what) + " von AEL-Image-Server ... " + str(bytes2human(progress, 1))
-
-	def downloadFinished(string=''):
-		global STATUS
-		global what
-		global url
-		global filename
-		global dooverwrite
-		write_log("extract files for " + str(what))
-		STATUS = 'Extrahiere Dateien f�r ' + str(what)
-		cdir = getPictureDir() + 'aelDownload/'
-		if not os.path.exists(cdir):
-			os.makedirs(cdir)
-		with ZipFile(filename, 'r') as zip:
-			zip.extractall(cdir)
-		cf = 0
-		rf = 0
-		STATUS = 'kopiere neue ' + str(what)
-		for root, directories, files in os.walk(cdir + str(what) + '/'):
-			for file in files:
-				if file.endswith('.jpg'):
-					if dooverwrite:
-						shutil.copy2(os.path.join(root, file), os.path.join(dir + str(what).lower() + '/', file))
-						createSingleThumbnail(os.path.join(root, file), os.path.join(dir + str(what).lower(), file))
-						cf += 1
-					else:
-						if not fileExists(os.path.join(dir + str(what).lower() + '/', file)):
-							shutil.copy2(os.path.join(root, file), os.path.join(dir + str(what).lower() + '/', file))
-							createSingleThumbnail(os.path.join(root, file), os.path.join(dir + str(what).lower(), file))
-							cf += 1
-			for file in files:
-				try:
-					os.remove(os.path.join(root, file))
-					rf += 1
-				except:
-					continue
-		os.remove(filename)
-		write_log("found " + str(rf) + ' images. got ' + str(cf) + ' new files')
-		STATUS = None
-		if what == 'poster':
-			db = getDB()
-			if db:
-				db.parameter(PARAMETER_SET, 'lastimagedownload', str(time()))
-		if what != 'poster':
-			what = 'poster'
-			url = 'http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download'
-#			url = 'https://timobayl.de/AEL/index.php/s/RfW2ZXiTcfA3z4D/download?path=%2F&files=poster'
-			filename = getPictureDir() + 'poster.zip'
-			startDownload()
-
-	def downloadFailed(failure_instance=None, error_message=""):
-		global STATUS
-		if error_message == "" and failure_instance is not None:
-			error_message = failure_instance.getErrorMessage()
-			STATUS = None
-			write_log("Fehler beim Download : " + str(error_message))
-
-	def startDownload():
-		try:
-			global STATUS
-			global what
-			global url
-			global filename
-			write_log("try to download all " + str(what) + "s from AEL-Image-Server")
-			STATUS = 'lade ' + str(what) + ' vom AEL-Image-Server herunter...'
-			download = DownloadWithProgress(url, filename)
-			download.addProgress(downloadProgress)
-			download.start().addCallback(downloadFinished).addErrback(downloadFailed)
-		except Exception as ex:
-			write_log("Fehler in downloadAllImagesfromAELImageServer : " + str(ex))
-			STATUS = None
-	startDownload()
-
-
-def checkAELImageServer(url, timeout=5):
-	try:
-		res = requests.get(url, stream=True, timeout=timeout)
-		if res.status_code == 200:
-			return True
-		else:
-			return False
-	except Exception as ex:
-		write_log("Fehler in checkAELImageServer : " + str(ex))
 		return False
 
 
@@ -3284,19 +3169,6 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						except Exception as ex:
 							write_log('Fehler in get_titleInfo omdb : ' + str(ex))
 
-					if imdb_id and titleinfo['fsk'] == "":
-						try:
-							STATUS = str(position) + '/' + str(len(titles)) + ' : altersfreigaben.de -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							write_log('looking for fsk on altersfreigaben.de', addlog.value)
-							url = "https://altersfreigaben.de/api2/s/%s/de" % (imdb_id)
-							r = requests.get(url, timeout=4)
-							if r.status_code == 200:
-								if r.content not in ['100', '300', '310']:
-									titleinfo['fsk'] = r.content
-									write_log("found FSK " + str(titleinfo['fsk']) + " for " + str(title) + " on altersfreigaben.de", addlog.value)
-						except Exception as ex:
-							write_log('Fehler in get_titleInfo altersfreigaben.de : ' + str(ex), addlog.value)
-
 					filename = convert2base64(title)
 					if filename and filename != '' and filename != ' ':
 						if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
@@ -3362,6 +3234,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		if len(liveTVRecords) > 0:
 			write_log('try to insert ' + str(len(liveTVRecords)) + ' events into database')
 			db.addliveTV(liveTVRecords)
+			db.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(db.getUpdateCount()))
 			getTVSpielfilm(db, tvsref)
 			getTVMovie(db)
 			db.updateliveTVProgress()
@@ -3775,61 +3648,6 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			if not b64title:
 				b64title = convert2base64(title)
 
-#			write_log('################################################### AEL-Image-Server ##############################################')
-			if useAELIS.value:
-				try:
-					if what == 'Poster':
-						aelTitle = convert2base64(title)
-						aelurl = 'http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-						if checkAELImageServer(aelurl):
-							downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-							itm = [title, what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle + '.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-							pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle(title)):
-							aelTitle = convert2base64(convertTitle(title))
-							aelurl = 'http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-								itm = [convertTitle(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle + '.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-								pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle2(title)):
-							aelTitle = convert2base64(convertTitle2(title))
-							aelurl = 'http://ael.timobayl.de/index.php/s/476Wk32A8QSsXd7/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultPoster') + '.jpg')
-								itm = [convertTitle2(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(posterDir, aelTitle + '.jpg'), convert2base64('AELDefaultPoster') + '.jpg']
-								pictureList.append((itm,))
-
-					if what == 'Cover':
-						aelTitle = convert2base64(title)
-						aelurl = 'http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-						if checkAELImageServer(aelurl):
-							downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-							itm = [title, what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle + '.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-							pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle(title)):
-							aelTitle = convert2base64(convertTitle(title))
-							aelurl = 'http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-								itm = [convertTitle(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle + '.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-								pictureList.append((itm,))
-
-						if aelTitle != convert2base64(convertTitle2(title)):
-							aelTitle = convert2base64(convertTitle2(title))
-							aelurl = 'http://ael.timobayl.de/index.php/s/J6y2cbB38HDQp33/download?path=%2F&files=' + str(aelTitle) + '.jpg'
-							if checkAELImageServer(aelurl):
-								downloadImagefromAELImageServer(aelurl, '/tmp/' + convert2base64('AELDefaultCover') + '.jpg')
-								itm = [convertTitle2(title), what, ' gefunden auf AEL-Image-Server', aelurl, os.path.join(coverDir, aelTitle + '.jpg'), convert2base64('AELDefaultCover') + '.jpg']
-								pictureList.append((itm,))
-				except Exception as ex:
-					write_log('Fehler in get_PictureList AEL-Image-Server : ' + str(ex))
-
-
-#			write_log('################################################### thetvdb ##############################################')
 			if True:
 				tvdb.KEYS.API_KEY = get_keys('tvdb')
 				seriesid = None
@@ -4796,7 +4614,7 @@ class DB_Functions(object):
 			cur.executemany('insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);', records)
 			write_log("have inserted " + str(cur.rowcount) + " events into database")
 			self.conn.commit()
-			self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
+			# self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
 		except Error as ex:
 			write_log("Fehler in addliveTV : " + str(ex))
 
@@ -4848,14 +4666,39 @@ class DB_Functions(object):
 		except Error as ex:
 			write_log("Fehler in updateliveTV : " + str(ex))
 
-	def updateliveTVS(self, id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sref, airtime):
+	'''
+	def updateliveTVS(self, id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country, imdb, sref, airtime):
 		try:
 			low = airtime - 150
 			high = airtime + 150
 			cur = self.conn.cursor()
 			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
-			cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, str(imdb), str(sref), low, high))
+			cur.execute(query,(id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(sref).decode('utf8'), low, high))
 			self.conn.commit()
+		except Error as ex:
+			write_log("Fehler in updateliveTVS : " + str(ex))
+	'''		
+	def updateliveTVS(self, id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country, imdb, sref, airtime,title):
+		try:
+			updatetRows = 0
+			low = airtime - 150
+			high = airtime + 150
+			cur = self.conn.cursor()
+			query = "update liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress';"
+			cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, str(imdb), str(sref), low, high))
+			updatetRows = cur.rowcount
+			self.conn.commit()
+			if updatetRows < 1:
+				#Suche mit titel
+				low = airtime - 2700
+				high = airtime + 2700
+				query = "SELECT sref, airtime FROM liveOnTV WHERE title = ? AND sref = ? AND airtime BETWEEN ? AND ? AND id = 'in progress' ORDER BY airtime ASC LIMIT 1;"
+				cur.execute(query,(str(title),str(sref),low,high))
+				row = cur.fetchone()
+				if row:
+					query = "UPDATE liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime = ? AND  id = 'in progress';"
+					cur.execute(query,(id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre).decode('utf8'), country, str(imdb), str(row[0]), row[1]))
+					self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTVS : " + str(ex))
 
@@ -4953,7 +4796,8 @@ class DB_Functions(object):
 	def getMinAirtimeforUpdate(self, sref):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT Min(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			now = str(int(time()-7200))
+			query = "SELECT Min(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ? and airtime > " + now
 			cur.execute(query, (str(sref),))
 			row = cur.fetchall()
 			if row:
@@ -4967,7 +4811,8 @@ class DB_Functions(object):
 	def getMaxAirtimeforUpdate(self, sref):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT Max(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ?"
+			now = str(int(time()-7200))
+			query = "SELECT Max(airtime) FROM liveOnTV WHERE id = 'in progress' and sref = ? and airtime > " + now
 			cur.execute(query, (str(sref),))
 			row = cur.fetchall()
 			if row:
@@ -4981,7 +4826,8 @@ class DB_Functions(object):
 	def getUpdateCount(self):
 		try:
 			cur = self.conn.cursor()
-			query = "SELECT COUNT(title) FROM liveOnTV WHERE id = 'in progress'"
+			now = str(int(time()-7200))
+			query = "SELECT COUNT(title) FROM liveOnTV WHERE id = 'in progress' and airtime > " + now
 			cur.execute(query)
 			row = cur.fetchall()
 			if row:
