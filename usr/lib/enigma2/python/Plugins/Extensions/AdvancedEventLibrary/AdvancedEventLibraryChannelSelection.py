@@ -8,6 +8,7 @@ from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import InfoBar, MoviePlayer
+from Screens.Setup import Setup
 from Components.Label import Label, MultiColorLabel
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
@@ -32,13 +33,14 @@ from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiConten
 from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
-    ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
+	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
+from . import _  # for localized messages
 from . import AdvancedEventLibrarySystem
-from .AdvancedEventLibraryLists import AELBaseWall
+from . AdvancedEventLibraryLists import AELBaseWall
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
@@ -122,7 +124,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.eventListLen = 0
 		self.activeList = "Channels"
 		self.idx = 0
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 		if fileExists(imgpath + "shaper.png"):
 			self.shaper = LoadPixmap(imgpath + "shaper.png")
 		else:
@@ -132,10 +134,14 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.userBouquets = []
 		self.userBouquets.append(('Alle Bouquets',))
 
+#		config.plugins.AdvancedEventLibrary = ConfigSubsection()
+#		self.myBouquet = config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
+#		self.channelSelectionEventListDuration = config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
+#		self.epgViewType = config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myBouquet = config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
-		self.channelSelectionEventListDuration = config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
-		self.epgViewType = config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
+		config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
+		config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
+		config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
 
 		self.CHANSEL = InfoBar.instance.servicelist
 		if sRef:
@@ -171,7 +177,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			serviceHandler = eServiceCenter.getInstance()
 			ret = serviceHandler.list(root).getContent("SN", True)
 			for (serviceref, servicename) in ret:
-				if not "::" in serviceref:
+				if "::" not in serviceref:
 					self.channelNumbers[bouquet[1]][serviceref] = channelNumber
 					channelNumber += 1
 		self.epgcache = eEPGCache.getInstance()
@@ -255,7 +261,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 
-			if self.myBouquet.value == 'Alle Bouquets':
+			if config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet.value == 'Alle Bouquets':
 				self.getChannelList(self.tvbouquets)
 			else:
 				bName = ServiceReference(self.CHANSEL.servicelist.getRoot()).getServiceName()
@@ -289,7 +295,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			ret = serviceHandler.list(root).getContent("SN", True)
 
 			for (serviceref, servicename) in ret:
-				if not "::" in serviceref:
+				if "::" not in serviceref:
 					if serviceref == self.current_service_ref:
 						self.idx = id
 					id += 1
@@ -321,24 +327,22 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					name = ''
 					hasTrailer = None
 					evt = self.db.getliveTV(events[0][0], events[0][1], events[0][2])
-					if evt:
-						if evt[0][16].endswith('mp4'):
-							hasTrailer = evt[0][16]
+					if evt and evt[0][16].endswith('mp4'):
+						hasTrailer = evt[0][16]
 					if hasTrailer is None:
 						dbdata = self.db.getTitleInfo(convert2base64(events[0][1]))
 						if dbdata and dbdata[7].endswith('mp4'):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
-						if evt:
-							if evt[0][3] != '':
-								niC = self.nameCache.get(evt[0][3], '')
-								if niC != '':
-									image = niC
-								else:
-									image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
-									if image is not None:
-										self.nameCache[evt[0][3]] = str(image)
-								name = evt[0][3]
+						if evt and evt[0][3] != '':
+							niC = self.nameCache.get(evt[0][3], '')
+							if niC != '':
+								image = niC
+							else:
+								image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
+								if image is not None:
+									self.nameCache[evt[0][3]] = str(image)
+							name = evt[0][3]
 						if image is None:
 							niC = self.nameCache.get(events[0][1], '')
 							if niC != '':
@@ -503,25 +507,23 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		try:
 			if self.activeList == "Channels":
 				selected_element = self["channelList"].getcurrentselection()
-				if selected_element:
-					if selected_element.hasTrailer:
-						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
-						sRef.setName(str(selected_element.title))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element.hasTrailer:
+					sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
+					sRef.setName(str(selected_element.title))
+					self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventList"].getcurrentselection()
-				if selected_element:
-					if selected_element.hasTrailer:
-						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
-						sRef.setName(str(selected_element.title))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element.hasTrailer:
+					sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
+					sRef.setName(str(selected_element.title))
+					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
 	def key_ok_handler(self):
 		selection = self["channelList"].getcurrentselection()
 		sRef = selection.serviceref
-		if not "::" in sRef:
+		if "::" not in sRef:
 			bouquet = selection.bouquet
 
 			if (ServiceReference(self.CHANSEL.servicelist.getRoot()).getPath()) != bouquet.split(':')[-1]:
@@ -814,7 +816,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self["trailer"].show()
 				else:
 					self["trailer"].hide()
-				evts = self.epgcache.lookupEvent(['ITBD', (sRef, 0, -1, (self.channelSelectionEventListDuration.value * 60))]) or [(0, ' ', 0, 0), (0, ' ', 0, 0)]
+				evts = self.epgcache.lookupEvent(['ITBD', (sRef, 0, -1, (config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration.value * 60))]) or [(0, ' ', 0, 0), (0, ' ', 0, 0)]
 				for event in evts:
 						etime = time()
 						beginTime = datetime.datetime.fromtimestamp(event[2])
@@ -840,24 +842,22 @@ class AdvancedEventLibraryChannelSelection(Screen):
 						name = ""
 						hasTrailer = None
 						evt = self.db.getliveTV(event[0], event[1], event[2])
-						if evt:
-							if evt[0][16].endswith('mp4'):
-								hasTrailer = evt[0][16]
+						if evt and evt[0][16].endswith('mp4'):
+							hasTrailer = evt[0][16]
 						if hasTrailer is None:
 							dbdata = self.db.getTitleInfo(convert2base64(event[1]))
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
 						if self.eventImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
-							if evt:
-								if evt[0][3] != '':
-									niC = self.nameCache.get(evt[0][3], '')
-									if niC != '':
-										image = niC
-									else:
-										image = getImageFile(getPictureDir() + self.eventImageType, evt[0][3])
-										if image is not None:
-											self.nameCache[evt[0][3]] = str(image)
-									name = evt[0][3]
+							if evt and evt[0][3] != '':
+								niC = self.nameCache.get(evt[0][3], '')
+								if niC != '':
+									image = niC
+								else:
+									image = getImageFile(getPictureDir() + self.eventImageType, evt[0][3])
+									if image is not None:
+										self.nameCache[evt[0][3]] = str(image)
+								name = evt[0][3]
 							if image is None:
 								niC = self.nameCache.get(event[1], '')
 								if niC != '':
@@ -881,7 +881,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					del events[0]
 				else:
 					if not events:
-						itm = ChannelEntry(sRef, 0, ' ', 'uppps...', ' ', ' ', 0, imgpath + 'folder.png', None, selected_channel.bouquet, False, 0)
+						itm = ChannelEntry(sRef, 0, ' ', 'uppps...', ' ', ' ', 0, imgpath + 'folder.png', None, selected_channel.bouquet, False, 0, False)
 						events.append((itm,))
 				self.eventListLen = len(events)
 				self["eventList"].setlist(events)
@@ -914,7 +914,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		selected_event = self["eventList"].getcurrentselection()
 		if selected_event:
 			sRef = str(selected_event.serviceref)
-			if self.epgViewType.value == "EPGSelection":
+			if config.plugins.AdvancedEventLibrary.EPGViewType.value == "EPGSelection":
 				from Screens.EpgSelection import EPGSelection
 				self.session.open(EPGSelection, sRef)
 			else:
@@ -927,67 +927,26 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		return _itm
 
 
-####################################################################################
-class MySetup(Screen, ConfigListScreen):
+class MySetup(Setup):
 	def __init__(self, session):
-		Screen.__init__(self, session)
 		self.session = session
-		self.skinName = ["AEL-Channel-Selection-Setup", "Setup"]
-		self.title = "AEL-Channel-Selection-Setup"
-
-		self.setup_title = "AEL-Channel-Selection-Setup"
-		self["title"] = StaticText(self.title)
-
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Speichern")
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myBouquet = config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
-		self.epgViewType = config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
-		self.channelSelectionEventListDuration = config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
-
-		self.configlist = []
-		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
-		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
-		{
-			"key_cancel": self.close,
-			"key_red": self.close,
-			"key_green": self.do_close,
-		}, -1)
-
-	def buildConfigList(self):
-		try:
-			if self.configlist:
-				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen"))
-			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
-			self.configlist.append(getConfigListEntry("EPG-Taste �ffnet", self.epgViewType))
-			self.configlist.append(getConfigListEntry("Event-List Dauer (Stunden)", self.channelSelectionEventListDuration))
-		except Exception as ex:
-			write_log("Fehler in buildConfigList : " + str(ex))
-
-	def changedEntry(self):
-		self.buildConfigList()
-		cur = self["config"].getCurrent()
-		self["config"].setList(self.configlist)
-		#if cur and cur is not None:
-		#	self["config"].updateConfigListView(cur)
+		Setup.__init__(self, session, "AEL-Channel-Selection-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
+		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
+														{
+														"green": (self.do_close, _("save"))
+														}, prio=0, description=_("Advanced-Event-Library-Channel-Selection-Setup"))
 
 	def do_close(self):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
-	def restartGUI(self, answer):
+	def restartGUI(self, answer):  #  TODO: kann man bestimmt besser machen
 		if answer is True:
 			for x in self["config"].list:
 				x[1].save()
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
 
 
 class PicLoader:

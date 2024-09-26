@@ -59,6 +59,7 @@ if fileExists("/usr/lib/enigma2/python/Plugins/Extensions/MovieRetitle/plugin.py
 	from Plugins.Extensions.MovieRetitle.plugin import MovieRetitle
 	isMovieRetitleInstalled = True
 
+
 class MovieEntry():
 	def __init__(self, filename, date, name, service, image, isFolder, progress, desc, trailer="", mlen=0):
 		self.filename = filename
@@ -79,7 +80,7 @@ class MovieEntry():
 			self.image = value
 
 	def __repr__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 
 def write_log(svalue, logging=True):
@@ -119,29 +120,23 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.lastFolder = []
 		self.listlen = 0
 		self.pageCount = 0
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
-		self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigText(default="None")
-		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default = False)
-		sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend"])
-		if sortType.value == "Datum absteigend":
+		sortType = config.plugins.AdvancedEventLibrary.SortType.value
+		if sortType == "Datum absteigend":
 			self.sortType = 0
-		elif sortType.value == "Datum aufsteigend":
+		elif sortType == "Datum aufsteigend":
 			self.sortType = 1
-		elif sortType.value == "Name aufsteigend":
+		elif sortType == "Name aufsteigend":
 			self.sortType = 2
-		elif sortType.value == "Name absteigend":
+		elif sortType == "Name absteigend":
 			self.sortType = 3
-		self.oldSortOrder = sortType.value
-
+		self.oldSortOrder = sortType
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Advanced-Event-Library")
 		if isTMDb:
 			self["key_yellow"] = StaticText("TMDb Infos...")
 		else:
 			self["key_yellow"] = StaticText("")
-		self["key_blue"] = StaticText(str(sortType.value))
+		self["key_blue"] = StaticText(str(sortType))
 
 		self['NaviInfo'] = Label('')
 
@@ -153,7 +148,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self['PageInfo'] = Label('')
 			self['moviewall'] = AELBaseWall()
 			self["moviewall"].l.setBuildFunc(self.setMovieEntry)
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			if fileExists(imgpath + "shaper.png"):
 				self.shaper = LoadPixmap(imgpath + "shaper.png")
 			else:
@@ -307,10 +302,10 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			break
 
 		if goToFolder is None:
-			if self.startPath.value != "None":
+			if config.plugins.AdvancedEventLibrary.StartPath.value != "None":
 				for k, v in self.moviedict.items():
 					for ik, iv in v.items():
-						if str(ik) == str(self.startPath.value):
+						if str(ik) == str(config.plugins.AdvancedEventLibrary.StartPath.value):
 							self.currentFolder = [k, ik]
 							break
 		else:
@@ -376,7 +371,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					self.movielist = self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['files']
 
 				if self.movielist:
-					if sorttype != 2 and not self.ignoreSortSeriesdetection.value:
+					if sorttype != 2 and not config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection.value:
 						foundEpisodes = False
 						for entry in self.movielist:
 							if self.findEpisode(entry[2]):
@@ -405,12 +400,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						else:
 							image = item[5]
 						if len(item) > 7:
-							if self.showProgress.value:
+							if config.plugins.AdvancedEventLibrary.Progress.value:
 								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, self.getProgress(item[0], item[4]), item[6], item[7], item[4])
 							else:
 								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, 0, item[6], item[7], item[4])
 						else:
-							if self.showProgress.value:
+							if config.plugins.AdvancedEventLibrary.Progress.value:
 								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, self.getProgress(item[0], item[4]), item[6])
 							else:
 								itm = MovieEntry(item[0], item[1], item[2], eServiceReference(item[3]), image, False, 0, item[6])
@@ -438,7 +433,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def findEpisode(self, title):
 		try:
-			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE | re.DOTALL)
+			regexfinder = re.compile(r'[Ss]\d{2}[Ee]\d{2}', re.MULTILINE | re.DOTALL)
 			ex = regexfinder.findall(str(title))
 			if ex:
 				return True
@@ -487,7 +482,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				#							(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 				#							]
 				#	else:
-				#		if self.showProgress.value:
+				#		if config.plugins.AdvancedEventLibrary.Progress.value:
 				#			if scrambled_or_rec:
 				#				return [entrys,
 				#									(eWallPythonMultiContent.TYPE_PIXMAP, eWallPythonMultiContent.SHOW_ALWAYS, 0, 0, 0, 0, 100, 100, 100, 100, image, None, None, BT_SCALE),
@@ -532,7 +527,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					timeobj = datetime.datetime.fromtimestamp(entrys.date)
 					_time = timeobj.strftime(self.parameter[23])
 					_time = _time + '  ' + str(int(entrys.mlen / 60)) + ' Min.'
-					if self.showProgress.value:
+					if config.plugins.AdvancedEventLibrary.Progress.value:
 						if scrambled_or_rec:
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], image, None, None, BT_SCALE))
 							res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[22][0], self.parameter[22][1], self.parameter[22][2], self.parameter[22][3], scrambled_or_rec, None, None, BT_SCALE))
@@ -580,10 +575,10 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			cs = self['moviewall'].getcurrentselection()
 		if cs.isFolder:
 			if self.currentFolder[0] != "root" and cs.name != "...":
-				if os.access(cs.filename[1], os.W_OK): #Check Readonly
-					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abbrechen',)],0)
+				if os.access(cs.filename[1], os.W_OK):  # Check Readonly
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.filename[1],), ('kopiere : ' + cs.filename[1],), ('lösche : ' + cs.filename[1],), ('Abbrechen',)], 0)
 				else:
-					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('kopiere : ' + cs.filename[1],), ('Abbrechen',)],0)
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('kopiere : ' + cs.filename[1],), ('Abbrechen',)], 0)
 				self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
 			else:
 				self.menuCallBack(ret=["Einstellungen"])
@@ -592,11 +587,11 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				if config.usage.movielist_use_moviedb_trash.value:
 					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('lösche (Papierkorb) : ' + cs.name,), ('Abrechen',)], 0)
 					if isMovieRetitleInstalled:
-						choices.insert(len(choices)-3,('umbenennen : ' + cs.name,))
+						choices.insert(len(choices) - 3, ('umbenennen : ' + cs.name,))
 				else:
-					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abbrechen',)],0)
+					choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abbrechen',)], 0)
 					if isMovieRetitleInstalled:
-						choices.insert(len(choices)-2,('umbenennen : ' + cs.name,))
+						choices.insert(len(choices) - 2, ('umbenennen : ' + cs.name,))
 			else:
 				choices, idx = ([('Einstellungen',), ('aktualisiere Ansicht',), ('verschiebe : ' + cs.name,), ('kopiere : ' + cs.name,), ('lösche : ' + cs.name,), ('Abrechen',)], 0)
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Menüauswahl', keys=keys, list=choices, selection=idx)
@@ -650,6 +645,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 			elif 'umbenennen : ' in ret[0]:
 				self.session.open(MovieRetitle, cs.service, self)
+
 	def reloadList(self):
 		self.getList(self.currentFolder, True)
 		self.getMovieList(self.sortType)
@@ -1140,8 +1136,6 @@ def saveList(imageType):
 	try:
 		global saving
 		saving = True
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 		setStatus('Advanced-Event-Library SimpleMovieWall aktualisiert Deine Daten.')
 		f = open(os.path.join(pluginpath, 'imageType.data'), "w")
 		f.write(str(imageType))
@@ -1186,7 +1180,7 @@ def saveList(imageType):
 					recordPath = recordPath[:-1]
 				for root, directories, files in os.walk(recordPath, followlinks=True):
 					root = os.path.normpath(os.path.realpath(root))
-					if os.path.isdir(root) and not 'trash' in root and not 'recycle' in root and ((searchLinks.value and os.path.islink(root)) or not os.path.islink(root)):
+					if os.path.isdir(root) and 'trash' not in root and 'recycle' not in root and ((config.plugins.AdvancedEventLibrary.SearchLinks.value and os.path.islink(root)) or not os.path.islink(root)):
 						if root.endswith('/'):
 							root = root[:-1]
 						movielist = []
@@ -1239,7 +1233,7 @@ def saveList(imageType):
 												except Exception as ex:
 													write_log(ex)
 												itm = (str(os.path.join(root, filename)), date, removeExtension(name), s_service, mlen, image, desc, trailer)
-												if not itm in movielist:
+												if itm not in movielist:
 													movielist.append(itm)
 									except Exception as ex:
 										continue
@@ -1282,7 +1276,7 @@ class MySetup(Screen, ConfigListScreen):
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 		self.sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend"])
-		if self.paths:
+		if self.paths:   #TODO: Unklar wie ich das in setup.xml sauber abfahren kann
 			self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigSelection(default=self.paths[0], choices=self.paths)
 		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
 		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])

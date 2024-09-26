@@ -6,6 +6,7 @@ from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
+from Screens.Setup import Setup
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
@@ -23,12 +24,12 @@ from skin import loadSkin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
-    ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
+	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
@@ -78,10 +79,10 @@ class EventEntry():
 			self.hasTimer = value
 
 	def __getitem__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 	def __repr__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 
 class AdvancedEventLibraryPlanerScreens(Screen):
@@ -120,7 +121,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			if fileExists(imgpath + "shaper.png"):
 				self.shaper = LoadPixmap(imgpath + "shaper.png")
 			else:
@@ -385,6 +386,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
+
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
 		try:
@@ -398,10 +400,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			if self.current_event and sRef:
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
-		
+
 		except Exception as ex:
 			write_log("call EventView : " + str(ex))
-			
 
 	def addtimer(self):
 		try:
@@ -776,43 +777,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 ####################################################################################
 
 
-class MySetup(Screen, ConfigListScreen):
+class MySetup(Setup):
 	def __init__(self, session):
-		Screen.__init__(self, session)
 		self.session = session
-		self.skinName = ["SerieStart-Planer-Setup", "Setup"]
-		self.title = "Serien-Starts-Planer-Setup"
-
-		self.setup_title = "Serien-Starts-Planer-Setup"
-		self["title"] = StaticText(self.title)
-
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Speichern")
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.startType = config.plugins.AdvancedEventLibrary.SeriesType = ConfigSelection(default="Staffelstart", choices=["Staffelstart", "Serienstart"])
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
-
-		self.configlist = []
-		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
-		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
-		{
-			"key_cancel": self.close,
-			"key_red": self.close,
-			"key_green": self.do_close,
-		}, -1)
-
-	def buildConfigList(self):
-		try:
-			if self.configlist:
-				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen"))
-			self.configlist.append(getConfigListEntry("suche nach", self.startType))
-			self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
-		except Exception as ex:
-			write_log("Fehler in buildConfigList : " + str(ex))
+		Setup.__init__(self, session, "SerieStart-Planer-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
+		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
+														{
+														"green": (self.do_close, _("save")),
+														}, prio=0, description=_("SerieStart-Planer-Setup"))
 
 	def changedEntry(self):
 		self.buildConfigList()

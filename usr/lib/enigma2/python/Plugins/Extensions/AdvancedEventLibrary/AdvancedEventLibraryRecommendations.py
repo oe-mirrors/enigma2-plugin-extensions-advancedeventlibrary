@@ -8,6 +8,7 @@ from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
+from Screens.Setup import Setup
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
@@ -26,12 +27,12 @@ from skin import loadSkin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
-    ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+	ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
+	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
@@ -81,10 +82,10 @@ class EventEntry():
 			self.hasTimer = value
 
 	def __getitem__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 	def __repr__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 
 class AdvancedEventLibraryPlanerScreens(Screen):
@@ -110,12 +111,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.timers = []
 		self.epgcache = eEPGCache.getInstance()
 
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
-		self.favouritesViewCount = config.plugins.AdvancedEventLibrary.FavouritesViewCount = ConfigInteger(default=2, limits=(0, 10))
-		self.favouritesPreviewDuration = config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration = ConfigInteger(default=12, limits=(2, 240))
-		self.excludedGenres = config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigText(default='Wetter,Dauerwerbesendung')
-
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Timer hinzufügen")
 		self["key_yellow"] = StaticText("")
@@ -131,7 +126,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			if fileExists(imgpath + "shaper.png"):
 				self.shaper = LoadPixmap(imgpath + "shaper.png")
 			else:
@@ -222,16 +217,16 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def getFavourites(self):
 		favs = {'titles': {}}
-		excludedGenres = self.excludedGenres.value.split(',')
+		excludedGenres = config.plugins.AdvancedEventLibrary.ExcludedGenres.value.split(',')
 		for k, v in self.favourites['genres'].items():
 			if k not in excludedGenres:
-				if v[0] >= self.favouritesViewCount.value:
-					res = self.db.getFavourites("genre LIKE '" + k + "'", (self.favouritesPreviewDuration.value * 3600))
+				if v[0] >= config.plugins.AdvancedEventLibrary.FavouritesViewCount.value:
+					res = self.db.getFavourites("genre LIKE '" + k + "'", (config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration.value * 3600))
 					if res:
 						favs[k] = res
 		for k, v in self.favourites['titles'].items():
-			if v[0] >= self.favouritesViewCount.value:
-				res = self.db.getFavourites("title LIKE '%" + k + "%'", (self.favouritesPreviewDuration.value * 3600))
+			if v[0] >= config.plugins.AdvancedEventLibrary.FavouritesViewCount.value:
+				res = self.db.getFavourites("title LIKE '%" + k + "%'", (config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration.value * 3600))
 				if res:
 					favs['titles'][k] = res
 		return favs
@@ -434,6 +429,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
+
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
 		try:
@@ -447,10 +443,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			if self.current_event and sRef:
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
-		
+
 		except Exception as ex:
 			write_log("call EventView : " + str(ex))
-			
 
 	def addtimer(self):
 		try:
@@ -622,7 +617,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			favs = set()
 			sList = []
 			if what != "Meist gesehen":
-				for fav in self.myFavourites[str(what).decode('utf-8')]:
+				for fav in self.myFavourites[str(what)]:
 					favs.add((fav[0], str(fav[1])))
 			else:
 				for key, value in self.myFavourites['titles'].items():
@@ -768,60 +763,15 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 ####################################################################################
 
 
-class MySetup(Screen, ConfigListScreen):
+class MySetup(Setup):
 	def __init__(self, session):
-		Screen.__init__(self, session)
-		self.session = session
-		self.skinName = ["Favoriten-Planer-Setup", "Setup"]
-		self.title = "Favoriten-Planer-Setup"
+		Setup.__init__(self, session, "Favoriten-Planer-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
 		self.db = getDB()
 		self.genres = self.db.getGenres()
-
-		self.setup_title = "Favoriten-Planer-Setup"
-		self["title"] = StaticText(self.title)
-
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Speichern")
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
-		self.favouritesViewCount = config.plugins.AdvancedEventLibrary.FavouritesViewCount = ConfigInteger(default=2, limits=(0, 10))
-		self.favouritesPreviewDuration = config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration = ConfigInteger(default=12, limits=(2, 240))
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
-		self.excludedGenres = config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigText(default='Wetter,Dauerwerbesendung')
-
-		self.configlist = []
-		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
-		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
-		{
-			"key_cancel": self.close,
-			"key_red": self.close,
-			"key_green": self.do_close,
-		}, -1)
-
-	def buildConfigList(self):
-		try:
-			if self.configlist:
-				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen"))
-			self.configlist.append(getConfigListEntry("entferne Genre/Sendung nach x Tagen nicht gesehen", self.favouritesMaxAge))
-			self.configlist.append(getConfigListEntry("zeige Genre/Sendung mindestens x mal gesehen", self.favouritesViewCount))
-			self.configlist.append(getConfigListEntry("Vorschaudauer der Favoriten innerhalb x Stunden", self.favouritesPreviewDuration))
-			self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
-			if self.genres:
-				self.configlist.append(getConfigListEntry("Ignorelist"))
-				excluded = self.excludedGenres.value.split(',')
-				for genre in self.genres:
-					if genre in excluded:
-						entry = ConfigYesNo(default=True)
-					else:
-						entry = ConfigYesNo(default=False)
-					self.configlist.append(getConfigListEntry("ignoriere das Genre " + str(genre), entry))
-
-		except Exception as ex:
-			write_log("Fehler in buildConfigList : " + str(ex))
+		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
+														{
+														"green": (self.do_close, _("save")),
+														}, prio=0, description=_("Advanced-Event-Library-Setup"))
 
 	def changedEntry(self):
 		cur = self["config"].getCurrent()
@@ -847,8 +797,8 @@ class MySetup(Screen, ConfigListScreen):
 						excludedGenres += x[0].replace("ignoriere das Genre ", "").strip() + ","
 			if excludedGenres.endswith(","):
 				excludedGenres = excludedGenres[:-1]
-			self.excludedGenres.value = excludedGenres
-			self.excludedGenres.save()
+			config.plugins.AdvancedEventLibrary.ExcludedGenres.value = excludedGenres
+			config.plugins.AdvancedEventLibrary.ExcludedGenres.save()
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()

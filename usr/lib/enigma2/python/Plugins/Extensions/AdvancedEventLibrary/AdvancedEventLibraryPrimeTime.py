@@ -8,6 +8,7 @@ from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
+from Screens.Setup import Setup
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
@@ -25,12 +26,12 @@ from skin import loadSkin
 from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
 from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from threading import Timer, Thread
 from Components.ConfigList import ConfigListScreen
 from Components.config import getConfigListEntry, ConfigEnableDisable, \
-    ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-    ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
+	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
@@ -88,11 +89,12 @@ class EventEntry():
 			self.hasTimer = value
 
 	def __repr__(self):
-		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.iteritems()))
+		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 
 class AdvancedEventLibraryPlanerScreens(Screen):
 	ALLOW_SUSPEND = True
+
 	skin = loadSkin(skinpath + "AdvancedEventLibraryPlaners.xml")
 
 	def __init__(self, session, viewType):
@@ -126,14 +128,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.userBouquets.append('Alle Bouquets')
 		for bouquet in self.tvbouquets:
 			self.userBouquets.append(bouquet[1])
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
-		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
-		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
-		self.primeTimeDuration = config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
-
+		config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
 		self["Content"] = StaticText("")
 		if self.viewType == 'Listenansicht':
 			self["eventList"] = AdvancedEventLibraryLists.EPGList()
@@ -144,7 +139,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',','')
+			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			if fileExists(imgpath + "shaper.png"):
 				self.shaper = LoadPixmap(imgpath + "shaper.png")
 			else:
@@ -153,7 +148,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self["genreList"] = AdvancedEventLibraryLists.MenuList()
 		self["genreList"].connectsel_changed(self.menu_sel_changed)
 		self.current_event = None
-		self.currentBouquet = self.myBouquet.value
+		self.currentBouquet = config.plugins.AdvancedEventLibrary.StartBouquet.value
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -258,7 +253,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
 			self.getAllEvents(currentBouquet=self.currentBouquet)
-			self.menu_sel_changed(self.myGenres.value)
+			self.menu_sel_changed(config.plugins.AdvancedEventLibrary.Genres.value)
 
 	def key_red_handler(self):
 		clearMem("Prime-Time-Planer")
@@ -400,20 +395,19 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		try:
 			if self.viewType == 'Listenansicht':
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
-				if selected_element:
-					if selected_element[8]:
-						sRef = eServiceReference(4097, 0, str(selected_element[8]))
-						sRef.setName(str(selected_element[0]))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element andselected_element[8]:
+					sRef = eServiceReference(4097, 0, str(selected_element[8]))
+					sRef.setName(str(selected_element[0]))
+					self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventWall"].getcurrentselection()
-				if selected_element:
-					if selected_element.hasTrailer:
-						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
-						sRef.setName(str(selected_element.name))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element.hasTrailer:
+					sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
+					sRef.setName(str(selected_element.name))
+					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
+
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
 		try:
@@ -427,10 +421,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			if self.current_event and sRef:
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
-		
+
 		except Exception as ex:
 			write_log("call EventView : " + str(ex))
-			
 
 	def addtimer(self):
 		try:
@@ -621,7 +614,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					for (serviceref, servicename) in ret:
 						playable = not (eServiceReference(serviceref).flags & mask)
 						if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != ".":
-							if not self.HDonly.value or "1:0:19:" in serviceref:
+							if not config.plugins.AdvancedEventLibrary.HDonly.value or "1:0:19:" in serviceref:
 								line = [serviceref, servicename]
 								if line not in lines:
 									lines.append(line)
@@ -636,17 +629,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					for (serviceref, servicename) in ret:
 						playable = not (eServiceReference(serviceref).flags & mask)
 						if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != ".":
-							if not self.HDonly.value or "1:0:19:" in serviceref:
+							if not config.plugins.AdvancedEventLibrary.HDonly.value or "1:0:19:" in serviceref:
 								line = [serviceref, servicename]
 								if line not in lines:
 									lines.append(line)
 
 			now = localtime()
-			primetime = mktime((now.tm_year, now.tm_mon, now.tm_mday, self.primeTimeStart.value[0], self.primeTimeStart.value[1], 0, now.tm_wday, now.tm_yday, now.tm_isdst))
+			primetime = mktime((now.tm_year, now.tm_mon, now.tm_mday, config.plugins.AdvancedEventLibrary.StartTime.value[0], config.plugins.AdvancedEventLibrary.StartTime.value[1], 0, now.tm_wday, now.tm_yday, now.tm_isdst))
 
 			test = ['RITBDSEn']
 			for line in lines:
-				test.append((line[0], 0, primetime, self.primeTimeDuration.value))
+				test.append((line[0], 0, primetime, config.plugins.AdvancedEventLibrary.Duration.value))
 
 			epgcache = eEPGCache.getInstance()
 			self.allevents = epgcache.lookupEvent(test) or []
@@ -935,19 +928,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 ####################################################################################
 
 
-class MySetup(Screen, ConfigListScreen):
+class MySetup(Setup):
 	def __init__(self, session):
-		Screen.__init__(self, session)
 		self.session = session
-		self.skinName = ["PrimeTime-Planer-Setup", "Setup"]
-		self.title = "PrimeTime-Planer-Setup"
-
-		self.setup_title = "PrimeTime-Planer-Setup"
-		self["title"] = StaticText(self.title)
-
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Speichern")
-
+		Setup.__init__(self, session, "PrimeTime-Planer-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
 		self.tvbouquets = serviceHandler.list(root).getContent("SN", True)
@@ -955,42 +939,14 @@ class MySetup(Screen, ConfigListScreen):
 		self.userBouquets.append('Alle Bouquets')
 		for bouquet in self.tvbouquets:
 			self.userBouquets.append(bouquet[1])
+		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
+														{
+														"green": (self.do_close, _("save")),
+														"yellow": (self.key_yellow_handler, _("TVS-Setup"))
+														}, prio=0, description=_("Advanced-Event-Library-Setup"))
 
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.myGenres = config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
-		self.myBouquet = config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
-		self.HDonly = config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
-		self.primeTimeDuration = config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
-
-		self.configlist = []
-		self.buildConfigList()
-		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
-		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
-		{
-			"key_cancel": self.close,
-			"key_red": self.close,
-			"key_green": self.do_close,
-		}, -1)
-
-	def buildConfigList(self):
-		try:
-			if self.configlist:
-				del self.configlist[:]
-			self.configlist.append(getConfigListEntry("Einstellungen"))
-			self.configlist.append(getConfigListEntry("Startbouquet", self.myBouquet))
-			self.configlist.append(getConfigListEntry("nur HD Sender durchsuchen", self.HDonly))
-			self.configlist.append(getConfigListEntry("Startgenre", self.myGenres))
-			self.configlist.append(getConfigListEntry("Prime-Time Start", self.primeTimeStart))
-			self.configlist.append(getConfigListEntry("Prime-Time Dauer (Minuten)", self.primeTimeDuration))
-			self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
-		except Exception as ex:
-			write_log("Fehler in buildConfigList : " + str(ex))
-
-	def changedEntry(self):
-		self.buildConfigList()
+	def changedEntry(self):  # TODO: kann man bestimmt besser machen
+#		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
 		#if cur and cur is not None:
@@ -1000,7 +956,7 @@ class MySetup(Screen, ConfigListScreen):
 		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
 		restartbox.setTitle(_("GUI needs a restart."))
 
-	def restartGUI(self, answer):
+	def restartGUI(self, answer):  # TODO: kann man bestimmt besser machen
 		if answer is True:
 			for x in self["config"].list:
 				x[1].save()
