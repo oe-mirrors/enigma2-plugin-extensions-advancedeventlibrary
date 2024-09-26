@@ -1100,12 +1100,14 @@ def get_TVDb():
 	return None
 
 
+# TODO
 def convert2base64(title):
 	if title.find('(') > 1:
 		return base64.b64encode(title.lower().encode().split(b'(')[0].strip()).replace(b'/', b'').decode('utf-8')
 	return base64.b64encode(title.lower().strip().encode()).replace(b'/', b'').decode('utf-8')
 
 
+# TODO
 def convertSigns(text):
 #	text = text.replace('\xc3\x84', '\xc4').replace('\xc3\x96', '\xd6').replace('\xc3\x9c', '\xdc').replace('\xc3\x9f', '\xdf').replace('\xc3\xa4', '\xe4').replace('\xc3\xb6', '\xf6').replace('\xc3\xbc', '\xfc').replace('&', '%26').replace('\xe2\x80\x90', '-').replace('\xe2\x80\x91', '-').replace('\xe2\x80\x92', '-').replace('\xe2\x80\x93', '-')
 	text = text.replace('\xe2\x80\x90', '-').replace('\xe2\x80\x91', '-').replace('\xe2\x80\x92', '-').replace('\xe2\x80\x93', '-')

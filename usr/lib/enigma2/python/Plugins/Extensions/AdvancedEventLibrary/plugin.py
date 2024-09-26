@@ -300,7 +300,7 @@ def sessionstart(reason, **kwargs):
 #		try:
 #			with open(f, "r") as txtfile:
 #				extended_desc = txtfile.read()
-#		except IOError:
+#		except OSError:
 #			pass
 #	return (name, extended_desc)
 
@@ -557,7 +557,7 @@ def getMovieDescriptionFromTXT(ref):
 		try:
 			with open(f, "r") as txtfile:
 				extended_desc = txtfile.read()
-		except IOError:
+		except OSError:
 			pass
 
 	return (name, extended_desc)

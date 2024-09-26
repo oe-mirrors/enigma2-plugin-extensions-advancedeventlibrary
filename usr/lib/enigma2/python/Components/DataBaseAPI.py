@@ -57,6 +57,8 @@ def debugPrint(str, level=0):
 
 
 def encodeDVBTXT(txt):
+	return txt
+# TODO
 	for r in ('\xc2\x8a', '\xc2\x85', '\xc2\x86', '\xc2\x87'):
 		txt = txt.replace(r, '\n')
 	txt = txt.decode('utf-8')
@@ -64,12 +66,12 @@ def encodeDVBTXT(txt):
 
 
 def prepareStringIN(txt):
-	ret = ''
-	try:
-		ret = txt.decode('utf-8')
-	except UnicodeDecodeError:
-		ret = unicode(txt, 'ISO-8859-1')
-	return ret
+#	ret = ''
+#	try:
+#		ret = txt.decode('utf-8')
+#	except UnicodeDecodeError:
+#		ret = unicode(txt, 'ISO-8859-1')
+	return txt
 
 
 class globalThreads():
@@ -169,14 +171,14 @@ class DatabaseState(object):
 			try:
 				with open(self.lockfile, 'r') as f:
 					content = f.readlines()
-			except (OSError, IOError) as e:
+			except OSError as e:
 				pass
 			if content and len(content) >= 1:
 				lockid = content[0]
 				if lockid.startswith(self.boxid):
 					try:
 						os.remove(self.lockfile)
-					except (OSError, IOError) as e:
+					except OSError as e:
 							pass
 
 	def isRemoteLocked(self):
@@ -191,7 +193,7 @@ class DatabaseState(object):
 				try:
 					with open(self.lockfile, 'r') as f:
 						content = f.readlines()
-				except (OSError, IOError) as e:
+				except OSError as e:
 					break
 				if content and len(content) >= 1:
 					lockid = content[0]
@@ -206,7 +208,7 @@ class DatabaseState(object):
 						else:
 							try:
 								os.remove(self.lockfile)
-							except (OSError, IOError) as e:
+							except OSError as e:
 								pass
 							break
 					else:
@@ -214,7 +216,7 @@ class DatabaseState(object):
 				else:
 					try:
 						os.remove(self.lockfile)
-					except (OSError, IOError) as e:
+					except OSError as e:
 						pass
 					break
 			else:
@@ -228,14 +230,14 @@ class DatabaseState(object):
 			f = open(self.lockfile, 'w')
 			f.write(self.boxid)
 			f.close()
-		except (OSError, IOError) as e:
+		except OSError as e:
 			pass
 
 	def unlockDB(self):
 		if self.check_remote_lock and not self.isRemoteLocked():
 			try:
 				os.remove(self.lockfile)
-			except (OSError, IOError) as e:
+			except OSError as e:
 				pass
 
 

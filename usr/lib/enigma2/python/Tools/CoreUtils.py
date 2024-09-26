@@ -7,7 +7,7 @@ def getUniqueID(device='eth0'):
 	try:
 		with open('/proc/stb/info/vumodel', 'r') as f:
 			model = f.read()
-	except IOError:
+	except OSError:
 		model = "vustb"
 	model = model.strip()
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

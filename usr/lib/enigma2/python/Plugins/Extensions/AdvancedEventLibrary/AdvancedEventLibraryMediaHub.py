@@ -1024,7 +1024,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			try:
 				with open(f, "r") as txtfile:
 					extended_desc = txtfile.read()
-			except IOError:
+			except OSError:
 				pass
 		return (name, extended_desc)
 

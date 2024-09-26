@@ -1,6 +1,7 @@
 from os import path
 from enigma import eServiceCenter
 
+
 def getExtendedMovieDescription(ref):
     serviceHandler = eServiceCenter.getInstance()
     info = serviceHandler.info(ref)
@@ -41,7 +42,7 @@ def getExtendedMovieDescription(ref):
         try:
             with open(f, 'r') as txtfile:
                 extended_desc = txtfile.read()
-        except IOError:
+        except OSError:
             pass
 
     return (name, extended_desc)
