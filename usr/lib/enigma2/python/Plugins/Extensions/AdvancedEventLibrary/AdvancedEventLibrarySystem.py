@@ -78,17 +78,16 @@ log = "/var/tmp/AdvancedEventLibrary.log"
 bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
 mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
-backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
-maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
-previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
+#backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
+#maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
+#previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
+#addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 #usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
-# useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
-maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
-closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
-updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
+#dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
+#maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
+#closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
+#createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
+#updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 
 
 def write_log(svalue):
@@ -154,7 +153,7 @@ class AELMenu(Screen):
 	def afterInit(self):
 		try:
 			self.db = getDB()
-			if dbfolder.value == "Flash":
+			if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash":
 				dir = '/etc/enigma2/eventLibrary.db'
 			else:
 				dir = mypath.value + 'eventLibrary.db'
@@ -223,7 +222,7 @@ class AELMenu(Screen):
 
 				size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
 				self.statistic = 'Statistik letzter Suchlauf:\nAnzahl Poster | Cover | Vorschaubilder:\t' + str(lastposterCount) + ' | ' + str(lastcoverCount) + ' | ' + str(lastpreviewImageCount) + '\ngesuchte Event-Informationen:\t' + str(lasteventInfoCount) + '\tgefunden:\t' + str(lasteventInfoCountSuccsess) + ' | ' + str(percentlIC) + '\ngesuchte Extradaten:     \t' + str(lastadditionalDataCount) + '\tgefunden:\t' + str(lastadditionalDataCountSuccess) + ' | ' + str(percentlaC) + str(self.getlastUpdateInfo(self.db))
-				self.statistic += '\n\nStatistik gesamt:\nAnzahl Poster:\t' + str(posterCount) + '\tGröße:\t' + str(posterSize) + '\nAnzahl Cover:\t' + str(coverCount) + '\tGröße:\t' + str(coverSize) + '\nAnzahl Previews:\t' + str(previewCount) + '\tGröße:\t' + str(previewSize) + '\nAnzahl Trailer: \t' + str(trailers) + '\nDatenbankgröße: \t' + str(dbSize) + ' kB\nEinträge:\t' + str(titleCount) + ' | ' + str(blackListCount) + ' | ' + str(percent) + '\tExtradaten:\t' + str(liveTVtitleCount) + ' | ' + str(liveTVidtitleCount) + ' | ' + str(percentTV) + '\nSpeicherplatz:\t' + str(size) + ' / ' + str(int(maxSize.value * 1024.0)) + ' MB' + '\tbenutzte Inodes\t' + str(usedInodes)
+				self.statistic += '\n\nStatistik gesamt:\nAnzahl Poster:\t' + str(posterCount) + '\tGröße:\t' + str(posterSize) + '\nAnzahl Cover:\t' + str(coverCount) + '\tGröße:\t' + str(coverSize) + '\nAnzahl Previews:\t' + str(previewCount) + '\tGröße:\t' + str(previewSize) + '\nAnzahl Trailer: \t' + str(trailers) + '\nDatenbankgröße: \t' + str(dbSize) + ' kB\nEinträge:\t' + str(titleCount) + ' | ' + str(blackListCount) + ' | ' + str(percent) + '\tExtradaten:\t' + str(liveTVtitleCount) + ' | ' + str(liveTVidtitleCount) + ' | ' + str(percentTV) + '\nSpeicherplatz:\t' + str(size) + ' / ' + str(int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)) + ' MB' + '\tbenutzte Inodes\t' + str(usedInodes)
 				self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))
 				self.memInfo += str(self.getMemInfo('Mem'))
 				self.memInfo += '\nMountpoints :\n' + self.getDiskInfo()
@@ -327,11 +326,11 @@ class AELMenu(Screen):
 		if current:
 			if current[3] == 'setup':
 				self.main()
-				if closeMenu.value:
+				if config.plugins.AdvancedEventLibrary.CloseMenu.value:
 					self.do_close()
 			elif current[3] == 'editor':
 				self.editor()
-				if closeMenu.value:
+				if config.plugins.AdvancedEventLibrary.CloseMenu.value:
 					self.do_close()
 			elif current[3] == 'ptp':
 				self.open_primetime()
@@ -427,7 +426,7 @@ class AELMenu(Screen):
 			if self.viewType != self.vtype.value:
 				self.reload.start(50, True)
 			else:
-				if closeMenu.value:
+				if config.plugins.AdvancedEventLibrary.CloseMenu.value:
 					self.do_close()
 		except:
 			self.do_close()
@@ -504,7 +503,6 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 		self.previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
 		self.showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
 		self.useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
-		# self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
 		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
 		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 #NEW		# self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
@@ -522,9 +520,9 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 		self.delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 		self.closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
 		self.refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
-		self.refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default = True)
-		self.refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default = False)
-		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default = False)
+		self.refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
+		self.refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
+		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default=False)
 		self.searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 		self.maxUsedInodes = config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
 		self.createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
@@ -665,7 +663,6 @@ class AdvancedEventLibrarySetup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("Einstellungen Download"))
 			self.configlist.append(getConfigListEntry("Art der Suche", self.searchfor))
 			if str(self.searchfor.value) == "Extradaten und Bilder":
-				# self.configlist.append(getConfigListEntry("benutze AEL Image-Server", self.useAELIS))
 				self.configlist.append(getConfigListEntry("lade Previewbilder", self.usePreviewImages))
 				if self.usePreviewImages.value:
 					self.configlist.append(getConfigListEntry("lösche alte Previewbilder beim Suchlauf", self.delPreviewImages))
@@ -944,7 +941,7 @@ class Editor(Screen, ConfigListScreen):
 		self.fileName = None
 		self.eid = None
 		self.isInit = False
-		self.ImageCount = previewCount.value
+		self.ImageCount = config.plugins.AdvancedEventLibrary.PreviewCount.value
 #		self.currentService = self.session.nav.getCurrentlyPlayingServiceReference()
 		self.language = 'de'
 		self.pSource = 1
@@ -1123,7 +1120,7 @@ class Editor(Screen, ConfigListScreen):
 							if self.pSource == 1:
 								write_log('Selection to move : ' + str(selection))
 								AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(maxImageSize.value):
+								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 									AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 								else:
 									shutil.copy('/tmp/' + selection[5], selection[4])
@@ -1137,7 +1134,7 @@ class Editor(Screen, ConfigListScreen):
 							if self.cSource == 1:
 								write_log('Selection to move : ' + str(selection))
 								AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(maxImageSize.value):
+								if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 									AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 								else:
 									shutil.copy('/tmp/' + selection[5], selection[4])
@@ -1159,7 +1156,7 @@ class Editor(Screen, ConfigListScreen):
 							typ = "cover/"
 
 						AEL.createSingleThumbnail('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
-						if int(os.path.getsize('/tmp/' + fname) / 1024.0) > int(maxImageSize.value):
+						if int(os.path.getsize('/tmp/' + fname) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 							AEL.reduceSigleImageSize('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
 						else:
 							shutil.copy('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
@@ -1205,11 +1202,11 @@ class Editor(Screen, ConfigListScreen):
 		if self.ptr != 'nothing found':
 
 			if self.cSource == 0 and self.activeList == 'cover' and not "/etc" in str(mypath.value):
-				choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+				choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 			elif self.pSource == 0 and self.activeList == 'poster' and not "/etc" in str(mypath.value):
-				choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+				choices, idx = ([('Sprachauswahl',), ('lade Poster',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Poster löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 			else:
-				choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)],0)
+				choices, idx = ([('Sprachauswahl',), ('erzeuge Poster aus Screenshot',), ('erzeuge Cover aus Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Bearbeiten', keys=keys, list=choices, selection=idx)
 
@@ -1713,7 +1710,7 @@ class Editor(Screen, ConfigListScreen):
 				self.db.updateliveTVInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eid)
 			if self.db.checkTitle(self.eventData[0]):
 				self.db.updateTitleInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eventData[0])
-				if createMetaData.value:
+				if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
 					if self.fileName and not os.path.isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
 						if self.eventOverview:
 							txt = open(self.fileName + ".txt", "w")

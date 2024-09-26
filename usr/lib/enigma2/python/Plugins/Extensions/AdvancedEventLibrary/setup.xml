@@ -1,0 +1,98 @@
+<setupxml>
+	<setup key="Advanced-Event-Library-Setup" title="Advanced-Event-Library-Setup">
+		# hier Text "Einstellungen Allgemein"
+		<item level="0" text="Location:" description="---Daten-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Location</item>
+		<item level="0" text="dbFolder:" description="---Datenbank-Verzeichnis---">config.plugins.AdvancedEventLibrary.dbFolder</item>
+		<item level="0" text="Backup:" description="---Backup-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Backup</item>
+		<item level="0" text="tvdbV4Key:" description="---benutzter TVDb API-V4-USER-PIN---">config.plugins.AdvancedEventLibrary.tvdbV4Key</item>
+		<item level="0" text="tvdbKey:" description="---benutzter TVDb API-Key---">config.plugins.AdvancedEventLibrary.tvdbKey</item>
+		<item level="0" text="tmdbKey:" description="---benutzter TMDb API-Key---">config.plugins.AdvancedEventLibrary.tmdbKey</item>
+		<item level="0" text="omdbKey:" description="---benutzter OMDB API-Key---">config.plugins.AdvancedEventLibrary.omdbKey</item>
+		<item level="0" text="Maxsize:" description="---maximaler Speicherplatz (GB)---">config.plugins.AdvancedEventLibrary.MaxSize</item>
+		<item level="0" text="MaxUsedInodes:" description="---maximal zu benutzende Inodes (%)---">config.plugins.AdvancedEventLibrary.MaxUsedInodes</item>
+		<item level="0" text="CloseMenu:" description="---AEL-Menü automatisch schließen---">config.plugins.AdvancedEventLibrary.CloseMenu</item>
+		<item level="0" text="Log:" description="---schreibe erweitertes Logfile---">config.plugins.AdvancedEventLibrary.Log</item>
+		# hier Text "Einstellungen Download"
+		<item level="0" text="SearchFor:" description="---Art der Suche---">config.plugins.AdvancedEventLibrary.SearchFor</item>
+		# CONDITIONAL: nachfolgendes nur einblenden wenn SeachFor = "Extradaten und Bilder"
+		<item level="0" text="UseAELIS:" description="---benutze AEL Image-Server---">config.plugins.AdvancedEventLibrary.UseAELIS</item>
+		<item level="0" text="UsePreviewImages:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
+		<item level="0" text="DelPreviewImages:" description="---lösche alte Previewbilder beim Suchlauf---">config.plugins.AdvancedEventLibrary.DelPreviewImages</item>
+		<item level="0" text="posterQuality:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterQuality</item>
+		<item level="0" text="coverQuality:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverQuality</item>
+		<item level="0" text="MaxImageSize:" description="---maximale Speichergröße pro Bild---">config.plugins.AdvancedEventLibrary.MaxImageSize</item>
+		<item level="0" text="MaxCompression:" description="---minimale JPEG-Qualität (%)---">config.plugins.AdvancedEventLibrary.MaxCompression</item>
+		<item level="0" text="PreviewCount:" description="---Anzahl Vorschaubilder im Editor---">config.plugins.AdvancedEventLibrary.PreviewCount</item>
+		# hier Text "Einstellungen EPG und MovieWall"
+		<item level="0" text="UseAELEPGLists:" description="---benutze AEL EPG-Listenstil---">config.plugins.AdvancedEventLibrary.UseAELEPGLists</item>
+		<item level="0" text="ShowInEPG:" description="---benutze EPG-Taste in EPGSelection für Plugin-Aufruf---">config.plugins.AdvancedEventLibrary.ShowInEPG</item>
+		<item level="0" text="UpdateAELMovieWall:" description="---benutze AEL-Movie-Wall---">config.plugins.AdvancedEventLibrary.UpdateAELMovieWall</item>
+		<item level="0" text="ignoreSortSeriesdetection:" description="---ignoriere die Serienerkennung bei der Sortierung (Movie-Wall)---">config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection</item>
+		# CONDITIONAL: nachfolgendes nur einblenden wenn UpdateAELMovieWall = True
+		<item level="0" text="UseAELMovieWall:" description="---benutze PVR-Taste zum Start für Movie-Wall---">config.plugins.AdvancedEventLibrary.UseAELMovieWall</item>
+		<item level="0" text="SearchLinks:" description="---beziehe Symlinks in die Suche nach Aufnahmen ein---">config.plugins.AdvancedEventLibrary.SearchLinks</item>
+		<item level="0" text="RefreshMovieWall:" description="---Scheint ungenutzt zu sein---">config.plugins.AdvancedEventLibrary.RefreshMovieWall</item>
+		<item level="0" text="RefreshMovieWallAtStart:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestop---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart</item>
+		<item level="0" text="RefreshMovieWallAtStop:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestart---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop</item>
+		# hier Text "Einstellungen Suche"
+		<item level="0" text="CreateMetaData:" description="---erstelle nicht vorhandene Metadaten---">config.plugins.AdvancedEventLibrary.CreateMetaData</item>
+		# hier self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True)) oder ConfigYesNo(default=True)
+		# hier self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
+		# siehe AdvancedEventLibrarySystem Zeile 539...
+		# hier suche in Bouquet " + str(bouquet[1]), bpath)
+		# hier "suche in " + str(dir), rpath)
+		# hier "suche in Unterverzeichnissen von " + str(dir), subpaths)
+		# siehe AdvancedEventLibrarySystem Zeile 700...
+		<item level="0" text="StartBouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.StartBouquet</item>
+		<item level="0" text="HDonly:" description="---nur HD Sender durchsuchen---">config.plugins.AdvancedEventLibrary.HDonly</item>
+		<item level="0" text="Genres:" description="---Startgenre---">config.plugins.AdvancedEventLibrary.Genres</item>
+		<item level="0" text="StartTime:" description="---Prime-Time Start---">config.plugins.AdvancedEventLibrary.StartTime</item>
+		<item level="0" text="Duration:" description="---Prime-Time Dauer (Minuten)---">config.plugins.AdvancedEventLibrary.Duration</item>
+	</setup>
+
+	<setup key="AEL-Channel-Selection-Setup" title="AEL-Channel-Selection-Setup">
+		# hier Text "Einstellungen"
+		<item level="0" text="ChannelSelectionStartBouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet</item>
+		<item level="0" text="EPGViewType:" description="---EPG-Taste öffnet---">config.plugins.AdvancedEventLibrary.EPGViewType</item>
+		<item level="0" text="ChannelSelectionEventListDuration:" description="---Event-List Dauer (Stunden)---">config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration</item>
+	</setup>
+
+	<setup key="AEL-Media-Hub-Setup" title="AEL-Media-Hub-Setup">
+		<item level="0" text="ChannelSelectionStartBouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet</item>
+		<item level="0" text="MediaHubStartType:" description="---Startansicht im Kanalbereich---">config.plugins.AdvancedEventLibrary.MediaHubStartType</item>
+		<item level="0" text="EPGViewType:" description="EPG-Taste öffnet">config.plugins.AdvancedEventLibrary.EPGViewType</item>
+		<item level="0" text="MaxEventAge:" description="---zeige Events gestartet vor maximal (Minuten)---">config.plugins.AdvancedEventLibrary.MaxEventAge</item>
+		<item level="0" text="MaxEventStart:" description="---zeige Events die starten in maximal (Minuten)---">config.plugins.AdvancedEventLibrary.MaxEventStart</item>
+		<item level="0" text="RecordingsCount:" description="---nzahl neuester Aufnahmen---">config.plugins.AdvancedEventLibrary.RecordingsCount</item>
+	</setup>
+
+	<setup key="PrimeTime-Planer-Setup" title="PrimeTime-Planer-Setup">
+		<item level="0" text="StartBouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.StartBouquet</item>
+		<item level="0" text="HDonly:" description="---nur HD Sender durchsuchen---">config.plugins.AdvancedEventLibrary.HDonly</item>
+		<item level="0" text="Genres:" description="---Startgenre---">config.plugins.AdvancedEventLibrary.Genres</item>
+		<item level="0" text="StartTime:" description="---Prime-Time Start---">config.plugins.AdvancedEventLibrary.StartTime</item>
+		<item level="0" text="Duration:" description="---Prime-Time Dauer (Minuten)---">config.plugins.AdvancedEventLibrary.Duration</item>
+		<item level="0" text="ViewType:" description="---Ansicht---">config.plugins.AdvancedEventLibrary.ViewType</item>
+	</setup>
+
+	<setup key="Favoriten-Planer-Setup" title="Favoriten-Planer-Setup">
+		<item level="0" text="FavouritesMaxAge:" description="---entferne Genre/Sendung nach x Tagen nicht gesehen---">config.plugins.AdvancedEventLibrary.FavouritesMaxAge</item>
+		<item level="0" text="FavouritesViewCount:" description="---zeige Genre/Sendung mindestens x mal gesehen---">config.plugins.AdvancedEventLibrary.FavouritesViewCount</item>
+		<item level="0" text="FavouritesPreviewDuration:" description="---Vorschaudauer der Favoriten innerhalb x Stunden---">config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration</item>
+		<item level="0" text="ViewType:" description="---Ansicht---">config.plugins.AdvancedEventLibrary.ViewType</item>
+		<item level="0" text="ExcludedGenres:" description="---ignoriere das Genre---">config.plugins.AdvancedEventLibrary.ExcludedGenres</item>
+	</setup>
+
+	<setup key="SerieStart-Planer-Setup" title="SerieStart-Planer-Setup">
+		<item level="0" text="SeriesType:" description="---suche nach---">config.plugins.AdvancedEventLibrary.SeriesType</item>
+		<item level="0" text="ViewType:" description="---Ansicht---">config.plugins.AdvancedEventLibrary.ViewType</item>
+	</setup>
+
+	<setup key="Simple-Movie-Wall-Setup" title="Simple-Movie-Wall-Setup">
+		<item level="0" text="SortType:" description="---Sortierung---">config.plugins.AdvancedEventLibrary.SortType</item>
+		<item level="0" text="StartPath:" description="---Startpfad---">config.plugins.AdvancedEventLibrary.StartPath</item>
+		<item level="0" text="Progress:" description="---zeige Fortschritt gesehen---">config.plugins.AdvancedEventLibrary.Progress</item>
+		<item level="0" text="ViewType:" description="---Ansicht---">config.plugins.AdvancedEventLibrary.ViewType</item>
+	</setup>
+
+</setupxml>

@@ -78,12 +78,12 @@ viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(defaul
 favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
 #refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
 #refreshMovieData = refreshMW.value or refreshMW.value == 'true'
-refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default = True)
-refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default = False)
+refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
+refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
 refreshMovieDataAtStop = refreshMWAtStop.value
 refreshMovieDataAtStart = refreshMWAtStart.value
-updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
-refreshMovieWall = updateAELMovieWall.value or updateAELMovieWall.value == 'true'
+config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
+#refreshMovieWall = updateAELMovieWall.value or updateAELMovieWall.value == 'true'
 
 baseEPGSelection__init__ = None
 baseEventViewBase__init__ = None
