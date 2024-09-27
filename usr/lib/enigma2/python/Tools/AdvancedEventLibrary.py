@@ -27,7 +27,7 @@ from random import SystemRandom
 from sqlite3 import Error
 from time import time, localtime, strftime, mktime
 import threading
-from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, eTimer, iPlayableServicePtr, iPlayableService
+from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, getDesktop, eTimer, iPlayableServicePtr, iPlayableService
 from Screens.ChannelSelection import service_types_tv
 from operator import itemgetter
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock

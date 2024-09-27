@@ -79,7 +79,7 @@ def write_log(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
 	with open("/var/tmp/AdvancedEventLibrary.log", "a") as log:
-		log.write(str(logtime) + " : [AdvancedEventLibraryPlugin] - " + str(svalue) + "\n")
+		log.write(f"{logtime}: [AdvancedEventLibraryPlugin] - {svalue}\n")
 
 
 def sessionstart(reason, **kwargs):
