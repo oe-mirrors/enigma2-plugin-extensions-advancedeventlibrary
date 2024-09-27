@@ -91,7 +91,14 @@ class AELMenu(Screen):
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = "Advanced-Event-Library Menüauswahl: (R" + str(currentVersion) + ")"
 		imgpath = "/usr/share/enigma2/AELImages/"
-		self.menulist = [('Einstellungen', 'Grundeinstellungen von AEL vornehmen', LoadPixmap(imgpath + 'settings.png'), 'setup'), ('Editor', 'Eventinformationen bearbeiten', LoadPixmap(imgpath + 'keyboard.png'), 'editor'), ('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'), ('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'), ('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'), ('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'), ('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'), ('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')]
+		self.menulist = [(_('Settingsn'), _('Making basic settings for AEL'), LoadPixmap(imgpath + 'settings.png'), 'setup'),
+				   		(_('Editor'), _('Edit event information'), LoadPixmap(imgpath + 'keyboard.png'), 'editor'),
+						('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'),
+						('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'),
+						('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'),
+						('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'),
+						('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'),
+						('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')]
 		self["menulist"] = List(self.menulist, enableWrapAround=True)
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -103,8 +110,8 @@ class AELMenu(Screen):
 		}, -1)
 
 		self["key_red"] = StaticText(_("Close"))
-		self["key_green"] = StaticText(_("starte Suchlauf..."))
-		self["key_yellow"] = StaticText(_("erzeuge Backup..."))
+		self["key_green"] = StaticText(_("Start scan..."))
+		self["key_yellow"] = StaticText(_("Create Backup..."))
 		self["info"] = StaticText("")
 		self["status"] = StaticText("")
 
@@ -274,7 +281,7 @@ class AELMenu(Screen):
 		if AEL.STATUS:
 			self["status"].setText(AEL.STATUS)
 		else:
-			self["status"].setText("Momentan ist kein Suchlauf gestartet.")
+			self["status"].setText(_("No search is currently running."))
 		self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))
 		self.memInfo += str(self.getMemInfo('Mem'))
 		self.memInfo += '\nMountpoints :\n' + self.getDiskInfo()
@@ -438,7 +445,7 @@ class AdvancedEventLibrarySetup(Setup):
 #		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
 		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
 														{
-														"green": (self.do_close, _("save")),
+														"green": (self.do_close, _("Save")),
 														"yellow": (self.key_yellow_handler, _("TVS-Setup"))
 														}, prio=0, description=_("Advanced-Event-Library-Setup"))
 
@@ -623,7 +630,7 @@ class AdvancedEventLibrarySetup(Setup):
 							for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
 								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
 									self.searchOptions[str(root)] = x[1].value
-							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
+							self.searchOptions[x[0].replace(_"suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
 						else:
 							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
 			config.plugins.AdvancedEventLibrary.searchPlaces.value = str(self.searchOptions)
@@ -648,8 +655,8 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		self["footnote"] = StaticText("")
 		self["description"] = Label("")
 
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Speichern")
+		self["key_red"] = StaticText(_("Close"))
+		self["key_green"] = StaticText(_("Speichern"))
 
 		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 #		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
@@ -711,7 +718,7 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 						itm = (k, v)
 						list.append(itm)
 						break
-			list.insert(0, ("unbenutzt", ""))
+			list.insert(0, (_("unused"), ""))
 			choices, idx = (list, 0)
 			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Referenz auswählen', keys=keys, list=choices, selection=idx)
@@ -878,10 +885,10 @@ class Editor(Screen, ConfigListScreen):
 			write_log('found second name : ' + str(self.ptr2))
 		write_log('search name : ' + str(self.ptr))
 
-		self["key_red"] = StaticText("Übernehmen")
+		self["key_red"] = StaticText(_("Activate"))
 		self["key_green"] = StaticText("")
-		self["key_yellow"] = StaticText("aktiviere Posterauswahl")
-		self["key_blue"] = StaticText("aktiviere Coverauswahl")
+		self["key_yellow"] = StaticText(_("Activate poster selection"))
+		self["key_blue"] = StaticText(_("Activate Cover selection"))
 
 		self.activeList = 'editor'
 		self.jahr = ''
@@ -947,8 +954,8 @@ class Editor(Screen, ConfigListScreen):
 						self.eventCountry.value = selection[1]
 						self.eventOverview = selection[7]
 						self.changedEntry()
-				self["key_yellow"].setText("aktiviere Posterauswahl")
-				self["key_blue"].setText("aktiviere Coverauswahl")
+				self["key_yellow"] = StaticText(_("Activate poster selection"))
+				self["key_blue"] = StaticText(_("Activate Cover selection"))
 				self['sList'].hide()
 				self['config'].show()
 				self.activeList = 'editor'
@@ -956,7 +963,7 @@ class Editor(Screen, ConfigListScreen):
 					self['cList'].show()
 					self['pList'].show()
 				waitList = []
-				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
+				itm = [_("load data, please wait..."), None, None, None, None, None, None]
 				waitList.append((itm,))
 				self['cList'].setList(waitList)
 				self['pList'].setList(waitList)
@@ -1574,22 +1581,22 @@ class Editor(Screen, ConfigListScreen):
 	def key_green_handler(self):
 		if self.activeList != 'choiceBox':
 			self["key_green"].setText("")
-			self["key_yellow"].setText("aktiviere Posterauswahl")
-			self["key_blue"].setText("aktiviere Coverauswahl")
+			self["key_yellow"] = StaticText(_("Activate poster selection"))
+			self["key_blue"] = StaticText(_("Activate Cover selection"))
 			self.activeList = 'editor'
 
 	def key_yellow_handler(self):
 		if self.activeList != 'choiceBox':
-			self["key_green"].setText("aktiviere Editor")
+			self["key_green"].setText("Activate Editor")
 			self["key_yellow"].setText("")
-			self["key_blue"].setText("aktiviere Coverauswahl")
+			self["key_blue"].setText("Activate Cover selection")
 			self.activeList = 'poster'
 			self.showPreview()
 
 	def key_blue_handler(self):
 		if self.activeList != 'choiceBox':
-			self["key_green"].setText("aktiviere Editor")
-			self["key_yellow"].setText("aktiviere Posterauswahl")
+			self["key_green"].setText("Activate Editor")
+			self["key_yellow"].setText("Activate poster selection")
 			self["key_blue"].setText("")
 			self.activeList = 'cover'
 			self.showPreview()
@@ -1597,13 +1604,13 @@ class Editor(Screen, ConfigListScreen):
 	def buildConfigList(self):
 		if self.configlist:
 			del self.configlist[:]
-		self.configlist.append(getConfigListEntry("Event-Informationen"))
-		self.configlist.append(getConfigListEntry("Event Name (suche mit OK)", self.eventTitle))
-		self.configlist.append(getConfigListEntry("Genre", self.eventGenre))
-		self.configlist.append(getConfigListEntry("Land", self.eventCountry))
-		self.configlist.append(getConfigListEntry("Erscheinungsjahr", self.eventYear))
-		self.configlist.append(getConfigListEntry("Bewertung", self.eventRating))
-		self.configlist.append(getConfigListEntry("FSK", self.eventFSK))
+		self.configlist.append(getConfigListEntry(_("Event-Informations")))
+		self.configlist.append(getConfigListEntry(_("Event name (search with OK)"), self.eventTitle))
+		self.configlist.append(getConfigListEntry(_("Genre"), self.eventGenre))
+		self.configlist.append(getConfigListEntry(_("Country"), self.eventCountry))
+		self.configlist.append(getConfigListEntry(_("Year of publication"), self.eventYear))
+		self.configlist.append(getConfigListEntry(_("Rating"), self.eventRating))
+		self.configlist.append(getConfigListEntry(_("FSK (Germany only)"), self.eventFSK))
 
 	def changedEntry(self):
 		self.buildConfigList()
@@ -1614,8 +1621,8 @@ class Editor(Screen, ConfigListScreen):
 
 	def doClose(self):
 		if self.activeList == 'choiceBox':
-			self["key_yellow"].setText("aktiviere Posterauswahl")
-			self["key_blue"].setText("aktiviere Coverauswahl")
+			self["key_yellow"] = StaticText(_("Activate poster selection"))
+			self["key_blue"] = StaticText(_("Activate Cover selection"))
 			self['sList'].hide()
 			self['config'].show()
 			self.activeList = 'editor'

@@ -1189,9 +1189,8 @@ class EPGList(GUIComponent, object):
 		return True
 
 	def correctweekdays(self, itm):
-		_itm = str(itm)
-		_itm = _itm.replace("Mon", "Mo").replace("Tue", "Di").replace("Wed", "Mi").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
-		return _itm
+#		_itm = _itm.replace("Mon", "Mo").replace("Tue", "Di").replace("Wed", "Mi").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
+		return (_(itm))
 
 	def connectsel_changed(self, func):
 		if not self.onsel_changed.count(func):
@@ -1205,7 +1204,7 @@ class EPGList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:  # FIXME!!!
+				except:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
 					pass
 
@@ -1328,7 +1327,7 @@ class MenuList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:  # FIXME!!!
+				except:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
 					pass
 

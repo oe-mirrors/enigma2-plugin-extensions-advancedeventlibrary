@@ -188,10 +188,10 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self["eventList"].l.setBuildFunc(self.buildEventList)
 		self["trailer"] = Pixmap()
 
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Timer hinzufügen")
-		self["key_yellow"] = StaticText("Bouquetauswahl")  # (self.myBouquet.value)
-		self["key_blue"] = StaticText("Advanced-Event-Library")
+		self["key_red"] = StaticText(_("Exit"))
+		self["key_green"] = StaticText(_("Add Timer"))
+		self["key_yellow"] = StaticText(_("Bouquets"))  # (self.myBouquet.value)
+		self["key_blue"] = StaticText(_("Advanced-Event-Library"))
 
 		self["channelsInfo"] = MultiColorLabel()
 		self["eventsInfo"] = MultiColorLabel()
@@ -922,9 +922,8 @@ class AdvancedEventLibraryChannelSelection(Screen):
 						self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
 
 	def correctweekdays(self, itm):
-		_itm = str(itm)
-		_itm = _itm.replace("Mon", "Mo").replace("Tue", "Di").replace("Wed", "Mi").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
-		return _itm
+#		_itm = _itm.replace("Mon", "Mo").replace("Tue", "Di").replace("Wed", "Mi").replace("Thu", "Do").replace("Fri", "Fr").replace("Sat", "Sa").replace("Sun", "So")
+		return _(itm)
 
 
 class MySetup(Setup):
