@@ -9,9 +9,6 @@ class AdvancedEventLibraryShowHideText(Converter, object):
 
 	@cached
 	def getText(self):
-		if self.source.text == self.txt or self.source.text.endswith(' B') or self.source.text.endswith('KB'):
-			return ""
-		else:
-			return self.source.text
+		return "" if self.source.text == self.txt or self.source.text.endswith(' B') or self.source.text.endswith('KB') else self.source.text
 
 	text = property(getText)

@@ -30,7 +30,7 @@ import threading
 from enigma import eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, eTimer, iPlayableServicePtr, iPlayableService
 from Screens.ChannelSelection import service_types_tv
 from operator import itemgetter
-from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection
+from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
 from Tools.Directories import fileExists
 from PIL import Image
 from Tools.Alternatives import GetWithAlternative
@@ -42,6 +42,7 @@ from Tools.Directories import defaultRecordingLocation
 from ServiceReference import ServiceReference
 from difflib import get_close_matches
 from datetime import datetime
+
 #from twisted.web import client
 #from twisted.internet import reactor, defer, ssl
 #from twisted.python import failure
@@ -55,15 +56,78 @@ isInstalled = True
 
 log = "/var/tmp/AdvancedEventLibrary.log"
 
-bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
+
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
+config.plugins.AdvancedEventLibrary.Location = ConfigText(default=defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/')
+config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
+config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
+config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
+config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
+config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
+config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
+config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
+config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
+config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
+config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default='intern')
+config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default='unbenutzt')
+config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default='intern')
+config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
+config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
+config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
+config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
+config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
+config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=["Alle Bouquets"])
+config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
+config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
+config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
+
+# config.plugins.AdvancedEventLibrary = ConfigSubsection()
+# useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
+# useEPGLists = useAELEPGLists.value or useAELEPGLists.value == 'true'
+# showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
+# setEPGList = showinEPG.value or showinEPG.value == 'true'
+# useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
+# useMW = useAELMW.value or useAELMW.value == 'true'
+viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
+favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
+# refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
+# refreshMovieData = refreshMW.value or refreshMW.value == 'true'
+refreshMovieDataAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop.value
+refreshMovieDataAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart.value
+refreshMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value or config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value == 'true'
+
+
+def write_log(svalue):
+	t = localtime()
+	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
+	AEL_log = open(log, "a")
+	AEL_log.write(str(logtime) + " : [AdvancedEventLibrarySystem] - " + str(svalue) + "\n")
+	AEL_log.close()
+
+
+#bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
+#config.plugins.AdvancedEventLibrary = ConfigSubsection()
+#config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
 dir = config.plugins.AdvancedEventLibrary.Location.value
 if not "AdvancedEventLibrary/" in dir:
 	dir = dir + "AdvancedEventLibrary/"
-config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
+#config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
 #backuppath = config.plugins.AdvancedEventLibrary.Backup.value
-addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
+#addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
@@ -93,6 +157,7 @@ if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 		sPDict = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
 	except:
 		pass
+
 
 #not used
 #vtidb_loc = config.misc.db_path.value + '/vtidb.db'
@@ -1082,19 +1147,23 @@ def randbelow(exclusive_upper_bound):
 
 
 def get_keys(forwhat):
-	if forwhat == 'tmdb' and tmdbKey.value != 'intern':
-		return tmdbKey.value
-	elif forwhat == 'tvdb' and tvdbKey.value != 'intern':
-		return tvdbKey.value
-	elif forwhat == 'omdb' and omdbKey.value != 'intern':
-		return omdbKey.value
+	tmdbkey = config.plugins.AdvancedEventLibrary.tmdbkey.value
+	tvdbkey = config.plugins.AdvancedEventLibrary.tvdbkey.value
+	omdbKey = config.plugins.AdvancedEventLibrary.omdbKey.value
+	if forwhat == 'tmdb' and tmdbkey != 'intern':
+		return tmdbkey
+	elif forwhat == 'tvdb' and tvdbkey != 'intern':
+		return tvdbkey
+	elif forwhat == 'omdb' and omdbKey != 'intern':
+		return omdbKey
 	else:
 		return base64.b64decode(ApiKeys[forwhat][randbelow(3)])
 
 
 def get_TVDb():
-	if tvdbV4Key.value != "unbenutzt1":
-		tvdbV4 = tvdb_api_v4.TVDB(tvdbV4Key.value)
+	tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key.value
+	if tvdbV4Key != "unbenutzt1":
+		tvdbV4 = tvdb_api_v4.TVDB(tvdbV4Key)
 		if tvdbV4.get_login_state():
 			return tvdbV4
 	return None
@@ -1145,11 +1214,6 @@ def removeExtension(ext):
 	return ext
 
 
-def setStatus(text=None):
-	global STATUS
-	STATUS = text
-
-
 def getMemInfo(value):
 	result = [0, 0, 0, 0]  # (size, used, avail, use%)
 	try:
@@ -1196,8 +1260,8 @@ def clearMem(screenName=""):
 def createBackup():
 	global STATUS
 	backuppath = config.plugins.AdvancedEventLibrary.Backup.value
-	STATUS = "erzeuge Backup in " + str(backuppath)
-	write_log("create backup in " + str(backuppath))
+	STATUS = f"erzeuge Backup in {backuppath}"
+	write_log(f"create backup in {backuppath}")
 	try:
 		if not os.path.exists(backuppath):
 			os.makedirs(backuppath)
@@ -1225,18 +1289,18 @@ def createBackup():
 				if not fileExists(target):
 #					os.system('cp ' + str(file) + str(target))
 					shutil.copy2(file, target)
-					STATUS = "(" + str(progress) + "/" + str(pics) + ") sichere Poster : " + str(file)
+					STATUS = f"({progress}/{pics} sichere Poster : {file}"
 					copied += 1
 				else:
 					if os.path.getmtime(file) > (os.path.getmtime(target) + 7200):
 #						os.system('cp ' + str(file) + str(target))
 						shutil.copy2(file, target)
-						STATUS = "(" + str(progress) + "/" + str(pics) + ") sichere Poster : " + str(file)
+						STATUS = f"({progress}/{pics} sichere Poster : {file}"
 						copied += 1
 			except Exception as ex:
-				write_log("Fehler beim kopieren : " + str(ex))
+				write_log(f"Fehler beim kopieren : {ex}")
 				continue
-		write_log("have copied " + str(copied) + " poster to " + str(backuppath) + "poster/")
+		write_log(f"have copied {copied} poster to {backuppath} poster/")
 		del files
 
 		files = glob.glob(getPictureDir() + 'cover/*.jpg')
@@ -1273,18 +1337,9 @@ def createBackup():
 def checkUsedSpace(db=None):
 	try:
 		recordings = getRecordings()
-		if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash":
-			dbpath = '/etc/enigma2/eventLibrary.db'
-		else:
-			dbpath = os.path.join(getPictureDir(), 'eventLibrary.db')
+		dbpath = '/etc/enigma2/eventLibrary.db' if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else os.path.join(getPictureDir(), 'eventLibrary.db')
 		if fileExists(dbpath) and db:
-			config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
-			config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
-			maxUsedInodes = config.plugins.AdvancedEventLibrary.MaxUsedInodes.value
-			if "/etc" in dir:
-				maxSize = 1 * 1024.0 * 1024.0
-			else:
-				maxSize = config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
+			maxSize = 1 * 1024.0 * 1024.0 if "/etc" in dir else config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
 			PDIR = dir + 'poster/'
 			CDIR = dir + 'cover/'
 			PRDIR = dir + 'preview/'
@@ -1295,7 +1350,7 @@ def checkUsedSpace(db=None):
 			write_log('benutzte Inodes = ' + str(inodes))
 			write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
 			usedInodes = int(inodes[:-1])
-			if (((int(posterSize) + int(coverSize) + int(previewSize)) > int(maxSize)) or usedInodes >= maxUsedInodes):
+			if (((int(posterSize) + int(coverSize) + int(previewSize)) > int(maxSize)) or usedInodes >= config.plugins.AdvancedEventLibrary.MaxUsedInodes.value):
 				removeList = glob.glob(os.path.join(PRDIR, "*.jpg"))
 				for f in removeList:
 					os.remove(f)
@@ -1396,8 +1451,8 @@ def createMovieInfo(db):
 														"overview": ""
 														}
 													try:
-														STATUS = 'suche meta-Informationen f�r ' + str(title)
-														write_log('suche meta-Informationen f�r ' + str(title), addlog.value)
+														STATUS = 'suche meta-Informationen für ' + str(title)
+														write_log('suche meta-Informationen für ' + str(title), ADDLOG)
 														search = tmdb.Search()
 														if jahr != '':
 															res = search.movie(query=title, language='de', year=jahr)
@@ -1634,6 +1689,7 @@ def createMovieInfo(db):
 
 def getAllRecords(db):
 	global STATUS
+	names = ""
 	try:
 		STATUS = 'durchsuche Aufnahmeverzeichnisse...'
 		PDIR = dir + 'poster/'
@@ -1656,6 +1712,7 @@ def getAllRecords(db):
 								doIt = True
 						fileCount = 0
 						if doIt:
+							name = ""
 							for filename in files:
 								try:
 									if (filename.endswith('.ts') or filename.endswith('.mkv') or filename.endswith('.avi') or filename.endswith('.mpg') or filename.endswith('.mp4') or filename.endswith('.iso') or filename.endswith('.mpeg2')) and doPics:
@@ -1765,6 +1822,7 @@ def getAllRecords(db):
 
 
 def getRecordings():
+	names = ""
 	try:
 		names = set()
 		recordPaths = config.movielist.videodirs.value
@@ -1778,6 +1836,7 @@ def getRecordings():
 							if sPDict[root]:
 								doIt = True
 						if doIt:
+							name = ""
 							for filename in files:
 								try:
 									if filename.endswith('.meta'):
@@ -1839,21 +1898,21 @@ def cleanPreviewImages(db):
 def getallEventsfromEPG():
 	global STATUS
 	#try:
-	STATUS = '�berpr�fe Verzeichnisse...'
+	STATUS = 'überprüfe Verzeichnisse...'
 	createDirs(dir)
 	STATUS = 'entferne Logfile...'
 	removeLogs()
 	write_log("Update start...")
 	write_log("default image path is " + str(dir)[:-1])
-	write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
+#	write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
 	write_log("searchOptions " + str(sPDict))
 	db = getDB()
 	db.parameter(PARAMETER_SET, 'laststart', str(time()))
 	cVersion = db.parameter(PARAMETER_GET, 'currentVersion', None, 111)
-	if int(cVersion) < 113:
+	if cVersion and int(cVersion) < 113:
 		db.parameter(PARAMETER_SET, 'currentVersion', '115')
 		db.cleanliveTV(int(time() + (14 * 86400)))
-	STATUS = '�berpr�fe reservierten Speicherplatz...'
+	STATUS = 'überprüfe reservierten Speicherplatz...'
 	checkUsedSpace(db)
 	names = getAllRecords(db)
 	STATUS = 'durchsuche aktuelles EPG...'
@@ -1926,7 +1985,7 @@ def getallEventsfromEPG():
 		#	continue
 	write_log('check ' + str(len(names)) + ' new events')
 	limgs = True
-	if str(config.plugins.AdvancedEventLibrary.SearchFor.value) == "nur Extradaten":
+	if config.plugins.AdvancedEventLibrary.SearchFor.value == "nur Extradaten":
 		limgs = False
 	get_titleInfo(names, None, limgs, db, liveTVRecords, tvsref)
 	del names
@@ -1955,10 +2014,11 @@ def getTVSpielfilm(db, tvsref):
 						maxDate = db.getMaxAirtimeforUpdate(sRef)
 						curDate = db.getMinAirtimeforUpdate(sRef)
 						#while int(curDate) <= int(maxDate) + 86400:
+						url = 0
 						while (int(curDate) - 86400) <= int(maxDate) + 86400:
 							try:
 								url = 'https://live.tvspielfilm.de/static/broadcast/list/' + str(tvsref[sRef]).upper() + '/' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d"))
-								STATUS = '(' + str(evt) + '/' + str(len(refs)) + ') durchsuche ' + tvsref[sRef] + ' f�r den ' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")) + ' auf TV-Spielfilm ' + " (" + str(founded) + "/" + str(tcount) + " | " + str(imgcount) + ")"
+								STATUS = '(' + str(evt) + '/' + str(len(refs)) + ') durchsuche ' + tvsref[sRef] + ' für den ' + str(datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")) + ' auf TV-Spielfilm ' + " (" + str(founded) + "/" + str(tcount) + " | " + str(imgcount) + ")"
 								results = json.loads(requests.get(url, timeout=4).text)
 								if results:
 									lastImage = ""
@@ -2076,7 +2136,7 @@ def getTVSpielfilm(db, tvsref):
 											db.updateliveTVS(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sRef, airtime, title)
 											founded = tcount - db.getUpdateCount()
 											if founded == success:
-												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', addlog.value)
+												write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', ADDLOG)
 											if founded > success and imdb != "":
 												trailers += 1
 											if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
@@ -2086,12 +2146,12 @@ def getTVSpielfilm(db, tvsref):
 														imgcount += 1
 														lastImage = image
 										except Exception as ex:
-											write_log('Fehler in TV-Spielfilm : ' + str(ex) + ' - url ' + str(url), addlog.value)
+											write_log('Fehler in TV-Spielfilm : ' + str(ex) + ' - url ' + str(url), ADDLOG)
 											continue
 
 								curDate = curDate + 86400
 							except Exception as ex:
-								write_log('Fehler in getTVSpielfilm: ' + str(ex) + ' - ' + str(url), addlog.value)
+								write_log('Fehler in getTVSpielfilm: ' + str(ex) + ' - ' + str(url), ADDLOG)
 								curDate = curDate + 86400
 								continue
 				except Exception as ex:
@@ -2123,6 +2183,7 @@ def getTVMovie(db, secondRun=False):
 			for name in failedNames:
 				tvnames.append(name)
 			write_log('recheck ' + str(len(tvnames)) + ' titles on TV-Movie')
+		url = 0
 		for title in tvnames:
 			try:
 				evt += 1
@@ -2259,7 +2320,7 @@ def getTVMovie(db, secondRun=False):
 								failedNames.append(title)
 								continue
 						if nothingfound:
-							write_log('nothing found on TV-Movie for ' + str(title[0]) + ' url ' + str(url), addlog.value)
+							write_log('nothing found on TV-Movie for ' + str(title[0]) + ' url ' + str(url), ADDLOG)
 			except Exception as ex:
 				write_log('Fehler in TV-Movie : ' + str(ex) + ' - ' + str(title[0]) + ' url ' + str(url))
 				continue
@@ -2280,15 +2341,15 @@ def correctTitleName(tvname):
 	if 'CSI: New York' in tvname:
 		tvname = 'CSI: NY'
 	elif 'CSI: Vegas' in tvname:
-		tvname = 'CSI: Den T�tern auf der Spur'
+		tvname = 'CSI: Den Tätern auf der Spur'
 	elif 'Star Trek - Das n' in tvname:
-		tvname = 'Raumschiff Enterprise - Das n�chste Jahrhundert'
+		tvname = 'Raumschiff Enterprise - Das nächste Jahrhundert'
 	elif 'SAT.1-Fr' in tvname:
-		tvname = 'Sat.1-Fr�hst�cksfernsehen'
+		tvname = 'Sat.1-Frühstücksfernsehen'
 	elif 'Gefragt - Gejagt' in tvname:
 		tvname = 'Gefragt Gejagt'
 	elif 'nder - Menschen - Abenteuer' in tvname:
-		tvname = 'L�nder Menschen Abenteuer'
+		tvname = 'Länder Menschen Abenteuer'
 	elif 'Land - Liebe - Luft' in tvname:
 		tvname = 'Land Liebe Luft'
 	elif 'Stadt - Land - Quiz' in tvname:
@@ -2302,7 +2363,7 @@ def correctTitleName(tvname):
 	elif 'The Garfield ShowT' in tvname:
 		tvname = 'The Garfield Show'
 	elif 'ProSieben S' in tvname:
-		tvname = 'Sp�tnachrichten'
+		tvname = 'Spätnachrichten'
 	elif 'Explosiv - Weekend' in tvname:
 		tvname = 'Explosiv Weekend'
 	elif 'Exclusiv - Weekend' in tvname:
@@ -2452,9 +2513,9 @@ def downloadImage(url, filename, timeout=5):
 					f.close()
 				r = None
 			else:
-				write_log("Fehlerhafter Statuscode beim Download f�r : " + str(filename) + ' auf ' + str(url))
+				write_log("Fehlerhafter Statuscode beim Download für : " + str(filename) + ' auf ' + str(url))
 		else:
-			write_log("Picture : " + str(base64.b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', addlog.value)
+			write_log("Picture : " + str(base64.b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', ADDLOG)
 	except Exception as ex:
 		write_log("Fehler in download image: " + str(ex))
 
@@ -2474,7 +2535,7 @@ def downloadImage2(url, filename, timeout=5):
 				return False
 		else:
 			return True
-	except:
+	except Exception:
 		return False
 
 
@@ -2490,7 +2551,7 @@ def checkAllImages():
 			for f in filelist:
 				try:
 					c += 1
-					STATUS = str(c) + '/' + str(l) + ' �berpr�fe ' + str(f)
+					STATUS = str(c) + '/' + str(l) + ' überprüfe ' + str(f)
 					img = Image.open(f)
 					if img.format != 'JPEG':
 						write_log('invalid image : ' + str(f) + ' ' + str(img.format))
@@ -2523,7 +2584,6 @@ def reduceImageSize(path, db):
 		sizex, sizey = imgsize.split("x", 1)
 		filelist = glob.glob(os.path.join(path, "*.jpg"))
 		maxSize = int(config.plugins.AdvancedEventLibrary.MaxImageSize.value)
-		maxcompression = int(maxCompression.value)
 		for f in filelist:
 			try:
 				q = 90
@@ -2544,24 +2604,24 @@ def reduceImageSize(path, db):
 						STATUS = 'Bearbeite ' + str(fn) + '.jpg mit ' + str(bytes2human(os.path.getsize(f), 1)) + ' und ' + str(w) + 'x' + str(h) + 'px'
 						img_bytes = io.StringIO()
 						img1 = img.convert('RGB', colors=256)
-						img1.save(img_bytes, format='jpeg')
+						img1.save(str(img_bytes), format='jpeg')
 						if img_bytes.tell() / 1024 >= oldSize:
 							if w > int(sizex):
 								w = int(sizex)
 								h = int(sizey)
-								img1 = img.resize((w, h), Image.ANTIALIAS)
-								img1.save(img_bytes, format='jpeg')
+								img1 = img.resize((w, h), Image.LANCZOS)
+								img1.save(str(img_bytes), format='jpeg')
 						else:
 							if w > int(sizex):
 								w = int(sizex)
 								h = int(sizey)
-								img1 = img1.resize((w, h), Image.ANTIALIAS)
-								img1.save(img_bytes, format='jpeg')
+								img1 = img1.resize((w, h), Image.LANCZOS)
+								img1.save(str(img_bytes), format='jpeg')
 						if img_bytes.tell() / 1024 > maxSize:
 							while img_bytes.tell() / 1024 > maxSize:
-								img1.save(img_bytes, format='jpeg', quality=q)
+								img1.save(str(img_bytes), format='jpeg', quality=q)
 								q -= 8
-								if q <= maxcompression:
+								if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 									break
 						img1.save(f, format='jpeg', quality=q)
 						write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(os.path.getsize(f), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
@@ -2586,7 +2646,6 @@ def reduceSigleImageSize(src, dest):
 			imgsize = posterqualityDict[config.plugins.AdvancedEventLibrary.posterQuality.value]
 		sizex, sizey = imgsize.split("x", 1)
 		maxSize = int(config.plugins.AdvancedEventLibrary.MaxImageSize.value)
-		maxcompression = int(maxCompression.value)
 		q = 90
 		try:
 			oldSize = int(os.path.getsize(src) / 1024.0)
@@ -2603,24 +2662,24 @@ def reduceSigleImageSize(src, dest):
 					write_log('convert image ' + str(fn) + '.jpg with ' + str(bytes2human(os.path.getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 					img_bytes = io.StringIO()
 					img1 = img.convert('RGB', colors=256)
-					img1.save(img_bytes, format='jpeg')
+					img1.save(str(img_bytes), format='jpeg')
 					if img_bytes.tell() / 1024 >= oldSize:
 						if w > int(sizex):
 							w = int(sizex)
 							h = int(sizey)
-							img1 = img.resize((w, h), Image.ANTIALIAS)
-							img1.save(img_bytes, format='jpeg')
+							img1 = img.resize((w, h), Image.LANCZOS)
+							img1.save(str(img_bytes), format='jpeg')
 					else:
 						if w > int(sizex):
 							w = int(sizex)
 							h = int(sizey)
-							img1 = img1.resize((w, h), Image.ANTIALIAS)
-							img1.save(img_bytes, format='jpeg')
+							img1 = img1.resize((w, h), Image.LANCZOS)
+							img1.save(str(img_bytes), format='jpeg')
 					if img_bytes.tell() / 1024 > maxSize:
 						while img_bytes.tell() / 1024 > maxSize:
-							img1.save(img_bytes, format='jpeg', quality=q)
+							img1.save(str(img_bytes), format='jpeg', quality=q)
 							q -= 8
-							if q <= maxcompression:
+							if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 								break
 					img1.save(dest, format='jpeg', quality=q)
 					write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(os.path.getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
@@ -2650,13 +2709,13 @@ def createThumbnails(path):
 					else:
 						destfile = f.replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails').replace('preview', 'preview/thumbnails')
 						if not fileExists(destfile):
-							STATUS = 'erzeuge Thumbnail f�r ' + str(f)
+							STATUS = 'erzeuge Thumbnail für ' + str(f)
 							img = Image.open(f)
 							imgnew = img.convert('RGBA', colors=256)
 							if 'cover' in str(f) or 'preview' in str(f):
-								imgnew = img.resize((wc, hc), Image.ANTIALIAS)
+								imgnew = img.resize((wc, hc), Image.LANCZOS)
 							else:
-								imgnew = img.resize((wp, hp), Image.ANTIALIAS)
+								imgnew = img.resize((wp, hp), Image.LANCZOS)
 							imgnew.save(destfile)
 							img = None
 			except Exception as ex:
@@ -2677,9 +2736,9 @@ def createSingleThumbnail(src, dest):
 		img = Image.open(src)
 		imgnew = img.convert('RGBA', colors=256)
 		if 'cover' in str(dest) or 'preview' in str(dest):
-			imgnew = img.resize((wc, hc), Image.ANTIALIAS)
+			imgnew = img.resize((wc, hc), Image.LANCZOS)
 		else:
-			imgnew = img.resize((wp, hp), Image.ANTIALIAS)
+			imgnew = img.resize((wp, hp), Image.LANCZOS)
 		imgnew.save(destfile)
 		if fileExists(destfile):
 			write_log('thumbnail created')
@@ -2731,7 +2790,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		#			write_log('################################################### themoviedb movie ##############################################')
 					try:
 						STATUS = str(position) + '/' + str(len(titles)) + ' : themoviedb movie -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-						write_log('looking for ' + str(title) + ' on themoviedb movie', addlog.value)
+						write_log('looking for ' + str(title) + ' on themoviedb movie', aelGlobals.addlog)
 						search = tmdb.Search()
 						if jahr != '':
 							res = search.movie(query=title, language='de', year=jahr)
@@ -2749,7 +2808,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								for item in res['results']:
 									if item['title'].lower() == bestmatch[0]:
 										foundAsMovie = True
-										write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb movie', addlog.value)
+										write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb movie', aelGlobals.addlog)
 										if item['original_title']:
 											org_name = item['original_title']
 										if item['poster_path'] and loadImages:
@@ -2799,7 +2858,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					try:
 						if not foundAsMovie:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : themoviedb tv -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							write_log('looking for ' + str(title) + ' on themoviedb tv', addlog.value)
+							write_log('looking for ' + str(title) + ' on themoviedb tv', aelGlobals.addlog)
 							search = tmdb.Search()
 							searchName = findEpisode(title)
 							if searchName:
@@ -2829,7 +2888,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									for item in res['results']:
 										if item['name'].lower() == bestmatch[0]:
 											foundAsSeries = True
-											write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', addlog.value)
+											write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', aelGlobals.addlog)
 											if searchName:
 												try:
 													details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
@@ -2903,7 +2962,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if not foundAsMovie and not foundAsSeries:
 						if True:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : thetvdb -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							write_log('looking for ' + str(title) + ' on thetvdb', addlog.value)
+							write_log('looking for ' + str(title) + ' on thetvdb', aelGlobals.addlog)
 							seriesid = None
 							search = tvdb.Search()
 							searchTitle = convertTitle2(title)
@@ -2920,7 +2979,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											bestmatch = [searchTitle.lower()]
 										for result in response:
 											if result['seriesName'].lower() == bestmatch[0]:
-												write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', addlog.value)
+												write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', aelGlobals.addlog)
 												seriesid = result['id']
 												break
 								except Exception as ex:
@@ -2936,7 +2995,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 												bestmatch = [searchTitle.lower()]
 											for result in response:
 												if result['seriesName'].lower() == bestmatch[0]:
-													write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', addlog.value)
+													write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', aelGlobals.addlog)
 													seriesid = result['id']
 													break
 									except Exception as ex:
@@ -3058,7 +3117,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if not foundAsMovie:
 						if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
 							STATUS = str(position) + '/' + str(len(titles)) + ' : maze.tv -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							write_log('looking for ' + str(title) + ' on maze.tv', addlog.value)
+							write_log('looking for ' + str(title) + ' on maze.tv', aelGlobals.addlog)
 							try:
 								if org_name:
 									url = "http://api.tvmaze.com/search/shows?q=%s" % (org_name)
@@ -3100,7 +3159,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if not foundAsMovie and not foundAsSeries:
 						try:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : omdb -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							write_log('looking for ' + str(title) + ' on omdb', addlog.value)
+							write_log('looking for ' + str(title) + ' on omdb', aelGlobals.addlog)
 							if imdb_id:
 								url = "http://www.omdbapi.com/?apikey=%s&i=%s" % (get_keys('omdb'), imdb_id)
 							else:
@@ -3178,7 +3237,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
 							blentrys += 1
 							db.addblackList(filename)
-							write_log('nothing found for : ' + str(titleinfo['title']), addlog.value)
+							write_log('nothing found for : ' + str(titleinfo['title']), aelGlobals.addlog)
 
 						if titleinfo['genre'] != "" or titleinfo['year'] != "" or titleinfo['rating'] != "" or titleinfo['fsk'] != "" or titleinfo['country'] != "":
 							entrys += 1
@@ -3189,7 +3248,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
 							else:
 								db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
-							write_log('found data for : ' + str(titleinfo['title']), addlog.value)
+							write_log('found data for : ' + str(titleinfo['title']), aelGlobals.addlog)
 
 						if not titleinfo['poster_url'] and loadImages:
 							if titleinfo['year'] != "":
@@ -3221,7 +3280,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									downloadImage(titleinfo['backdrop_url'], os.path.join(coverDir, research + '.jpg'))
 								else:
 									downloadImage(titleinfo['backdrop_url'], os.path.join(coverDir, filename + '.jpg'))
-					write_log(titleinfo, addlog.value)
+					write_log(titleinfo, aelGlobals.addlog)
 			except Exception as ex:
 				write_log("Fehler in get_titleInfo for : " + str(title) + ' infos = ' + str(titleinfo) + ' : ' + str(ex))
 				continue
@@ -3273,7 +3332,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					write_log("MovieWall data saved with " + str(itype))
 			except Exception as ex:
 				write_log('save moviewall data : ' + str(ex))
-		if addlog.value:
+		if aelGlobals.addlog:
 			writeTVStatistic(db)
 		db.parameter(PARAMETER_SET, 'laststop', str(time()))
 		write_log("Update done")
@@ -3528,7 +3587,7 @@ def get_MissingPictures(db, poster, cover):
 			write_log('found ' + str(len(pList[0])) + ' missing covers')
 			for picture in pList[0]:
 				i += 1
-				STATUS = 'suche fehlendes Cover f�r ' + str(picture) + ' (' + str(i) + '/' + str(len(pList[0])) + ' | ' + str(covers) + ') '
+				STATUS = 'suche fehlendes Cover für ' + str(picture) + ' (' + str(i) + '/' + str(len(pList[0])) + ' | ' + str(covers) + ') '
 				url = get_Picture(title=picture, what='Cover', lang='de')
 				if url:
 					covers += 1
@@ -3541,7 +3600,7 @@ def get_MissingPictures(db, poster, cover):
 			i = 0
 			for picture in pList[1]:
 				i += 1
-				STATUS = 'suche fehlendes Poster f�r ' + str(picture) + ' (' + str(i) + '/' + str(len(pList[1])) + ' | ' + str(posters) + ') '
+				STATUS = 'suche fehlendes Poster für ' + str(picture) + ' (' + str(i) + '/' + str(len(pList[1])) + ' | ' + str(posters) + ') '
 				url = get_Picture(title=picture, what='Poster', lang='de')
 				if url:
 					posters += 1
@@ -3620,7 +3679,7 @@ def createStatistics(db):
 
 		try:
 			inodes = subprocess.check_output(['df', '-i', dir]).split()
-			nodestr = inodes[-4] + ' | ' + inodes[-5] + ' | ' + inodes[-2]
+			nodestr = f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}"
 		except:
 			nodestr = "0"
 
@@ -3660,6 +3719,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 				seriesid = None
 				search = tvdb.Search()
 				searchTitle = convertTitle2(title)
+				result = {}
 				try:
 					try:
 						response = search.series(searchTitle, language=str(lang))
@@ -3927,10 +3987,10 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 
 			if pictureList:
 				idx = 0
-				write_log('found ' + str(len(pictureList)) + ' images for ' + str(title), addlog.value)
+				write_log('found ' + str(len(pictureList)) + ' images for ' + str(title), aelGlobals.addlog)
 				failed = []
 				while idx <= int(count) and idx < len(pictureList):
-					write_log('Image : ' + str(pictureList[idx]), addlog.value)
+					write_log('Image : ' + str(pictureList[idx]), aelGlobals.addlog)
 					if not downloadImage2(pictureList[idx][0][3], os.path.join('/tmp/', pictureList[idx][0][5])):
 						failed.insert(0, idx)
 					idx += 1
@@ -4474,7 +4534,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [eventInfo] ([base64title] TEXT NOT NULL,[title] TEXT NOT NULL,[genre] TEXT NULL,[year] TEXT NULL,[rating] TEXT NULL,[fsk] TEXT NULL,[country] TEXT NULL,[gDate] TEXT NOT NULL,[trailer] TEXT DEFAULT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'eventInfo' hinzugef�gt")
+				write_log("Tabelle 'eventInfo' hinzugefügt")
 
 			# create table blackList
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackList';"
@@ -4483,7 +4543,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [blackList] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'blackList' hinzugef�gt")
+				write_log("Tabelle 'blackList' hinzugefügt")
 
 			# create table blackListCover
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListCover';"
@@ -4492,7 +4552,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [blackListCover] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'blackListCover' hinzugef�gt")
+				write_log("Tabelle 'blackListCover' hinzugefügt")
 
 			# create table blackListPoster
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListPoster';"
@@ -4501,7 +4561,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [blackListPoster] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'blackListPoster' hinzugef�gt")
+				write_log("Tabelle 'blackListPoster' hinzugefügt")
 
 			# create table liveOnTV
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='liveOnTV';"
@@ -4510,7 +4570,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [liveOnTV] (eid INTEGER NOT NULL, id TEXT,subtitle TEXT,image TEXT,year TEXT,fsk TEXT,rating TEXT,title TEXT,airtime INTEGER NOT NULL,leadText TEXT,conclusion TEXT,categoryName TEXT,season TEXT,episode TEXT,genre TEXT,country TEXT,imdb TEXT,sref TEXT NOT NULL, PRIMARY KEY ([eid],[airtime],[sref]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'liveOnTV' hinzugef�gt")
+				write_log("Tabelle 'liveOnTV' hinzugefügt")
 
 			# delete table myliveTV
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='myliveTV';"
@@ -4535,7 +4595,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE [imageBlackList] ([name] TEXT NOT NULL,PRIMARY KEY ([name]))"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'imageBlackList' hinzugef�gt")
+				write_log("Tabelle 'imageBlackList' hinzugefügt")
 
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='parameters';"
 			cur.execute(query)
@@ -4543,7 +4603,7 @@ class DB_Functions(object):
 				query = "CREATE TABLE `parameters` ( `name` TEXT NOT NULL UNIQUE, `value` TEXT, PRIMARY KEY(`name`) )"
 				cur.execute(query)
 				self.conn.commit()
-				write_log("Tabelle 'parameters' hinzugef�gt")
+				write_log("Tabelle 'parameters' hinzugefügt")
 
 			#append columns eventInfo
 			query = "PRAGMA table_info('eventInfo');"
@@ -4705,7 +4765,7 @@ class DB_Functions(object):
 				row = cur.fetchone()
 				if row:
 					query = "UPDATE liveOnTV set id = ?, subtitle = ?, image = ?, year = ?, fsk = ?, rating = ?, leadText = ?, conclusion = ?, categoryName = ?, season = ?, episode = ?, genre = ?, country = ?, imdb = ? where sref = ? AND airtime = ? AND  id = 'in progress';"
-					cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre).decode('utf8'), country, str(imdb), str(row[0]), row[1]))
+					cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, str(imdb), str(row[0]), row[1]))
 					self.conn.commit()
 		except Error as ex:
 			write_log("Fehler in updateliveTVS : " + str(ex))
@@ -4737,6 +4797,7 @@ class DB_Functions(object):
 
 	def getliveTV(self, eid, name=None, beginTime=None):
 		try:
+			tvname = ""
 			cur = self.conn.cursor()
 			if name:
 				tvname = name
@@ -5217,7 +5278,7 @@ class DB_Functions(object):
 			now = time()
 			titleList = []
 			cur = self.conn.cursor()
-			if str(seriesStartType.value) == 'Staffelstart':
+			if config.plugins.AdvancedEventLibrary.SeriesType.value == 'Staffelstart':
 				query = "SELECT sref, eid, categoryName FROM liveOnTV WHERE sref <> '' AND episode = '1' AND airtime > " + str(now) + " ORDER BY categoryName, airtime"
 			else:
 				query = "SELECT sref, eid, categoryName FROM liveOnTV WHERE sref <> '' AND season = '1' AND episode = '1' AND airtime > " + str(now) + "  ORDER BY categoryName, airtime"
@@ -5237,7 +5298,7 @@ class DB_Functions(object):
 			now = time()
 			titleList = []
 			cur = self.conn.cursor()
-			if str(seriesStartType.value) == 'Staffelstart':
+			if config.plugins.AdvancedEventLibrary.SeriesType.value == 'Staffelstart':
 				query = "SELECT Distinct categoryName from liveOnTV where airtime > " + str(now) + " AND sref <> '' and episode = '1'"
 			else:
 				query = "SELECT Distinct categoryName from liveOnTV where airtime > " + str(now) + " AND sref <> '' and season = '1' and episode = '1'"
@@ -5334,7 +5395,7 @@ class BingImageSearch:
 							  + '&adlt=off' + '&qft=' + self.filters
 				write_log('Bing-requests ' + str(request_url))
 				html = requests.get(request_url, timeout=5, headers=self.headers).content
-				links = re.findall('murl&quot;:&quot;(.*?)&quot;', html)
+				links = re.findall(r'murl&quot;:&quot;(.*?)&quot;', html.decode())
 				write_log('Bing-result ' + str(links))
 				if len(links) <= self.limit:
 					self.limit = len(links) - 1
@@ -5353,3 +5414,24 @@ class BingImageSearch:
 
 #https://live.tvspielfilm.de/static/broadcast/list/ARD/2020-06-11
 #https://live.tvspielfilm.de/static/content/channel-list/livetv
+
+
+class AELGlobals:
+	pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
+	currentVersion = 132
+	desktopSize = getDesktop(0).size()
+	if desktopSize.width() == 1920:
+		skinpath = pluginpath + 'skin/1080/'
+	else:
+		skinpath = pluginpath + 'skin/720/'
+
+	def __init__(self):
+		self.saving = False
+		self.STATUS = None
+		self.addlog = config.plugins.AdvancedEventLibrary.Log.value
+
+	def setStatus(self, text=None):
+		self.STATUS = text
+
+
+aelGlobals = AELGlobals()

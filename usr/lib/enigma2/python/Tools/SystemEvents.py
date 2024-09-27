@@ -5,6 +5,7 @@ from gettext import gettext as _
 from enigma import eConsoleAppContainer
 import os
 
+
 class SystemEvents:
 	STANDBY_ENTER = "STANDBY_ENTER"
 	STANDBY_LEAVE = "STANDBY_LEAVE"
@@ -29,27 +30,27 @@ class SystemEvents:
 	DBTASK_FINISH = "DBTASK_FINISH"
 
 	def __init__(self):
-		self.event_ids = { 	self.STANDBY_ENTER : _("Standby"),
-						self.STANDBY_LEAVE : _("Leave Standby"),
-						self.RECORD_START : _("Start record timer"),
-						self.RECORD_STOP : _("Record timer finished"),
-						self.GUI_REBOOT : _("GUI reboot"),
-						self.PVRDESCRAMBLE_START : _("Start descrambling movie"),
-						self.PVRDESCRAMBLE_STOP : _("Descrambling of movie finished"),
-						self.STBBOOT : _("Start Set-Top-Box"),
-						self.REBOOT : _("Reboot"),
-						self.SHUTDOWN : _("Shutdown"),
-						self.E2START : _("Start enigma2"),
-						self.RECORD_WAKEUP : _("Start Set-Top-Box for upcoming timer"),
-						self.RECORD_REMIND : _("Reminder for service event"),
-						self.SERVICE_START : _("Start playing service"),
-						self.SERVICE_STOP : _("Stop playing service"),
-						self.TASK_START : _("Task started"),
-						self.TASK_FINISH : _("Task stopped"),
-						self.TASK_CANCEL : _("Task cancelled"),
-						self.DBTASK_START : _("Database Task started"),
-						self.DBTASK_FINISH : _("Database Task stopped"),
-						self.DBTASK_CANCEL : _("Database Task cancelled"),
+		self.event_ids = {self.STANDBY_ENTER: _("Standby"),
+						self.STANDBY_LEAVE: _("Leave Standby"),
+						self.RECORD_START: _("Start record timer"),
+						self.RECORD_STOP: _("Record timer finished"),
+						self.GUI_REBOOT: _("GUI reboot"),
+						self.PVRDESCRAMBLE_START: _("Start descrambling movie"),
+						self.PVRDESCRAMBLE_STOP: _("Descrambling of movie finished"),
+						self.STBBOOT: _("Start Set-Top-Box"),
+						self.REBOOT: _("Reboot"),
+						self.SHUTDOWN: _("Shutdown"),
+						self.E2START: _("Start enigma2"),
+						self.RECORD_WAKEUP: _("Start Set-Top-Box for upcoming timer"),
+						self.RECORD_REMIND: _("Reminder for service event"),
+						self.SERVICE_START: _("Start playing service"),
+						self.SERVICE_STOP: _("Stop playing service"),
+						self.TASK_START: _("Task started"),
+						self.TASK_FINISH: _("Task stopped"),
+						self.TASK_CANCEL: _("Task cancelled"),
+						self.DBTASK_START: _("Database Task started"),
+						self.DBTASK_FINISH: _("Database Task stopped"),
+						self.DBTASK_CANCEL: _("Database Task cancelled"),
 					}
 		self.event_list = {}
 		self.ignore_script_exec = []
@@ -60,7 +61,7 @@ class SystemEvents:
 		dummy_txt += "# PLEASE NOTE !!!!\n"
 		dummy_txt += "# Event hook calls can have some command-line arguments, which can be accessed via $1, $2 ...\n\n"
 		dummy_txt += "exit 0\n"
-		
+
 		for evt in self.event_ids:
 			self.event_list[evt] = []
 		if not os.path.exists(self.cmd_path):
@@ -93,7 +94,7 @@ class SystemEvents:
 			return self.event_ids[evt]
 		else:
 			return ""
-	
+
 	def getSystemEvents(self):
 		event_list = []
 		for key in self.event_list:
@@ -143,5 +144,6 @@ class SystemEvents:
 				if f in fncs_new:
 					fncs_new.remove(f)
 			self.event_list[what] = fncs_new
+
 
 systemevents = SystemEvents()

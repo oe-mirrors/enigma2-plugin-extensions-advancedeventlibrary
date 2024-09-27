@@ -23,9 +23,9 @@ class Auth:
 						if "token" in res["data"]:
 							if res["data"]["token"] is not None:
 								self.token = res["data"]["token"]
-				except:
+				except Exception:
 					pass
-		except:
+		except Exception:
 			pass
 
 	def get_token(self):
@@ -199,7 +199,7 @@ class Url:
 		return url
 
 	def updates_url(self, since=0, typ="series"):
-                #https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
+				#https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
 		url = "{}/updates?since={}".format(self.base_url, since)
 		print(url)
 		return url

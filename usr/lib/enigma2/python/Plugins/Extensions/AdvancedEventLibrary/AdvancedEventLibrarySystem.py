@@ -8,7 +8,6 @@
 #																				#
 #################################################################################
 
-from __future__ import absolute_import
 from Screens.Screen import Screen
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Screens.Standby import TryQuitMainloop
@@ -24,13 +23,11 @@ from Components.Input import Input
 from Components.Pixmap import Pixmap
 from Components.ConfigList import ConfigListScreen
 from Screens.Setup import Setup
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger, ConfigClock, getConfigListEntry
 from Tools.Directories import fileExists
 from time import localtime, time
 from Tools import AdvancedEventLibrary as AEL
-from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, createBackup, convertTitle, setStatus, startUpdate, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, createBackup, convertTitle, startUpdate, clearMem
 from Tools.Bytes2Human import bytes2human
 from enigma import getDesktop, eTimer, ePixmap, ePicLoad, eServiceReference, eServiceCenter, iServiceInformation
 from Tools.Directories import defaultRecordingLocation
@@ -57,39 +54,13 @@ from . import AdvancedEventLibraryChannelSelection
 from . import AdvancedEventLibraryLists
 from . import AdvancedEventLibraryMediaHub
 from . import AdvancedEventLibraryRecommendations
-from .AdvancedEventLibrarySimpleMovieWall import saving
+from Tools.AdvancedEventLibrary import getSizeStr, PARAMETER_GET, aelGlobals
 
 currentVersion = 132
-PARAMETER_SET = 0
-PARAMETER_GET = 1
-SIZE_UNITS = ["B", "KB", "MB", "GB", "TB", "PB", "EB"]
-
-#global saving
-saving = False
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-desktopSize = getDesktop(0).size()
-if desktopSize.width() == 1920:
-	skinpath = pluginpath + 'skin/1080/'
-else:
-	skinpath = pluginpath + 'skin/720/'
-
+skinpath = pluginpath + 'skin/1080/' if getDesktop(0).size().width() == 1920 else pluginpath + 'skin/720/'
 log = "/var/tmp/AdvancedEventLibrary.log"
-
-#bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
-#config.plugins.AdvancedEventLibrary = ConfigSubsection()
-#mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
-#backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
-#maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
-#previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-#addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-#usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-#dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
-# useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
-#maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
-#closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-#createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
-#updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 
 
 def write_log(svalue):
@@ -209,7 +180,7 @@ class AELMenu(Screen):
 					result[3] = result[1] * 100 // result[0]  # use%
 				break
 		fd.close()
-		return "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % ('RAM', self.getSizeStr(result[0]), self.getSizeStr(result[2]), self.getSizeStr(result[1]), result[3])
+		return "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % ('RAM', getSizeStr(result[0]), getSizeStr(result[2]), getSizeStr(result[1]), result[3])
 
 	def getDiskInfo(self, path=None):
 		def getMountPoints():
@@ -240,20 +211,8 @@ class AELMenu(Screen):
 				resultList.append(result)
 		res = ""
 		for result in resultList:
-			res += "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % (result[4], self.getSizeStr(result[0]), self.getSizeStr(result[2]), self.getSizeStr(result[1]), result[3])
+			res += "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % (result[4], getSizeStr(result[0]), getSizeStr(result[2]), getSizeStr(result[1]), result[3])
 		return res.replace('/ :', 'Flash :')
-
-	def getSizeStr(self, value, u=0):
-		fractal = 0
-		if value >= 1024:
-			fmt = "%(size)u.%(frac)d %(unit)s"
-			while (value >= 1024) and (u < len(SIZE_UNITS)):
-				(value, mod) = divmod(value, 1024)
-				fractal = mod * 10 // 1024
-				u += 1
-		else:
-			fmt = "%(size)u %(unit)s"
-		return fmt % {"size": value, "frac": fractal, "unit": SIZE_UNITS[u]}
 
 	def getlastUpdateInfo(self, db):
 		lastUpdateStart = self.convertTimestamp(db.parameter(PARAMETER_GET, 'laststart', None, 0))
@@ -338,8 +297,7 @@ class AELMenu(Screen):
 		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, self.viewType)
 
 	def open_moviewall(self):
-		global saving
-		while saving:
+		while aelGlobals.saving:
 			pass
 		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 2

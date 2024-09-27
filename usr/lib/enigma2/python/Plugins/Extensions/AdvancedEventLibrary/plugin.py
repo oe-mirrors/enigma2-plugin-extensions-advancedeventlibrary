@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #################################################################################
 #																				#
 #								AdvancedEventLibrary							#
@@ -57,70 +55,14 @@ from . import AdvancedEventLibraryPrimeTime
 from . import AdvancedEventLibraryChannelSelection
 from . import AdvancedEventLibraryMediaHub
 from . import AdvancedEventLibraryRecommendations
-from Tools.Directories import defaultRecordingLocation
-from Tools.AdvancedEventLibrary import getDB, convertTitle, convert2base64, getallEventsfromEPG, createBackup
+from Tools.AdvancedEventLibrary import getDB, convertTitle, convert2base64, getallEventsfromEPG, createBackup, aelGlobals
 
 global leavePlayerfromTrailer
 leavePlayerfromTrailer = False
 
-PARAMETER_SET = 0
-PARAMETER_GET = 1
-
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 pdesc = 'AdvancedEventLibrary'
 
-config.plugins.AdvancedEventLibrary = ConfigSubsection()
-config.plugins.AdvancedEventLibrary.Location = ConfigText(default=defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/')
-config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
-config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
-config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
-config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
-config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
-config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
-config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
-config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
-config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default='unbenutzt')
-config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
-config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
-config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
-config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=["Alle Bouquets"])
-config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
-config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
-
-# config.plugins.AdvancedEventLibrary = ConfigSubsection()
-# useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
-# useEPGLists = useAELEPGLists.value or useAELEPGLists.value == 'true'
-# showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
-# setEPGList = showinEPG.value or showinEPG.value == 'true'
-# useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
-# useMW = useAELMW.value or useAELMW.value == 'true'
-viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
-favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
-# refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
-# refreshMovieData = refreshMW.value or refreshMW.value == 'true'
-refreshMovieDataAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop.value
-refreshMovieDataAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart.value
-refreshMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value or config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value == 'true'
 
 baseEPGSelection__init__ = None
 baseEventViewBase__init__ = None
@@ -173,6 +115,7 @@ def sessionstart(reason, **kwargs):
 #			for evt in systemevents.getSystemEvents():
 			#	write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
 #				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
+#					refreshMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value
 #					if refreshMovieData and refreshMovieWall:
 #						systemevents.addEventHook(evt, _refreshMovieWall, "refreshMovieWallData_" + evt, evt)
 #				if evt == systemevents.SERVICE_START:
@@ -1377,8 +1320,9 @@ class Recommendations(object):
 	def cleanFavorites(self):
 		k = 0
 		keys = []
+		favouritesMaxAge = config.plugins.AdvancedEventLibrary.FavouritesMaxAge.value
 		for k, v in self.favourites['genres'].items():
-			if v[1] < (time() - (86400 * favouritesMaxAge.value)):
+			if v[1] < (time() - (86400 * favouritesMaxAge)):
 				keys.append(k)
 		if keys:
 			for key in keys:
@@ -1386,7 +1330,7 @@ class Recommendations(object):
 				del self.favourites['genres'][key]
 		keys = []
 		for k, v in self.favourites['titles'].items():
-			if v[1] < (time() - (86400 * favouritesMaxAge.value)):
+			if v[1] < (time() - (86400 * favouritesMaxAge)):
 				keys.append(k)
 		if keys:
 			for key in keys:

@@ -395,7 +395,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		try:
 			if self.viewType == 'Listenansicht':
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
-				if selected_element andselected_element[8]:
+				if selected_element and selected_element[8]:
 					sRef = eServiceReference(4097, 0, str(selected_element[8]))
 					sRef.setName(str(selected_element[0]))
 					self.session.open(MoviePlayer, sRef)

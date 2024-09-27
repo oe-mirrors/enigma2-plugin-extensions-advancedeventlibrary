@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #################################################################################
 #																				#
 #								AdvancedEventLibrary							#
@@ -75,7 +73,6 @@ class AdvancedEventLibraryImage(Renderer):
 		self.db = AdvancedEventLibrary.getDB()
 		self.ptr = None
 		self.ptr2 = None
-		return
 
 	GUI_WIDGET = eWidget
 
@@ -111,7 +108,7 @@ class AdvancedEventLibraryImage(Renderer):
 						self.posterPath = AdvancedEventLibrary.getPictureDir() + 'poster/thumbnails/'
 					if len(params) > 1:
 						self.frameImage = params[1]
-						if os.path.isfile(self.frameImage):
+						if self.imageframe and os.path.isfile(self.frameImage):
 							self.imageframe.setPixmap(loadPNG(self.frameImage))
 						else:
 							self.frameImage = None
@@ -124,16 +121,16 @@ class AdvancedEventLibraryImage(Renderer):
 
 			self.skinAttributes = attribs
 
-		if self.frameImage:
+		if self.frameImage and self.image and self.imageframe:
 			self.image.resize(eSize(self.WCover - 20, self.HCover - 20))
 			self.imageframe.resize(eSize(self.WCover, self.HCover))
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
 			self.image.move(ePoint(10, 10))
-		else:
+		elif self.image:
 			self.image.resize(eSize(self.WCover, self.HCover))
-
-		self.image.setScale(self.scalertype)
+		if self.image:
+			self.image.setScale(self.scalertype)
 		ret = Renderer.applySkin(self, desktop, screen)
 		return ret
 
@@ -149,7 +146,7 @@ class AdvancedEventLibraryImage(Renderer):
 					if isinstance(self.source, ServiceEvent):
 						service = self.source.getCurrentService()
 						sRef = service.toString()
-						if '/'  in sRef and not '//' in sRef:
+						if '/' in sRef and '//' not in sRef:
 							self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')
 							self.fileName = service.getPath()
 							if self.fileName.endswith("/"):
@@ -229,7 +226,6 @@ class AdvancedEventLibraryImage(Renderer):
 		except Exception as e:
 			self.hideimage()
 			write_log("changed : " + str(e))
-		return
 
 	def GUIcreate(self, parent):
 		self.instance = eWidget(parent)
@@ -243,20 +239,23 @@ class AdvancedEventLibraryImage(Renderer):
 		self.image = None
 		self.instance = None
 		AdvancedEventLibrary.clearMem(self.screenName)
-		return
 
 	def showimage(self):
-		self.instance.show()
+		if self.instance:
+			self.instance.show()
 		if self.imageframe:
 			self.imageframe.show()
-		self.image.show()
+		if self.image:
+			self.image.show()
 		self.ishide = False
 
 	def hideimage(self):
-		self.image.hide()
+		if self.image:
+			self.image.hide()
 		if self.imageframe:
 			self.imageframe.hide()
-		self.instance.hide()
+		if self.instance:
+			self.instance.hide()
 		self.ishide = True
 
 	def onShow(self):
@@ -342,32 +341,31 @@ class AdvancedEventLibraryImage(Renderer):
 				self.setthePixmap(eventNames, 1)
 			else:
 				self.hideimage()
-	def checkIsLastRun(self,run,eventName0,eventName1):
-		if run == 0 and (eventName0 != eventName1) and (eventName1 != "None"):
-			return False
-		else: return True
+
+	def checkIsLastRun(self, run, eventName0, eventName1):
+		return False if run == 0 and (eventName0 != eventName1) and (eventName1 != "None") else True
 
 	def calcSize(self, how):
-		if how == 'Poster':
+		if self.instance and how == 'Poster':
 			self.instance.move(ePoint(self.x, self.y))
 			self.instance.resize(eSize(self.WCover, self.HCover))
-			if self.imageframe:
+			if self.image and self.imageframe:
 				self.image.resize(eSize(self.WCover - 20, self.HCover - 20))
 				self.imageframe.resize(eSize(self.WCover, self.HCover))
-			else:
+			elif self.image:
 				self.image.resize(eSize(self.WCover, self.HCover))
-		elif how == 'Image':
+		elif self.instance and how == 'Image':
 			if self.rotate == "left":
 				self.instance.move(ePoint(self.x - self.HCover + self.WCover, self.y - self.WCover + self.HCover))
 			self.instance.resize(eSize(self.HCover, self.WCover))
-			if self.imageframe:
+			if self.image and self.imageframe:
 				self.image.resize(eSize(self.HCover - 20, self.WCover - 20))
 				self.imageframe.resize(eSize(self.HCover, self.WCover))
-			else:
+			elif self.image:
 				self.image.resize(eSize(self.HCover, self.WCover))
 		else:
 			return
-		if self.imageframe:
+		if self.image and self.imageframe:
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
 			self.image.move(ePoint(10, 10))
@@ -379,7 +377,7 @@ class AdvancedEventLibraryImage(Renderer):
 
 	def loadPic(self, picname):
 		try:
-			if picname != "":
+			if self.image and picname != "":
 				size = self.image.size()
 				self.picload = ePicLoad()
 				self.picload.PictureData.get().append(self.showCallback)
@@ -389,7 +387,7 @@ class AdvancedEventLibraryImage(Renderer):
 							del self.picload
 			else:
 				self.hideimage()
-		except:
+		except Exception:
 			self.hideimage()
 
 	def showCallback(self, picInfo=None):
@@ -397,10 +395,10 @@ class AdvancedEventLibraryImage(Renderer):
 			if self.picload:
 				picload = self.picload
 				ptr = picload.getData()
-				if ptr != None:
+				if self.image and ptr != None:
 					self.image.setPixmap(ptr)
 					if self.ishide:
 						self.showimage()
 				del picload
-		except:
+		except Exception:
 			self.hideimage()

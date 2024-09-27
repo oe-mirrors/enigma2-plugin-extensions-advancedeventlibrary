@@ -20,8 +20,6 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 	def __init__(self, type):
 		Converter.__init__(self, type)
 		self.epgcache = eEPGCache.getInstance()
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300) # 20:15
 
 	def getServiceRef(self):
 		ref = None
@@ -56,7 +54,8 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		if not isinstance(ref, eServiceReference):
 			ref = eServiceReference(ref)
 		now = localtime(time())
-		dt = datetime(now.tm_year, now.tm_mon, now.tm_mday, self.primeTimeStart.value[0], self.primeTimeStart.value[1])
+		primeTimeStart = config.plugins.AdvancedEventLibrary.StartTime
+		dt = datetime(now.tm_year, now.tm_mon, now.tm_mday, primeTimeStart.value[0], primeTimeStart.value[1])
 		if time() > mktime(dt.timetuple()):
 			dt += timedelta(days=1)
 		primeTime = int(mktime(dt.timetuple()))
@@ -77,10 +76,6 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 				return ""
 			else:
 				return None
-		if what == 0:
-			return ""
-		else:
-			return None
 
 	def getPrimeTimeEvent(self, event):
 		time = "%s - %s" % (strftime("%H:%M", localtime(event.getBeginTime())), strftime("%H:%M", localtime(event.getBeginTime() + event.getDuration())))
@@ -98,7 +93,6 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 				else:
 					tdesc = desc.split("\n")
 					desc = tdesc[0].replace('\\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
-
 				if desc.find(' Altersfreigabe: Ohne Altersbe') > 0:
 					desc = desc[:desc.find(' Altersfreigabe: Ohne Altersbe')] + ' FSK: 0'
 				return '\n' + self.getMaxWords(desc.replace('Altersfreigabe: ab', 'FSK:'), 18)
@@ -114,7 +108,6 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 			return desc
 		except Exception as ex:
 			return ""
-		return ""
 
 	def changed(self, what):
 		if what[0] != self.CHANGED_SPECIFIC or what[1] in (iPlayableService.evStart,):

@@ -305,13 +305,15 @@ class CommonDataBase():
 		return False
 
 	def commitDB(self):
+		txt = ""
 		if not hasattr(self, 'db'):
 			txt = "not opened --> skip committing"
 			debugPrint(txt, LOGLEVEL.ERROR)
 		has_error = True
 		try:
 			lock.acquire(True)
-			self.db.commit()
+			if self.db:
+				self.db.commit()
 			has_error = False
 		except sqlite3.ProgrammingError as er:
 			txt = _("ERROR at committing database changes: ProgrammingError")
@@ -328,6 +330,7 @@ class CommonDataBase():
 		return not has_error
 
 	def closeDB(self):
+		txt = ""
 		if not hasattr(self, 'db'):
 			txt = "not opened --> skip  closing"
 			debugPrint(txt, LOGLEVEL.ERROR)
@@ -335,7 +338,8 @@ class CommonDataBase():
 		try:
 			lock.acquire(True)
 			self.c = None
-			self.db.close()
+			if self.db:
+				self.db.close()
 			has_error = False
 		except sqlite3.ProgrammingError as er:
 			txt = _("Programming ERROR at closing database")
@@ -1342,63 +1346,45 @@ class MovieDataBase(CommonDataBase):
 					is_dvd = True
 					serviceref = eServiceReference(4097, 0, filepath)
 					break
-		is_dir = 0
-		if is_dvd is None:
-			if serviceref.flags & eServiceReference.mustDescent:
-				is_dir = 1
-				fields = {self.box_path: filepath,
-					'IsDir': '1',
-					'fname': filepath,
-					'fsize': '0',
-					'ref': '2:47:1:0:0:0:0:0:0:0:',
-				}
-				if isTrash[0]:
-					fields['IsTrash'] = str(isTrash[1])
-					if isTrash[1] == 0:
-						fields['TrashTime'] = str(0)
-					else:
+		if is_dvd is None and serviceref.flags & eServiceReference.mustDescent:
+			fields = {self.box_path: filepath, 'IsDir': '1', 'fname': filepath, 'fsize': '0', 'ref': '2:47:1:0:0:0:0:0:0:0:', }
+			if isTrash[0]:
+				fields['IsTrash'] = str(isTrash[1])
+				fields['TrashTime'] = str(0) if isTrash[1] == 0 else str(time.time())
+			else:
+				if os.path.exists(trashfile):
+					fields['IsTrash'] = str(1)
+					try:
+						stat = os.stat(trashfile)
+						fields['TrashTime'] = str(stat.st_mtime)
+					except OSError:
 						fields['TrashTime'] = str(time.time())
 				else:
-					if os.path.exists(trashfile):
-						fields['IsTrash'] = str(1)
-						try:
-							stat = os.stat(trashfile)
-							fields['TrashTime'] = str(stat.st_mtime)
-						except OSError:
-							fields['TrashTime'] = str(time.time())
-					else:
-						return
-				if with_box_path:
-					self.updateUniqueData(fields, (self.box_path,))
-				else:
-					self.updateUniqueData(fields, ('fname', 'fsize'))
-				if not is_thread:
-					self.disconnectDataBase()
-				return
-
+					return
+			if with_box_path:
+				self.updateUniqueData(fields, (self.box_path,))
+			else:
+				self.updateUniqueData(fields, ('fname', 'fsize'))
+			if not is_thread:
+				self.disconnectDataBase()
+			return
 		file_path = serviceref.getPath()
 		file_extension = file_path.split(".")[-1].lower()
 		if file_extension == "iso":
 			serviceref = eServiceReference(4097, 0, file_path)
-
 		if file_extension in ("dat",):
 			return
-
 		is_rec = 0
 		if os.path.exists(file_path + '.rec'):
 			is_rec = 1
-
 		cur_item = os.path.basename(filepath)
 		if cur_item.lower().startswith("timeshift_"):
 			return
-
 		info = serviceHandler.info(serviceref)
 		if info is None:
 			return
-
 		m_db_begin = info.getInfo(serviceref, iServiceInformation.sTimeCreate)
 		m_db_tags = info.getInfoString(serviceref, iServiceInformation.sTags)
-
 		m_db_fullpath = filepath
 		m_db_path, m_db_fname = os.path.split(filepath)
 		m_db_title = info.getName(serviceref)
@@ -1424,13 +1410,11 @@ class MovieDataBase(CommonDataBase):
 		m_db_lastpos = -1
 		m_db_progress = -1
 		m_db_duration = info.getLength(serviceref)
-
 		if video_dirs:
 			for x in video_dirs:
 				if m_db_path.startswith(x) or m_db_path == x[:-1]:
 					m_db_path = m_db_path.lstrip(x)
 					break
-
 		m_db_autotags = ''
 		autotags = config.movielist.autotags.value.split(';')
 		desc = m_db_shortDesc.lower() + m_db_extDesc.lower()
@@ -1459,10 +1443,7 @@ class MovieDataBase(CommonDataBase):
 				'IsRecording': str(is_rec),
 			}
 
-		search_fields = {self.box_path: m_db_fullpath,
-				'fname': m_db_fname,
-				'title': m_db_title,
-		}
+		search_fields = {self.box_path: m_db_fullpath, 'fname': m_db_fname, 'title': m_db_title, }
 		is_in_db = self.searchContent(search_fields, fields=("fname",), query_type="AND", exactmatch=False, skipCheckExists=True)
 		if isTrash[0]:
 			fields['IsTrash'] = str(isTrash[1])
@@ -1495,9 +1476,8 @@ class MovieDataBase(CommonDataBase):
 	def calcMovieLen(self, fname):
 		if os.path.exists(fname):
 			try:
-				f = open(fname, "rb")
-				packed = f.read()
-				f.close()
+				with open(fname, "rb") as f:
+					packed = f.read()
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]

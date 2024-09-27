@@ -20,7 +20,7 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 		for (attrib, value) in self.skinAttributes:
 			if attrib == "path":
 				self.Path += value
-				str(self.Path).replace('//', '/')
+				self.Path = str(self.Path).replace('//', '/')
 			elif attrib == "delay":
 				self.delay = int(value)
 			else:
@@ -47,6 +47,6 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 		try:
 			number = random.randint(1, len(self.piclist) - 1)
 			self.instance.setPixmap(loadJPG(self.piclist[number]))
-		except:
+		except Exception:
 			pass
 		self.picchanger.start(self.delay, True)

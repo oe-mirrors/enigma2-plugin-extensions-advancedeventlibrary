@@ -163,16 +163,17 @@ class AEL_EPGList(GUIComponent):
 		post_clock = 2
 		clock_type = 0
 		endTime = beginTime + duration
-		for x in self.timer.timer_list:
-			if x.service_ref.ref.toString() == refstr:
-				if x.eit == eventId:
-					return self.clock_pixmap
-				beg = x.begin
-				end = x.end
-				if beginTime > beg and beginTime < end and endTime > end:
-					clock_type |= pre_clock
-				elif beginTime < beg and endTime > beg and endTime < end:
-					clock_type |= post_clock
+		if self.timer:
+			for x in self.timer.timer_list:
+				if x.service_ref.ref.toString() == refstr:
+					if x.eit == eventId:
+						return self.clock_pixmap
+					beg = x.begin
+					end = x.end
+					if beginTime > beg and beginTime < end and endTime > end:
+						clock_type |= pre_clock
+					elif beginTime < beg and endTime > beg and endTime < end:
+						clock_type |= post_clock
 		if clock_type == 0:
 			return self.clock_add_pixmap
 		elif clock_type == pre_clock:
@@ -184,13 +185,11 @@ class AEL_EPGList(GUIComponent):
 
 	def getPixmapForEntry(self, service, eventId, beginTime, duration):
 		try:
-			rec = beginTime and (self.timer.isInTimer(eventId, beginTime, duration, service))
-			if rec:
-				clock_pic = self.getClockPixmap(service, beginTime, duration, eventId)
-			else:
-				clock_pic = None
-			return (clock_pic, rec)
-		except:
+			if self.timer:
+				rec = beginTime and (self.timer.isInTimer(eventId, beginTime, duration, service))
+				clock_pic = self.getClockPixmap(service, beginTime, duration, eventId) if rec else None
+				return (clock_pic, rec)
+		except Exception:
 			return (None, None)
 
 	def correctweekdays(self, itm):
@@ -349,9 +348,8 @@ class AEL_EPGList(GUIComponent):
 		cnt = 0
 		for x in tmp:
 			changecount = self.list[cnt][0] + direction
-			if changecount >= 0:
-				if x[2] is not None:
-					self.list[cnt] = (changecount, x[0], x[1], x[2], x[3], x[4], x[5], x[6])
+			if changecount >= 0 and if x[2] is not None:
+				self.list[cnt] = (changecount, x[0], x[1], x[2], x[3], x[4], x[5], x[6])
 			cnt += 1
 		self.l.setList(self.list)
 		self.selectionChanged()

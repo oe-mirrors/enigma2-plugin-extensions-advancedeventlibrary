@@ -23,7 +23,7 @@ from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, Confi
 from Tools.Directories import fileExists
 from glob import glob
 from . import AdvancedEventLibrarySystem
-from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, setStatus, clearMem, getDB, convert2base64
+from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, clearMem, getDB, convert2base64, aelGlobals
 from .AdvancedEventLibraryLists import AELBaseWall, MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime
@@ -46,8 +46,6 @@ log = "/var/tmp/AdvancedEventLibrary.log"
 
 global active
 active = False
-global saving
-saving = False
 
 isTMDb = False
 if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
@@ -1134,9 +1132,8 @@ def getMovieLen(moviename):
 
 def saveList(imageType):
 	try:
-		global saving
-		saving = True
-		setStatus('Advanced-Event-Library SimpleMovieWall aktualisiert Deine Daten.')
+		aelGlobals.saving = True
+		aelGlobals.setStatus('Advanced-Event-Library SimpleMovieWall aktualisiert Deine Daten.')
 		f = open(os.path.join(pluginpath, 'imageType.data'), "w")
 		f.write(str(imageType))
 		f.close()
@@ -1251,12 +1248,12 @@ def saveList(imageType):
 			pickle.dump(moviedict, f)
 		del movielist
 		del moviedict
-		saving = False
-		setStatus()
+		aelGlobals.saving = False
+		aelGlobals.setStatus()
 	except Exception as ex:
 		write_log('saveList : ' + str(ex))
-		setStatus()
-		saving = False
+		aelGlobals.setStatus()
+		aelGlobals.saving = False
 
 
 ####################################################################################

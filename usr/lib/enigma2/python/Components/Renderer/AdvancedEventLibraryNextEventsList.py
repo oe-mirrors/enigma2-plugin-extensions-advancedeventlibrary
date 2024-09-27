@@ -61,7 +61,6 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 	def preWidgetRemove(self, instance):
 		instance.setContent(None)
 		clearMem("NextEventsList")
-		return
 
 	def changed(self, what):
 		if what[0] == self.CHANGED_CLEAR:
@@ -69,10 +68,10 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		else:
 			elist = self.epgcache.lookupEvent(['RIBDT', (self.source.text, 0, -1, 720)])
 			count = self.y / int(skin.parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0])
-			list = elist[:math.trunc(count)]
-			if list and len(list):
-				list.sort(key=lambda x: x[2])
-			self.l.setList(list)
+			liste = elist[:math.trunc(count)]
+			if liste and len(liste):
+				liste.sort(key=lambda x: x[2])
+			self.l.setList(liste)
 
 	def correctweekdays(self, itm):
 		_itm = str(itm)
@@ -121,9 +120,8 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		else:
 			if config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 				evt = self.db.getliveTV(eventId, eventName)
-				if evt:
-					if evt[0][3] != '' and not str(evt[0][3]).endswith('.jpg'):
-						eventName = str(evt[0][3])
+				if evt and evt[0][3] != '' and not str(evt[0][3]).endswith('.jpg'):
+					eventName = str(evt[0][3])
 			coverFileName = getImageFile(self.imagePath, eventName)
 			if coverFileName:
 				self.nameCache[eventName] = str(coverFileName)
