@@ -1,33 +1,17 @@
-﻿#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
-
-from __future__ import absolute_import
+﻿from datetime import datetime
+from glob import glob
+from html.parser import HTMLParser
+from os import remove
+from os.path import getsize, getmtime, isfile, join
+from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, ePoint, RT_HALIGN_LEFT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
+from skin import skin, fonts, parameters, variables, parseFont, parseColor
+from Components.config import config
 from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
-from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, eRect, eSize, ePoint, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from skin import parseColor
-from Tools.Directories import fileExists
-from time import time, localtime
-from Components.config import config
 from Tools.Alternatives import GetWithAlternative
+from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
-from html.parser import HTMLParser
-import glob
-import os
-import skin
-import datetime
-
-piconpath = config.usage.picon_dir.value
-
-log = "/var/tmp/AdvancedEventLibrary.log"
-
-
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log, "a")
-	AdvancedEventLibrary_log.write(str(logtime) + " : [AEL-Lists] : " + str(svalue) + "\n")
-	AdvancedEventLibrary_log.close()
+from Tools.AdvancedEventLibrary import AELglobs
 
 
 class ImageList(GUIComponent, object):
@@ -38,23 +22,22 @@ class ImageList(GUIComponent, object):
 		self.l = eListboxPythonMultiContent()
 		desktopSize = getDesktop(0).size()
 		if desktopSize.width() == 1920:
-			ffont, fsize = skin.fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 30))
-			sfont, ssize = skin.fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 26))
-			self.l.setItemHeight(int(skin.parameters.get("EventLibraryPictureListsItemHeight", (108,))[0]))
+			ffont, fsize = fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 30))
+			sfont, ssize = fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 26))
+			self.l.setItemHeight(int(parameters.get("EventLibraryPictureListsItemHeight", (108,))[0]))
 		else:
-			ffont, fsize = skin.fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 20))
-			sfont, ssize = skin.fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 16))
-			self.l.setItemHeight(int(skin.parameters.get("EventLibraryPictureListsItemHeight", (80,))[0]))
+			ffont, fsize = fonts.get("EventLibraryPictureListsFirstFont", ('Regular', 20))
+			sfont, ssize = fonts.get("EventLibraryPictureListsSecondFont", ('Regular', 16))
+			self.l.setItemHeight(int(parameters.get("EventLibraryPictureListsItemHeight", (80,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		self.l.setBuildFunc(self.buildEntry)
 		sel_changedCB = None
 		self.onsel_changed = []
-		if sel_changedCB is not None:
+		if sel_changedCB is not None:   # TODO: wird nie aufgerufen, ist immer False
 			self.onsel_changed.append(sel_changedCB)
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
-		return
 
 	def applySkin(self, desktop, parent):
 		attribs = []
@@ -86,19 +69,19 @@ class ImageList(GUIComponent, object):
 		try:
 			desktopSize = getDesktop(0).size()
 			if desktopSize.width() == 1920:
-				xcp, ycp, wcp, hcp = skin.parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 192, 108))
-				x1c, y1c, w1c, h1c = skin.parameters.get("EventLibraryCoverListFirstLine", (220, 0, 700, 54))
-				x2c, y2c, w2c, h2c = skin.parameters.get("EventLibraryCoverListSecondLine", (220, 54, 700, 54))
-				xpp, ypp, wpp, hpp = skin.parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 108))
-				x1p, y1p, w1p, h1p = skin.parameters.get("EventLibraryPosterListFirstLine", (100, 0, 700, 54))
-				x2p, y2p, w2p, h2p = skin.parameters.get("EventLibraryPosterListSecondLine", (100, 54, 700, 54))
+				xcp, ycp, wcp, hcp = parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 192, 108))
+				x1c, y1c, w1c, h1c = parameters.get("EventLibraryCoverListFirstLine", (220, 0, 700, 54))
+				x2c, y2c, w2c, h2c = parameters.get("EventLibraryCoverListSecondLine", (220, 54, 700, 54))
+				xpp, ypp, wpp, hpp = parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 108))
+				x1p, y1p, w1p, h1p = parameters.get("EventLibraryPosterListFirstLine", (100, 0, 700, 54))
+				x2p, y2p, w2p, h2p = parameters.get("EventLibraryPosterListSecondLine", (100, 54, 700, 54))
 			else:
-				xcp, ycp, wcp, hcp = skin.parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 142, 80))
-				x1c, y1c, w1c, h1c = skin.parameters.get("EventLibraryCoverListFirstLine", (160, 0, 500, 40))
-				x2c, y2c, w2c, h2c = skin.parameters.get("EventLibraryCoverListSecondLine", (160, 30, 500, 40))
-				xpp, ypp, wpp, hpp = skin.parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 80))
-				x1p, y1p, w1p, h1p = skin.parameters.get("EventLibraryPosterListFirstLine", (80, 0, 500, 40))
-				x2p, y2p, w2p, h2p = skin.parameters.get("EventLibraryPosterListSecondLine", (80, 30, 500, 40))
+				xcp, ycp, wcp, hcp = parameters.get("EventLibraryCoverListCoverPosition", (10, 0, 142, 80))
+				x1c, y1c, w1c, h1c = parameters.get("EventLibraryCoverListFirstLine", (160, 0, 500, 40))
+				x2c, y2c, w2c, h2c = parameters.get("EventLibraryCoverListSecondLine", (160, 30, 500, 40))
+				xpp, ypp, wpp, hpp = parameters.get("EventLibraryCoverListPosterPosition", (10, 0, 70, 80))
+				x1p, y1p, w1p, h1p = parameters.get("EventLibraryPosterListFirstLine", (80, 0, 500, 40))
+				x2p, y2p, w2p, h2p = parameters.get("EventLibraryPosterListSecondLine", (80, 30, 500, 40))
 
 			nDp = int(x1p) - int(wpp)
 			nDc = int(x1c) - int(wcp)
@@ -106,13 +89,10 @@ class ImageList(GUIComponent, object):
 				if data[1] == 'Cover':
 					if data[5]:
 						desktopSize = getDesktop(0).size()
-						if desktopSize.width() == 1920:
-							self.picloader = PicLoader(192, 108)
-						else:
-							self.picloader = PicLoader(142, 80)
+						self.picloader = PicLoader(192, 108) if desktopSize.width() == 1920 else PicLoader(142, 80)
 						picon = self.picloader.load('/tmp/' + data[5])
 						self.picloader.destroy()
-						fSize = round(float(os.path.getsize('/tmp/' + data[5]) / 1024.0), 1)
+						fSize = round(float(getsize('/tmp/' + data[5]) / 1024.0), 1)
 						fSize = str(fSize) + " kB "
 						res = [None]
 						res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xcp, ycp, wcp, hcp, picon))
@@ -129,7 +109,7 @@ class ImageList(GUIComponent, object):
 						self.picloader = PicLoader(70, 108)
 						picon = self.picloader.load('/tmp/' + data[5])
 						self.picloader.destroy()
-						fSize = round(float(os.path.getsize('/tmp/' + data[5]) / 1024.0), 1)
+						fSize = round(float(getsize('/tmp/' + data[5]) / 1024.0), 1)
 						fSize = str(fSize) + " kB "
 						res = [None]
 						res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xpp, ypp, wpp, hpp, picon))
@@ -147,10 +127,10 @@ class ImageList(GUIComponent, object):
 						self.picloader = PicLoader(192, 108)
 						picon = self.picloader.load(data[3])
 						self.picloader.destroy()
-						fSize = round(float(os.path.getsize(data[3]) / 1024.0), 1)
+						fSize = round(float(getsize(data[3]) / 1024.0), 1)
 						fSize = str(fSize) + " kB "
-						date = os.path.getmtime(data[3])
-						timeobj = datetime.datetime.fromtimestamp(date)
+						date = getmtime(data[3])
+						timeobj = datetime.fromtimestamp(date)
 						_time = timeobj.strftime("%d.%m.%Y-%H:%M")
 						res = [None]
 						res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xcp, ycp, wcp, hcp, picon, None, None, BT_SCALE | BT_FIXRATIO))
@@ -167,10 +147,10 @@ class ImageList(GUIComponent, object):
 						self.picloader = PicLoader(70, 108)
 						picon = self.picloader.load(data[3])
 						self.picloader.destroy()
-						fSize = round(float(os.path.getsize(data[3]) / 1024.0), 1)
+						fSize = round(float(getsize(data[3]) / 1024.0), 1)
 						fSize = str(fSize) + " kB "
-						date = os.path.getmtime(data[3])
-						timeobj = datetime.datetime.fromtimestamp(date)
+						date = getmtime(data[3])
+						timeobj = datetime.fromtimestamp(date)
 						_time = timeobj.strftime("%d.%m.%Y-%H:%M")
 						res = [None]
 						res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xpp, ypp, wpp, hpp, picon))
@@ -201,7 +181,7 @@ class ImageList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:
+				except Exception:
 					print('FIXME in ElementList.selectionChanged')
 
 	def getCurrentSelection(self):
@@ -212,42 +192,34 @@ class ImageList(GUIComponent, object):
 		instance.setContent(self.l)
 		instance.selectionChanged.get().append(self.selectionChanged)
 		self.instance.setWrapAround(True)
-		return
 
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		return
 
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveTop)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveEnd)
-		return
 
 	def pageUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageUp)
-		return
 
 	def pageDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageDown)
-		return
 
 	def moveUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def moveDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def getCurrentIndex(self):
 		return self.instance.getCurrentIndex()
@@ -270,7 +242,6 @@ class ImageList(GUIComponent, object):
 	def selectionEnabled(self, enabled):
 		if self.instance is not None:
 			self.instance.setSelectionEnable(enabled)
-		return
 
 
 class SearchResultsList(GUIComponent, object):
@@ -279,21 +250,20 @@ class SearchResultsList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		ffont, fsize = skin.fonts.get("EventLibrarySearchListFirstFont", ('Regular', 32))
-		sfont, ssize = skin.fonts.get("EventLibrarySearchListSecondFont", ('Regular', 28))
-		self.l.setItemHeight(int(skin.parameters.get("EventLibrarySearchListItemHeight", (80,))[0]))
+		ffont, fsize = fonts.get("EventLibrarySearchListFirstFont", ('Regular', 32))
+		sfont, ssize = fonts.get("EventLibrarySearchListSecondFont", ('Regular', 28))
+		self.l.setItemHeight(int(parameters.get("EventLibrarySearchListItemHeight", (80,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 
 		self.l.setBuildFunc(self.buildEntry)
 		sel_changedCB = None
 		self.onsel_changed = []
-		if sel_changedCB is not None:
+		if sel_changedCB is not None:  # TODO: wird nie aufgerufen, ist immer False
 			self.onsel_changed.append(sel_changedCB)
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
 		self.htmlParser = HTMLParser()
-		return
 
 	def applySkin(self, desktop, parent):
 		attribs = []
@@ -322,8 +292,8 @@ class SearchResultsList(GUIComponent, object):
 
 	def buildEntry(self, data, dummy=None):
 		try:
-			x1, y1, w1, h1 = skin.parameters.get("EventLibrarySearchListFirstLine", (20, 0, 1600, 40))
-			x2, y2, w2, h2 = skin.parameters.get("EventLibrarySearchListSecondLine", (20, 40, 1600, 40))
+			x1, y1, w1, h1 = parameters.get("EventLibrarySearchListFirstLine", (20, 0, 1600, 40))
+			x2, y2, w2, h2 = parameters.get("EventLibrarySearchListSecondLine", (20, 40, 1600, 40))
 			res = [None]
 			countries = ""
 			year = ""
@@ -368,7 +338,7 @@ class SearchResultsList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:
+				except Exception:
 					print('FIXME in ElementList.selectionChanged')
 
 	def getCurrentSelection(self):
@@ -383,37 +353,30 @@ class SearchResultsList(GUIComponent, object):
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		return
 
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveTop)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveEnd)
-		return
 
 	def pageUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageUp)
-		return
 
 	def pageDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageDown)
-		return
 
 	def moveUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def moveDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def getCurrentIndex(self):
 		return self.instance.getCurrentIndex()
@@ -436,7 +399,6 @@ class SearchResultsList(GUIComponent, object):
 	def selectionEnabled(self, enabled):
 		if self.instance is not None:
 			self.instance.setSelectionEnable(enabled)
-		return
 
 ####################################################################################################################################
 
@@ -447,14 +409,14 @@ class MovieList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		self.recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
-		ffont, fsize = skin.fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
-		sfont, ssize = skin.fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
+		self.recIcon = str(variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
+		ffont, fsize = fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
+		sfont, ssize = fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		sel_changedCB = None
 		self.onsel_changed = []
-		if sel_changedCB is not None:
+		if sel_changedCB is not None:  # TODO: wird nie aufgerufen, ist immer False
 			self.onsel_changed.append(sel_changedCB)
 		self.pixmapCache = {}
 		self.selectedID = None
@@ -485,7 +447,6 @@ class MovieList(GUIComponent, object):
 		self.recIconPos = [0, 0, 0, 0]
 		self.firstLinePos = [0, 0, 0, 0, 0, 0]
 		self.secondLinePos = [0, 0, 0, 0, 0, 0]
-		return
 
 	def applySkin(self, desktop, screen):
 		if self.skinAttributes is not None:
@@ -580,9 +541,9 @@ class MovieList(GUIComponent, object):
 					pos = value.split(',')
 					self.recIconPos = [int(pos[0].strip()), int(pos[1].strip()), int(pos[2].strip()), int(pos[3].strip())]
 				elif attrib == "firstFont":
-					self.l.setFont(0, skin.parseFont(value, ((1, 1), (1, 1))))
+					self.l.setFont(0, parseFont(value, ((1, 1), (1, 1))))
 				elif attrib == "secondFont":
-					self.l.setFont(1, skin.parseFont(value, ((1, 1), (1, 1))))
+					self.l.setFont(1, parseFont(value, ((1, 1), (1, 1))))
 				elif attrib == "dateFormat":
 					self.dateFormat = str(value)
 					dFremove = ('dateFormat', value)
@@ -636,7 +597,7 @@ class MovieList(GUIComponent, object):
 			return GUIComponent.applySkin(self, desktop, screen)
 
 	def getParameter(self):
-		recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
+		recIcon = str(variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
 		return (self.l.getItemSize().width(), self.l.getItemSize().height(), self.maxTextLength, self.imageType, self.folderImage, self.substituteImage, 0, 0, 0, self.progressForegroundColor, self.progressBackgroundColor, self.progressForegroundColorSelected, self.progressBackgroundColorSelected, self.progressBorderWidth, 0, recIcon, self.scrambledImage, self.progressPos, self.datePos, self.imagePos, self.firstLinePos, self.secondLinePos, self.recIconPos, self.dateFormat, self.firstLineColor, self.firstLineColorSelected, self.secondLineColor, self.secondLineColorSelected, self.dateColor, self.dateColorSelected)
 
 	def setList(self, list):
@@ -659,9 +620,8 @@ class MovieList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:  # FIXME!!!
+				except Exception:  # FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
-					pass
 
 	def getCurrentSelection(self):
 		cur = self.l.getCurrentSelection()
@@ -675,37 +635,30 @@ class MovieList(GUIComponent, object):
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		return
 
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def pageUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageUp)
-		return
 
 	def pageDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageDown)
-		return
 
 	def moveUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def moveDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def getCurrentIndex(self):
 		return self.instance.getCurrentIndex()
@@ -773,7 +726,6 @@ class AELBaseWall(GUIComponent, object):
 		self.control = {'left': 'left', 'right': 'right', 'up': 'up', 'down': 'down', 'pageUp': 'pageUp', 'pageDown': 'pageDown'}
 		self.coverings = []
 		self.fontOrientation = "RT_WRAP,RT_HALIGN_CENTER,RT_VALIGN_CENTER"
-		return
 
 	def applySkin(self, desktop, screen):
 		attribs = []
@@ -913,19 +865,19 @@ class AELBaseWall(GUIComponent, object):
 					self.l.setDownloadPath(str(value))
 				elif attrib == "backgroundColorGlobal":
 					pass
-				#	self.l.setGlobalBackgroundColor(skin.parseColor(str(value)))
+				#	self.l.setGlobalBackgroundColor(parseColor(str(value)))
 				elif attrib == "borderColor":
-					self.instance.setBorderColor(skin.parseColor(str(value)))
+					self.instance.setBorderColor(parseColor(str(value)))
 				elif attrib == "borderWidth":
 					self.borderwidth = int(value)
 					self.instance.setBorderWidth(self.borderwidth)
 				elif attrib == "animated":
 					self.instance.setAnimation(int(value))
 				elif attrib == "backgroundColor":
-					self.instance.setBackgroundColor(skin.parseColor(str(value)))
+					self.instance.setBackgroundColor(parseColor(str(value)))
 					self.backgroundColor = str(value)
 				elif attrib == "backgroundColorSelected":
-					self.instance.setBackgroundColorSelected(skin.parseColor(str(value)))
+					self.instance.setBackgroundColorSelected(parseColor(str(value)))
 				else:
 					attribs.append((attrib, value))
 			if fremove:
@@ -962,16 +914,16 @@ class AELBaseWall(GUIComponent, object):
 			return GUIComponent.applySkin(self, desktop, screen)
 
 	def getParameter(self):
-		recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
+		recIcon = str(variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
 		return (self.l.getItemSize().width(), self.l.getItemSize().height(), self.maxTextLength, self.imageType, self.folderImage, self.substituteImage, self.fc, self.fcs, self.textHeightPercent, self.progressForegroundColor, self.progressBackgroundColor, self.progressForegroundColorSelected, self.progressBackgroundColorSelected, self.progressBorderWidth, recIcon, self.scrambledImage, self.imagePos, self.recIconPos, self.firstLinePos, self.secondLinePos, self.piconPos, self.control, self.coverings, self.progressPos, self.fontOrientation, self.backgroundColor, self.timeFormat)
 
 	def isselectable(self, data):
 		return True
 
 	def refresh(self):
+		pass
 		#TODO add refresh function
 		# self.l.refresh()
-		return
 
 	def connectSelChanged(self, fnc):
 		if fnc not in self.onselectionchanged:
@@ -987,7 +939,7 @@ class AELBaseWall(GUIComponent, object):
 			for fnc in self.onselectionchanged:
 				fnc()
 		except Exception as ex:
-			write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex))
+			AELglobs.write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex))
 
 	def itemupdated(self, index=0):
 		self.l.invalidateEntry(index)
@@ -1004,13 +956,9 @@ class AELBaseWall(GUIComponent, object):
 	def getcurrentselection(self):
 		try:
 			cur = self.l.getCurrentSelection()
-			if cur:
-				return cur[0]
-			else:
-				return None
+			return cur[0] if cur else None
 		except Exception as ex:
-			write_log('AEL BaseWall getcurrentselectiond : ' + str(cur) + '  ' + str(ex))
-			return None
+			AELglobs.write_log('AEL BaseWall getcurrentselectiond : ' + str(cur) + '  ' + str(ex))
 
 	def postWidgetCreate(self, instance):
 		self.instance = instance
@@ -1024,7 +972,6 @@ class AELBaseWall(GUIComponent, object):
 		self.instance.selectionChanged.get().remove(self.itemupdated)
 		self.instance.selectionChanged.get().remove(self.selectionchanged)
 		self.instance.setContent(None)
-		return
 
 	def setlist(self, l):
 		try:
@@ -1033,7 +980,7 @@ class AELBaseWall(GUIComponent, object):
 			self.l.setList(l)
 			self.list = l
 		except Exception as ex:
-			write_log('set list : ' + str(ex))
+			AELglobs.write_log('set list : ' + str(ex))
 
 	def getlist(self):
 		return self.list
@@ -1044,37 +991,30 @@ class AELBaseWall(GUIComponent, object):
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def left(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveLeft)
-		return
 
 	def right(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveRight)
-		return
 
 	def nextPage(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.nextPage)
-		return
 
 	def prevPage(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.prevPage)
-		return
 
 	def movetoIndex(self, index):
 		if self.instance is not None:
 			self.instance.moveSelectionTo(index)
-		return
 
 	def movetoItem(self, item):
 		pass
@@ -1096,72 +1036,66 @@ class EPGList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		self.recIcon = str(skin.variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
-		ffont, fsize = skin.fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
-		sfont, ssize = skin.fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
-		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersEventListItemHeight", (70,))[0]))
+		self.recIcon = str(variables.get("EventLibraryEPGListsRecordIcon", '/usr/share/enigma2/AELImages/timer.png,')).replace(',', '')
+		ffont, fsize = fonts.get("EventLibraryPlanersEventListFirstFont", ('Regular', 26))
+		sfont, ssize = fonts.get("EventLibraryPlanersEventListSecondFont", ('Regular', 30))
+		self.l.setItemHeight(int(parameters.get("EventLibraryPlanersEventListItemHeight", (70,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		self.l.setBuildFunc(self.buildEntry)
 		sel_changedCB = None
 		self.onsel_changed = []
-		if sel_changedCB is not None:
+		if sel_changedCB is not None:  # TODO: wird nie aufgerufen, ist immer False
 			self.onsel_changed.append(sel_changedCB)
 		self.pixmapCache = {}
 		self.selectedID = None
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
-		return
 
 	def setList(self, list):
-		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersEventListItemHeight", (70,))[0]))
+		self.l.setItemHeight(int(parameters.get("EventLibraryPlanersEventListItemHeight", (70,))[0]))
 		self.l.setBuildFunc(self.buildEntry)
 		self.l.setList(list)
 		self.list = list
 
 	def buildEntry(self, data):
-		xp, yp, wp, hp = skin.parameters.get("EventLibraryPlanersEventListPiconPosition", (10, 5, 100, 60))
-		xrp, yrp, wrp, hrp = skin.parameters.get("EventLibraryPlanersEventListRecordPiconPosition", (130, 5, 55, 30))
-		x1, y1, w1, h1 = skin.parameters.get("EventLibraryPlanersEventListFirstLine", (130, 0, 1100, 30))
-		x2, y2, w2, h2 = skin.parameters.get("EventLibraryPlanersEventListSecondLine", (130, 25, 1100, 60))
+		xp, yp, wp, hp = parameters.get("EventLibraryPlanersEventListPiconPosition", (10, 5, 100, 60))
+		xrp, yrp, wrp, hrp = parameters.get("EventLibraryPlanersEventListRecordPiconPosition", (130, 5, 55, 30))
+		x1, y1, w1, h1 = parameters.get("EventLibraryPlanersEventListFirstLine", (130, 0, 1100, 30))
+		x2, y2, w2, h2 = parameters.get("EventLibraryPlanersEventListSecondLine", (130, 25, 1100, 60))
 		width = self.l.getItemSize().width()
 		height = self.l.getItemSize().height()
-
 		flc = '#00ffffff'
 		flcs = '#00ffffff'
 		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColorSelected").argb())
-
+			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		res = [None]
 		if int(data[2]) > 0:
-			timeobj = datetime.datetime.fromtimestamp(data[3])
+			timeobj = datetime.fromtimestamp(data[3])
 			_time = timeobj.strftime("%a   %d.%m.%Y   %H:%M")
-
 			picon = self.findPicon(data[1], data[7])
-
 			if data[5]:
-				if os.path.isfile(self.recIcon):
+				if isfile(self.recIcon):
 					res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xrp, yrp, wrp, hrp, LoadPixmap(self.recIcon), None, None, BT_SCALE | BT_FIXRATIO))
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time), parseColor(flc).argb(), parseColor(flcs).argb()))
 			else:
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time), parseColor(flc).argb(), parseColor(flcs).argb()))
 
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, data[0], skin.parseColor(slc).argb(), skin.parseColor(slcs).argb()))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, data[0], parseColor(slc).argb(), parseColor(slcs).argb()))
 			if picon:
 				res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, xp, yp, wp, hp, LoadPixmap(picon), None, None, BT_SCALE | BT_FIXRATIO))
 			else:
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + 300, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, data[7], skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + 300, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, data[7], parseColor(flc).argb(), parseColor(flcs).argb()))
 		else:
 			res.append((eListboxPythonMultiContent.TYPE_TEXT, 20, 0, (width - 40), height, 1, RT_HALIGN_CENTER | RT_VALIGN_CENTER, data[0]))
-
 		return res
 
 	def findPicon(self, service=None, serviceName=None):
@@ -1175,12 +1109,12 @@ class EPGList(GUIComponent, object):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			pngname = os.path.join(piconpath, service + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, service + ".png")
+			if isfile(pngname):
 				return pngname
 		if serviceName is not None:
-			pngname = os.path.join(piconpath, serviceName + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, serviceName + ".png")
+			if isfile(pngname):
 				return pngname
 		return None
 
@@ -1204,7 +1138,7 @@ class EPGList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:  # TODO: FIXME!!!
+				except Exception:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
 					pass
 
@@ -1220,37 +1154,30 @@ class EPGList(GUIComponent, object):
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		return
 
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def pageUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageUp)
-		return
 
 	def pageDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageDown)
-		return
 
 	def moveUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def moveDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def getCurrentIndex(self):
 		return self.instance.getCurrentIndex()
@@ -1281,29 +1208,28 @@ class MenuList(GUIComponent, object):
 	def __init__(self):
 		GUIComponent.__init__(self)
 		self.l = eListboxPythonMultiContent()
-		ffont, fsize = skin.fonts.get("EventLibraryPlanersGenreListFont", ('Regular', 28))
-		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersGenreListItemHeight", (100,))[0]))
+		ffont, fsize = fonts.get("EventLibraryPlanersGenreListFont", ('Regular', 28))
+		self.l.setItemHeight(int(parameters.get("EventLibraryPlanersGenreListItemHeight", (100,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setBuildFunc(self.buildEntry)
 		sel_changedCB = None
 		self.onsel_changed = []
-		if sel_changedCB is not None:
+		if sel_changedCB is not None:  # TODO: wird nie aufgerufen, ist immer False
 			self.onsel_changed.append(sel_changedCB)
 		self.pixmapCache = {}
 		self.selectedID = None
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
-		return
 
 	def setList(self, list):
-		self.l.setItemHeight(int(skin.parameters.get("EventLibraryPlanersGenreListItemHeight", (100,))[0]))
+		self.l.setItemHeight(int(parameters.get("EventLibraryPlanersGenreListItemHeight", (100,))[0]))
 		self.l.setBuildFunc(self.buildEntry)
 		self.l.setList(list)
 		self.list = list
 
 	def buildEntry(self, data):
-		xp, yp, wp, hp = skin.parameters.get("EventLibraryPlanersGenreListPiconPosition", (40, 5, 60, 60))
-		x1, y1, w1, h1 = skin.parameters.get("EventLibraryPlanersGenreListText", (0, 60, 140, 40))
+		xp, yp, wp, hp = parameters.get("EventLibraryPlanersGenreListPiconPosition", (40, 5, 60, 60))
+		x1, y1, w1, h1 = parameters.get("EventLibraryPlanersGenreListText", (0, 60, 140, 40))
 		width = self.l.getItemSize().width()
 		res = [None]
 
@@ -1327,7 +1253,7 @@ class MenuList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except:  # TODO: FIXME!!!
+				except Exception:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
 					pass
 
@@ -1343,37 +1269,30 @@ class MenuList(GUIComponent, object):
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		return
 
 	def up(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def down(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def pageUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageUp)
-		return
 
 	def pageDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.pageDown)
-		return
 
 	def moveUp(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveUp)
-		return
 
 	def moveDown(self):
 		if self.instance is not None:
 			self.instance.moveSelection(self.instance.moveDown)
-		return
 
 	def getCurrentIndex(self):
 		return self.instance.getCurrentIndex()
@@ -1492,14 +1411,12 @@ class PicLoader:
 			self.picload.startDecode(filename, 0, 0, False)
 			data = self.picload.getData()
 			return data
-		else:
-			return None
 
 	def destroy(self):
 		del self.picload
 
 
 def removeFiles():
-	filelist = glob.glob(os.path.join("/tmp/", "*.jpg"))
+	filelist = glob(join("/tmp/", "*.jpg"))
 	for f in filelist:
-		os.remove(f)
+		remove(f)

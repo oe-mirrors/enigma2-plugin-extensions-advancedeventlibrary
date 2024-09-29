@@ -1,6 +1,6 @@
-import fcntl
-import socket
-import struct
+from fcntl import ioctl
+from socket import socket, AF_INET, SOCK_DGRAM
+from struct import pack
 
 
 def getUniqueID(device='eth0'):
@@ -10,15 +10,12 @@ def getUniqueID(device='eth0'):
 	except OSError:
 		model = "vustb"
 	model = model.strip()
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	info = fcntl.ioctl(s.fileno(), 0x8927, struct.pack('256s', bytes(device[:15], 'utf-8')))
+	s = socket(AF_INET, SOCK_DGRAM)
+	info = ioctl(s.fileno(), 0x8927, pack('256s', bytes(device[:15], 'utf-8')))
 	key = "".join(['%02x' % char for char in info[18:24]])
-	id = ''
+	keyid = ''
 	j = len(key) - 1
 	for i in range(0, len(key)):
-		if i < len(model):
-			id += key[j] + model[i] + key[i]
-		else:
-			id += key[j] + key[i]
+		keyid += key[j] + model[i] + key[i] if i < len(model) else key[j] + key[i]
 		j -= 1
-	return id[:12]
+	return keyid[:12]

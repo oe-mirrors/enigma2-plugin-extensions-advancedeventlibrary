@@ -5,65 +5,37 @@
 #							Copyright: tsiegel 2019								#
 #																				#
 #################################################################################
-from __future__ import absolute_import
-from Screens.Screen import Screen
-#from Screens.MessageBox import MessageBox
-#from Screens.EventView import EventViewSimple, EventViewBase, EventViewMovieEvent
-#from Screens.EpgSelection import EPGSelection
-#from Screens.TimerEntry import TimerEntry
+from os.path import join, realpath, basename, exists, isfile
+from re import compile, IGNORECASE
+from pickle import load, dump
+from time import time
+from enigma import eEPGCache, eTimer, eServiceReference, addFont
+from skin import variables
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.Button import Button
+from Components.config import config
+from Components.EpgList import EPG_TYPE_SINGLE
 from Components.FunctionTimer import functionTimer  # TODO: später dann from Janitor import functionTimer
-#from Screens.ChoiceBox import ChoiceBox
-#from Screens.TimerEdit import TimerSanityConflict
-from Screens.InfoBar import InfoBar, MoviePlayer
-#from Screens.InfoBarGenerics import InfoBarSimpleEventView
-#from Screens.MovieSelection import MovieSelection
-from Screens.HelpMenu import HelpableScreen
-from Components.EpgList import EPGList, EPG_TYPE_SINGLE, EPG_TYPE_MULTI, EPG_TYPE_INFOBAR
-from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.StaticText import StaticText
-from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigSelection, ConfigInteger, ConfigClock, getConfigListEntry, ConfigEnableDisable, ConfigText, ConfigNumber, ConfigDateTime, NoSave, ConfigIP, configfile, ConfigNothing
-from Tools.Directories import fileExists
-from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Label import Label
 from Components.ScrollLabel import ScrollLabel
-from Components.Button import Button
-#from Components.UsageConfig import preferredTimerPath
-from Components.ActionMap import ActionMap
+from Components.Sources.StaticText import StaticText
 from Components.Pixmap import Pixmap
 from Plugins.Plugin import PluginDescriptor
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import eEPGCache, eTimer, eServiceReference, addFont, eServiceCenter
-from threading import Timer
-#import threading
-#from Tools.SystemEvents import systemevents
+from RecordTimer import parseEvent
+from Screens.HelpMenu import HelpableScreen
+from Screens.InfoBar import MoviePlayer
+from Screens.Screen import Screen
+from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
-#from ServiceReference import ServiceReference
-from time import time, localtime
-import Tools.AutoTimerHook as AutoTimerHook
-#from Tools.MovieInfoParser import getExtendedMovieDescription
-import os
-import re
-import skin
-import pickle
-import Screens.Standby
 
-from . import _  # for localized messages
-from . import AdvancedEventLibrarySystem
-#from . import AdvancedEventLibrarySimpleMovieWall
-from . import AdvancedEventLibrarySerienStarts
-from . import AdvancedEventLibraryPrimeTime
-from . import AdvancedEventLibraryChannelSelection
-from . import AdvancedEventLibraryMediaHub
-from . import AdvancedEventLibraryRecommendations
-from Tools.AdvancedEventLibrary import getDB, convertTitle, convert2base64, getallEventsfromEPG, createBackup, aelGlobals
+from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
+from Tools.AdvancedEventLibrary import getDB, convert2base64, getallEventsfromEPG, createBackup, AELglobs
+import Tools.AutoTimerHook as AutoTimerHook
 
 global leavePlayerfromTrailer
 leavePlayerfromTrailer = False
-
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 pdesc = 'AdvancedEventLibrary'
-
-
 baseEPGSelection__init__ = None
 baseEventViewBase__init__ = None
 baseEventViewMovieEvent__init__ = None
@@ -73,13 +45,6 @@ ServiceTrack = None
 
 addFont('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/fonts/Normal.ttf', 'Normal', 100, False)
 addFont('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/fonts/Small.ttf', 'Small', 100, False)
-
-
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	with open("/var/tmp/AdvancedEventLibrary.log", "a") as log:
-		log.write(f"{logtime}: [AdvancedEventLibraryPlugin] - {svalue}\n")
 
 
 def sessionstart(reason, **kwargs):
@@ -218,15 +183,15 @@ def sessionstart(reason, **kwargs):
 #	if extended_desc != "":
 #		extended_desc += "\n\n"
 #	extensions = (".txt", ".info")
-#	info_file = os.path.realpath(ref.getPath())
-#	name = os.path.basename(info_file)
+#	info_file = realpath(ref.getPath())
+#	name = basename(info_file)
 #	ext_pos = name.rfind('.')
 #	if ext_pos > 0:
 #		name = (name[:ext_pos]).replace("_", " ")
 #	else:
 #		name = name.replace("_", " ")
 #	for ext in extensions:
-#		if os.path.exists(info_file + ext):
+#		if exists(info_file + ext):
 #			f = info_file + ext
 #			break
 #	if not f:
@@ -236,7 +201,7 @@ def sessionstart(reason, **kwargs):
 #		if ext_len <= 5:
 #			info_file = info_file[:ext_pos]
 #			for ext in extensions:
-#				if os.path.exists(info_file + ext):
+#				if exists(info_file + ext):
 #					f = info_file + ext
 #					break
 #	if f:
@@ -266,7 +231,7 @@ def sessionstart(reason, **kwargs):
 #			write_log("create MovieWall data after new record detected")
 #			try:
 #				itype = None
-#				if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
+#				if isfile('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
 #					with open('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data', 'r') as f:
 #						itype = f.read()
 #						f.close()
@@ -459,8 +424,8 @@ def EventViewMovieEvent_onCreate(self):
 	if self.service:
 		self["Service"].newService(self.service)
 		self["ExtEvent"].newService(self.service)
-	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-	ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+	imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+	ptr = LoadPixmap(join(imgpath, "play.png"))
 	self["trailer"].instance.setPixmap(ptr)
 	self["trailer"].hide()
 	if self.name is not None and self.db and "trailer" in self:
@@ -475,15 +440,15 @@ def getMovieDescriptionFromTXT(ref):
 	extended_desc = ""
 	name = ""
 	extensions = (".txt", ".info")
-	info_file = os.path.realpath(ref.getPath())
-	name = os.path.basename(info_file)
+	info_file = realpath(ref.getPath())
+	name = basename(info_file)
 	ext_pos = name.rfind('.')
 	if ext_pos > 0:
 		name = (name[:ext_pos]).replace("_", " ")
 	else:
 		name = name.replace("_", " ")
 	for ext in extensions:
-		if os.path.exists(info_file + ext):
+		if exists(info_file + ext):
 			f = info_file + ext
 			break
 	if not f:
@@ -493,7 +458,7 @@ def getMovieDescriptionFromTXT(ref):
 		if ext_len <= 5:
 			info_file = info_file[:ext_pos]
 			for ext in extensions:
-				if os.path.exists(info_file + ext):
+				if exists(info_file + ext):
 					f = info_file + ext
 					break
 	if f:
@@ -574,8 +539,8 @@ def EventViewBase__init__(self, Event, Ref, callback=None, similarEPGCB=None):
 
 
 def EventViewBase_onCreate(self):
-	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-	ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+	imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+	ptr = LoadPixmap(join(imgpath, "play.png"))
 	self["trailer"].instance.setPixmap(ptr)
 	self.setService(self.currentService)
 	self.setEvent(self.event)
@@ -713,7 +678,7 @@ def EventViewBase_setEvent(self, event):
 #		}, -1)
 #
 #	check TMDb
-#	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
+#	if isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 		#config.plugins.tmdb = ConfigSubsection()
 #		if self.type != EPG_TYPE_MULTI and config.plugins.tmdb.keyyellow.value:
 #			write_log('Overwrite TMDb Key Yellow')
@@ -733,7 +698,7 @@ def EventViewBase_setEvent(self, event):
 #			self["key_yellow"].text = "TMDb Infos..."
 #
 #	check EPGSearch
-#	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
+#	if isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
 #		if self.type != EPG_TYPE_MULTI and config.plugins.epgsearch.add_search_to_epg.value:
 #			from Plugins.Extensions.EPGSearch import EPGSearch
 #			from Components.Sources.StaticText import StaticText
@@ -756,8 +721,8 @@ def EventViewBase_setEvent(self, event):
 
 
 #def EPGSelection_onCreate(self):
-#	imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-#	ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+#	imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+#	ptr = LoadPixmap(join(imgpath, "play.png"))
 #	self["trailer"].instance.setPixmap(ptr)
 #	l = self["list"]
 #	l.recalcEntrySize()
@@ -980,7 +945,7 @@ def EventViewBase_setEvent(self, event):
 
 
 #def EPGSelection_askTimerPath(self, ret=None):
-#	if ret and ret[0] and os.path.exists(ret[0]):
+#	if ret and ret[0] and exists(ret[0]):
 #		cur = self["list"].getCurrent()
 #		event = cur[0]
 #		serviceref = cur[1]
@@ -1007,7 +972,7 @@ def main(session, **kwargs):
 #def iBshowMovies(session, **kwargs):
 #	global gSession
 #	check MediaInfo
-#	if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/MediaInfo/plugin.pyc'):
+#	if isfile('/usr/lib/enigma2/python/Plugins/Extensions/MediaInfo/plugin.pyc'):
 #		MoviePlayer.openEventView = openMoviePlayerEventViewMI
 #	if useMW:
 #		open_moviewall(gSession)
@@ -1198,7 +1163,7 @@ def autostart(reason, **kwargs):
 		return
 		try:
 		#	check EPGSearch
-			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
+			if isfile('/usr/lib/enigma2/python/Plugins/Extensions/EPGSearch/plugin.pyc'):
 				from Plugins.Extensions.EPGSearch import plugin as epgS
 				from Plugins.Extensions.EPGSearch import EPGSearch
 				epgS.autostart = EPGSelectionInit
@@ -1208,7 +1173,7 @@ def autostart(reason, **kwargs):
 			write_log('Fehler in EPGSearch EPGSelectionInit : ' + str(ex))
 		try:
 		#	check TMDb
-			if os.path.isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
+			if isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 				#config.plugins.tmdb = ConfigSubsection()
 				#if config.plugins.tmdb.keyyellow.value:
 				from Plugins.Extensions.tmdb import plugin as tmdbP
@@ -1261,8 +1226,8 @@ class Recommendations(object):
 		self.currentEventName = None
 		self.epgcache = eEPGCache.getInstance()
 		self.db = getDB()
-		if fileExists(os.path.join(pluginpath, 'favourites.data')):
-			self.favourites = self.load_pickle(os.path.join(pluginpath, 'favourites.data'))
+		if fileExists(join(pluginpath, 'favourites.data')):
+			self.favourites = self.load_pickle(join(pluginpath, 'favourites.data'))
 		else:
 			self.favourites = {'genres': {}, 'titles': {}}
 
@@ -1299,7 +1264,7 @@ class Recommendations(object):
 					self.favourites['titles'][self.currentEventName][0] += 1
 					self.favourites['titles'][self.currentEventName][1] = time()
 				self.cleanFavorites()
-				self.save_pickle(self.favourites, os.path.join(pluginpath, 'favourites.data'))
+				self.save_pickle(self.favourites, join(pluginpath, 'favourites.data'))
 
 	def getEvent(self):
 		if not self.epgcache.startTimeQuery(eServiceReference(self.currentService), int(time())):
@@ -1310,11 +1275,11 @@ class Recommendations(object):
 
 	def save_pickle(self, data, filename):
 		with open(filename, 'wb') as f:
-			pickle.dump(data, f)
+			dump(data, f)
 
 	def load_pickle(self, filename):
 		with open(filename, 'rb') as f:
-			data = pickle.load(f)
+			data = load(f)
 		return data
 
 	def cleanFavorites(self):
@@ -1339,7 +1304,7 @@ class Recommendations(object):
 
 	def convertTitle(self, name):
 		if name.find(' (') > 0:
-			regexfinder = re.compile(r"\([12][90]\d{2}\)", re.IGNORECASE)
+			regexfinder = compile(r"\([12][90]\d{2}\)", IGNORECASE)
 			ex = regexfinder.findall(name)
 			if not ex:
 				name = name[:name.find(' (')].strip()

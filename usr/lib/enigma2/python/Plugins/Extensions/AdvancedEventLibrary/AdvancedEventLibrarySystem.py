@@ -1,74 +1,38 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#################################################################################
-#																				#
-#								AdvancedEventLibrary							#
-#																				#
-#							Copyright: tsiegel 2019								#
-#																				#
-#################################################################################
-
-from Screens.Screen import Screen
+from base64 import b64decode
+from datetime import datetime
+from glob import glob
+from json import dumps, loads
+from os import statvfs, makedirs, walk, system, remove, stat
+from os.path import isfile, getsize, exists, join, basename
+from re import compile, IGNORECASE
+from shutil import copy
+from requests import get
+from threading import Thread
+from enigma import getDesktop, eTimer, ePicLoad, eServiceReference, eServiceCenter
 from Components.ActionMap import ActionMap, HelpableActionMap
-from Screens.Standby import TryQuitMainloop
-from Screens.MessageBox import MessageBox
-from Screens.InputBox import InputBox
-from Screens.VirtualKeyBoard import VirtualKeyBoard
-from Screens.ChoiceBox import ChoiceBox
-from Screens.ChannelSelection import service_types_tv
-from Components.Label import Label
-from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
-from Components.Input import Input
-from Components.Pixmap import Pixmap
+from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
-from Screens.Setup import Setup
-from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigText, ConfigSelection, ConfigInteger, ConfigClock, getConfigListEntry
-from Tools.Directories import fileExists
-from time import localtime, time
-from Tools import AdvancedEventLibrary as AEL
-from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, createBackup, convertTitle, startUpdate, clearMem
-from Tools.Bytes2Human import bytes2human
-from enigma import getDesktop, eTimer, ePixmap, ePicLoad, eServiceReference, eServiceCenter, iServiceInformation
-from Tools.Directories import defaultRecordingLocation
-from Components.FileList import FileList
-import threading
-from Components.Button import Button
+from Components.Label import Label
+from Components.Pixmap import Pixmap
 from Components.Sources.List import List
-from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaTest
+from Components.Sources.StaticText import StaticText
+from Screens.ChannelSelection import service_types_tv
+from Screens.ChoiceBox import ChoiceBox
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
+from Screens.Setup import Setup
+from Screens.Standby import TryQuitMainloop
+from Screens.VirtualKeyBoard import VirtualKeyBoard
+from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
-import os
-import re
-import subprocess
-import datetime
-import shutil
-import linecache
-import base64
-import glob
-import json
-import requests
-from . import AdvancedEventLibraryPrimeTime
-from . import AdvancedEventLibrarySerienStarts
-from . import AdvancedEventLibrarySimpleMovieWall
-from . import AdvancedEventLibraryChannelSelection
-from . import AdvancedEventLibraryLists
-from . import AdvancedEventLibraryMediaHub
-from . import AdvancedEventLibraryRecommendations
-from Tools.AdvancedEventLibrary import getSizeStr, PARAMETER_GET, aelGlobals
 
+from . import AdvancedEventLibraryPrimeTime, AdvancedEventLibrarySerienStarts, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryLists, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations
+from Tools import AdvancedEventLibrary as AEL
+from Tools.AdvancedEventLibrary import getSizeStr, getPictureDir, getDB, getImageFile, createBackup, startUpdate, clearMem, AELglobs, PARAMETER_GET
 currentVersion = 132
-
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 skinpath = pluginpath + 'skin/1080/' if getDesktop(0).size().width() == 1920 else pluginpath + 'skin/720/'
 log = "/var/tmp/AdvancedEventLibrary.log"
-
-
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AEL_log = open(log, "a")
-	AEL_log.write(str(logtime) + " : [AdvancedEventLibrarySystem] - " + str(svalue) + "\n")
-	AEL_log.close()
 
 
 def loadskin(filename):
@@ -77,8 +41,6 @@ def loadskin(filename):
 		skin = f.read()
 		f.close()
 	return skin
-
-####################################################################################
 
 
 class AELMenu(Screen):
@@ -108,29 +70,24 @@ class AELMenu(Screen):
 			"key_yellow": self.key_yellow_handler,
 			"key_ok": self.key_ok_handler,
 		}, -1)
-
 		self["key_red"] = StaticText(_("Close"))
 		self["key_green"] = StaticText(_("Start scan..."))
 		self["key_yellow"] = StaticText(_("Create Backup..."))
 		self["info"] = StaticText("")
 		self["status"] = StaticText("")
-
 		self.refreshStatus = eTimer()
 		self.refreshStatus.callback.append(self.getStatus)
-
 		self.reload = eTimer()
 		self.reload.callback.append(self.goReload)
-
 		self.statistic = ""
 		self.memInfo = ""
-
 		self.onShow.append(self.afterInit)
 		self.getStatus()
 
 	def afterInit(self):
 		self.db = getDB()
 		dir = '/etc/enigma2/eventLibrary.db' if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else config.plugins.AdvancedEventLibrary.Location.value + 'eventLibrary.db'
-		if os.path.isfile(dir):
+		if isfile(dir):
 			posterCount = self.db.parameter(PARAMETER_GET, 'posterCount', None, 0)
 			posterSize = self.db.parameter(PARAMETER_GET, 'posterSize', None, 0)
 			coverCount = self.db.parameter(PARAMETER_GET, 'coverCount', None, 0)
@@ -146,7 +103,7 @@ class AELMenu(Screen):
 			lastadditionalDataCount = self.db.parameter(PARAMETER_GET, 'lastadditionalDataCount', None, 0)
 			lastadditionalDataCountBlacklist = self.db.parameter(PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0)
 			lastadditionalDataCountSuccess = int(lastadditionalDataCount) - int(lastadditionalDataCountBlacklist)
-			dbSize = os.path.getsize(dir) / 1024.0
+			dbSize = getsize(dir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
 			blackListCount = self.db.getblackListCount()
 			percent = "{100 * titleCount / (titleCount + blackListCount) if (titleCount + blackListCount) > 0 else 0} %"
@@ -199,16 +156,12 @@ class AELMenu(Screen):
 					mounts.append(l[1])
 			fd.close()
 			return mounts
-
 		resultList = []
-		if path:
-			mountPoints = [path]
-		else:
-			mountPoints = getMountPoints()
+		mountPoints = [path] if path else getMountPoints()
 		for mountPoint in mountPoints:
 			st = None
 			if '/media' in mountPoint or path:
-				st = os.statvfs(mountPoint)
+				st = statvfs(mountPoint)
 			if st is not None and 0 not in (st.f_bsize, st.f_blocks):
 				result = [0, 0, 0, 0, mountPoint.replace('/media/net/autonet', '/...').replace('/media/net', '/...')]  # (size, used, avail, use%)
 				result[0] = st.f_bsize * st.f_blocks  # size
@@ -227,11 +180,11 @@ class AELMenu(Screen):
 		return '\nausgeführt am:\t' + str(lastUpdateStart) + '\tDauer:\t' + str(lastUpdateDuration)
 
 	def convertTimestamp(self, val):
-		value = datetime.datetime.fromtimestamp(float(val))
+		value = datetime.fromtimestamp(float(val))
 		return value.strftime('%d.%m. %H:%M')
 
 	def convertDuration(self, val):
-		value = datetime.datetime.fromtimestamp(float(val))
+		value = datetime.fromtimestamp(float(val))
 		return value.strftime('%H:%M:%S')
 
 	def key_ok_handler(self):
@@ -264,18 +217,18 @@ class AELMenu(Screen):
 		startUpdate()
 
 	def key_yellow_handler(self):
-		thread = threading.Thread(target=createBackup, args=())
+		thread = Thread(target=createBackup, args=())
 		thread.start()
 
 	def createDirs(self, path):
-		if not os.path.exists(path):
-			os.makedirs(path)
-		if not os.path.exists(path + 'poster/'):
-			os.makedirs(path + 'poster/')
-		if not os.path.exists(path + 'cover/'):
-			os.makedirs(path + 'cover/')
-		if not os.path.exists(path + 'preview/'):
-			os.makedirs(path + 'preview/')
+		if not exists(path):
+			makedirs(path)
+		if not exists(path + 'poster/'):
+			makedirs(path + 'poster/')
+		if not exists(path + 'cover/'):
+			makedirs(path + 'cover/')
+		if not exists(path + 'preview/'):
+			makedirs(path + 'preview/')
 
 	def getStatus(self):
 		if AEL.STATUS:
@@ -304,14 +257,13 @@ class AELMenu(Screen):
 		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, self.viewType)
 
 	def open_moviewall(self):
-		while aelGlobals.saving:
+		while AELglobs.saving:
 			pass
 		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 2
 		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, self.viewType)
 
-	def open_favourites(self):
-		#reload_module(AdvancedEventLibraryRecommendations)
+	def open_favourites(self):  # reload_module(AdvancedEventLibraryRecommendations)
 		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 3
 		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, self.viewType)
@@ -330,7 +282,7 @@ class AELMenu(Screen):
 
 	def goRestart(self, ret=None):
 		if ret:
-			write_log('return ' + str(ret))
+			AELglobs.write_log('return ' + str(ret))
 			config.plugins.AdvancedEventLibrary.ViewType.value = ret
 			config.plugins.AdvancedEventLibrary.ViewType.save()
 		if self.viewType != config.plugins.AdvancedEventLibrary.ViewType.value:
@@ -385,8 +337,7 @@ class AELMenu(Screen):
 
 ####################################################################################
 class AdvancedEventLibrarySetup(Setup):
-	ALLOW_SUSPEND = True
-	#skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
+	ALLOW_SUSPEND = True  # skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
 
 	def __init__(self, session):
 		self.session = session
@@ -428,15 +379,15 @@ class AdvancedEventLibrarySetup(Setup):
 		self.searchOptions = {}
 		if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 			self.searchOptions = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
-		if self.searchOptions:
-			self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
-			self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True))
-		else:
-			self.vtidb = ConfigYesNo(default=True)
-			self.usePictures = ConfigYesNo(default=True)
+#		if self.searchOptions:
+#			self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
+#			self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True))
+#		else:
+#			self.vtidb = ConfigYesNo(default=True)
+#			self.usePictures = ConfigYesNo(default=True)
 
 		#inhibitDirs = ["/bin", "/boot", "/dev", "/home", "/lib", "/config", "/proc", "/sbin", "/share", "/sys", "/tmp", "/usr", "/var", "/media/VMC", "/media/VMC5", "/.cache", "/.local", "/autofs", "/mnt", "/run"]
-		#for root, directories, files in os.walk("/etc"):
+		#for root, directories, files in walk("/etc"):
 		#	if str(root) != "/etc" and str(root) != "/etc/enigma2":
 		#		inhibitDirs.append(str(root))
 		#self["myFileList"] = FileList("/media/hdd/", showDirectories=True, showFiles=False, inhibitDirs=inhibitDirs)
@@ -464,7 +415,7 @@ class AdvancedEventLibrarySetup(Setup):
 					self.updatePath()
 				self.buildConfigList()
 		except Exception as ex:
-			write_log("Setup - keyok : " + str(ex))
+			AELglobs.write_log("Setup - keyok : " + str(ex))
 
 	def updatePath(self, confirmed=False, cur=""):
 		return
@@ -492,12 +443,12 @@ class AdvancedEventLibrarySetup(Setup):
 
 	def createDirs(self, path):
 		return
-		if not os.path.exists(path):
-			os.makedirs(path)
-		if not os.path.exists(path + 'poster/'):
-			os.makedirs(path + 'poster/')
-		if not os.path.exists(path + 'cover/'):
-			os.makedirs(path + 'cover/')
+		if not exists(path):
+			makedirs(path)
+		if not exists(path + 'poster/'):
+			makedirs(path + 'poster/')
+		if not exists(path + 'cover/'):
+			makedirs(path + 'cover/')
 
 #	def key_up_handler(self):
 #		if self.myFileListActive:
@@ -584,7 +535,7 @@ class AdvancedEventLibrarySetup(Setup):
 #			recordPaths = config.movielist.videodirs.value
 #			if recordPaths:
 #				for dir in recordPaths:
-#					if os.path.isdir(dir):
+#					if isdir(dir):
 #						rpath = ConfigYesNo(default=self.searchOptions.get(dir, False))
 #						subpaths = ConfigYesNo(default=self.searchOptions.get('subpaths_' + dir, False))
 #
@@ -592,7 +543,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(dir), subpaths))
 #
 #		except Exception as ex:
-#			write_log("Fehler in buildConfigList : " + str(ex))
+#			AELglobs.write_log("Fehler in buildConfigList : " + str(ex))
 
 	def changedEntry(self):
 		return
@@ -623,14 +574,14 @@ class AdvancedEventLibrarySetup(Setup):
 			for x in self["config"].list:
 				if len(x) > 1:
 					if "suche" not in x[0] and "Einstellungen" not in x[0] and x[0]:
-						write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value))
+						AELglobs.write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value))
 						x[1].save()
 					else:
 						if 'suche in Unterverzeichnissen von ' in str(x[0]):
-							for root, directories, files in os.walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
+							for root, directories, files in walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
 								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
 									self.searchOptions[str(root)] = x[1].value
-							self.searchOptions[x[0].replace(_"suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
+							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
 						else:
 							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
 			config.plugins.AdvancedEventLibrary.searchPlaces.value = str(self.searchOptions)
@@ -649,22 +600,16 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		self.skinName = ["TV Spielfilm-Setup", "Setup"]
 		self.title = "TV Spielfilm-Setup"
 		self.cur = None
-
 		self.setup_title = "TV Spielfilm-Setup"
 		self["title"] = StaticText(self.title)
 		self["footnote"] = StaticText("")
 		self["description"] = Label("")
-
 		self["key_red"] = StaticText(_("Close"))
 		self["key_green"] = StaticText(_("Speichern"))
-
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 #		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
-
 		sPDict = {}
 		if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 			sPDict = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
-
 		self.senderlist = []
 		self.senderdict = {}
 		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
@@ -674,7 +619,6 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		tvsref = {}
 		if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data'):
 			self.tvsref = self.load_json('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
-
 		for bouquet in tvbouquets:
 			root = eServiceReference(str(bouquet[0]))
 			serviceHandler = eServiceCenter.getInstance()
@@ -692,14 +636,12 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 						if servicename not in self.senderlist:
 							self.senderlist.append(servicename)
 						self.senderdict[serviceref] = servicename
-
 		lists = self.get_tvsRefList()
 		self.tvsRefList = lists[0]
 		self.tvsKeys = lists[1]
 		self.configlist = []
 		self.buildConfigList()
 		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_cancel": self.close,
@@ -735,14 +677,14 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 
 	def save_json(self, data, filename):
 		DataFile = open(filename, 'w')
-		DataFile.write(json.dumps(data, indent=4, sort_keys=False))
+		DataFile.write(dumps(data, indent=4, sort_keys=False))
 		DataFile.close()
 
 	def get_tvsRefList(self):
 		refList = {}
 		keyList = []
 		url = 'https://live.tvspielfilm.de/static/content/channel-list/livetv'
-		results = json.loads(requests.get(url, timeout=4).text)
+		results = loads(get(url, timeout=4).text)
 		if results:
 			for service in results:
 				if "id" in service and "name" in service:
@@ -800,7 +742,6 @@ class Editor(Screen, ConfigListScreen):
 		self.session = session
 		self.skinName = 'Advanced-Event-Library-Editor'
 		self.title = "Advanced-Event-Library-Editor"
-
 		self.ptr = ""
 		self.ptr2 = ""
 		self.evt = None
@@ -860,7 +801,7 @@ class Editor(Screen, ConfigListScreen):
 				if ptr:
 					self.ptr = ptr.getEventName()
 					self.ptr2 = self.ptr
-					write_log('ptr.getEventName() ' + str(self.ptr))
+					AELglobs.write_log('ptr.getEventName() ' + str(self.ptr))
 					self.evt = self.db.getliveTV(ptr.getEventId(), str(self.ptr))
 					if self.evt:
 						self.eid = self.evt[0][0]
@@ -876,23 +817,19 @@ class Editor(Screen, ConfigListScreen):
 							if self.evt[0][2] != "":
 								name += self.evt[0][2] + ' - '
 							self.ptr = str(name[:-3])
-
 		if not self.ptr:
 			self.ptr = "nothing found"
 		self.ptr = AEL.convertSearchName(AEL.convertDateInFileName(self.ptr))
 		if self.ptr2:
 			self.ptr2 = AEL.convertSearchName(AEL.convertDateInFileName(self.ptr2))
-			write_log('found second name : ' + str(self.ptr2))
-		write_log('search name : ' + str(self.ptr))
-
+			AELglobs.write_log('found second name : ' + str(self.ptr2))
+		AELglobs.write_log('search name : ' + str(self.ptr))
 		self["key_red"] = StaticText(_("Activate"))
 		self["key_green"] = StaticText("")
 		self["key_yellow"] = StaticText(_("Activate poster selection"))
 		self["key_blue"] = StaticText(_("Activate Cover selection"))
-
 		self.activeList = 'editor'
 		self.jahr = ''
-
 		self["pList"] = AdvancedEventLibraryLists.ImageList()
 		self["cList"] = AdvancedEventLibraryLists.ImageList()
 		self["sList"] = AdvancedEventLibraryLists.SearchResultsList()
@@ -901,7 +838,6 @@ class Editor(Screen, ConfigListScreen):
 		self["cover"].hide()
 		self["poster"].hide()
 		self["sList"].hide()
-
 		self.eventTitle = ConfigText(default="")
 		self.eventGenre = ConfigText(default="")
 		self.eventYear = ConfigText(default="")
@@ -909,12 +845,9 @@ class Editor(Screen, ConfigListScreen):
 		self.eventFSK = ConfigText(default="")
 		self.eventCountry = ConfigText(default="")
 		self.eventOverview = None
-
 		self.configlist = []
 		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-
 		self.onShow.append(self.checkDoupleNames)
-
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_cancel": self.doClose,
@@ -935,10 +868,7 @@ class Editor(Screen, ConfigListScreen):
 		return ext
 
 	def checkPositions(self):
-		if int(self['sList'].getPosition()) > int(self['cList'].getPosition()):
-			return True
-		else:
-			return False
+		return True if int(self['sList'].getPosition()) > int(self['cList'].getPosition()) else False
 
 	def key_ok_handler(self):
 		if self.ptr != 'nothing found':
@@ -969,7 +899,7 @@ class Editor(Screen, ConfigListScreen):
 				self['pList'].setList(waitList)
 				self.cSource = 1
 				self.pSource = 1
-				thread = threading.Thread(target=self.searchPics, args=())
+				thread = Thread(target=self.searchPics, args=())
 				thread.start()
 			elif self.activeList == 'editor':
 				if self['config'].getCurrent()[0] == 'Event Name (suche mit OK)':
@@ -981,27 +911,27 @@ class Editor(Screen, ConfigListScreen):
 				if selection:
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != "lade Daten, bitte warten...":
 						if self.pSource == 1:
-							write_log('Selection to move : ' + str(selection))
+							AELglobs.write_log('Selection to move : ' + str(selection))
 							AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-							if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+							if int(getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 								AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 							else:
-								shutil.copy('/tmp/' + selection[5], selection[4])
+								copy('/tmp/' + selection[5], selection[4])
 			elif self.activeList == 'cover':
 				selection = self['cList'].l.getCurrentSelection()[0]
 				if selection:
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != "lade Daten, bitte warten...":
 						if self.cSource == 1:
-							write_log('Selection to move : ' + str(selection))
+							AELglobs.write_log('Selection to move : ' + str(selection))
 							AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-							if int(os.path.getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+							if int(getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 								AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 							else:
-								shutil.copy('/tmp/' + selection[5], selection[4])
+								copy('/tmp/' + selection[5], selection[4])
 			elif "screenshot" in self.activeList:
 				fname = AEL.convertSearchName(AEL.convert2base64(self.removeExtension(self.ptr))) + '.jpg'
 				cmd = "grab -v -j 100 /tmp/" + fname
-				ret = os.system(cmd)
+				ret = system(cmd)
 				if ret == 0:
 					if "poster" in self.activeList:
 						from PIL import Image
@@ -1011,11 +941,11 @@ class Editor(Screen, ConfigListScreen):
 						typ = "poster/"
 					else:
 						typ = "cover/"
-					AEL.createSingleThumbnail('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
-					if int(os.path.getsize('/tmp/' + fname) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
-						AEL.reduceSigleImageSize('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
+					AEL.createSingleThumbnail('/tmp/' + fname, join(getPictureDir() + typ, fname))
+					if int(getsize('/tmp/' + fname) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+						AEL.reduceSigleImageSize('/tmp/' + fname, join(getPictureDir() + typ, fname))
 					else:
-						shutil.copy('/tmp/' + fname, os.path.join(getPictureDir() + typ, fname))
+						copy('/tmp/' + fname, join(getPictureDir() + typ, fname))
 					self.session.open(MessageBox, 'AEL - Screenshot\nNeues Bild für ' + str(self.ptr) + ' erfolgreich erstellt.', MessageBox.TYPE_INFO, timeout=10)
 				else:
 					self.session.open(MessageBox, 'AEL - Screenshot\nBild ' + str(self.ptr) + ' konnte nicht erstellt werden.', MessageBox.TYPE_INFO, timeout=10)
@@ -1045,7 +975,7 @@ class Editor(Screen, ConfigListScreen):
 			self['sList'].show()
 			self.activeList = 'choiceBox'
 			self.text = text
-			thread = threading.Thread(target=self.searchAll, args=())
+			thread = Thread(target=self.searchAll, args=())
 			thread.start()
 
 	def searchAll(self):
@@ -1053,7 +983,6 @@ class Editor(Screen, ConfigListScreen):
 
 	def key_menu_handler(self):
 		if self.ptr != 'nothing found':
-
 			if self.cSource == 0 and self.activeList == 'cover' and "/etc" not in str(config.plugins.AdvancedEventLibrary.Location.value):
 				choices, idx = ([('Sprachauswahl',), ('lade Cover',), ('erzeuge Screenshot',), ('Eintrag löschen',), ('Eintrag löschen und auf Blacklist setzen',), ('Cover löschen',), ('Thumbnails löschen',), ('BlackList löschen',), ('Bilder überprüfen',)], 0)
 			elif self.pSource == 0 and self.activeList == 'poster' and "/etc" not in str(config.plugins.AdvancedEventLibrary.Location.value):
@@ -1076,18 +1005,18 @@ class Editor(Screen, ConfigListScreen):
 				if self.cSource == 0:
 					for file in self['cList'].getList():
 						try:
-							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
+							remove(file[0][3])
+							remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
 						except Exception as ex:
-							write_log('remove images : ' + str(ex))
+							AELglobs.write_log('remove images : ' + str(ex))
 							continue
 				if self.pSource == 0:
 					for file in self['pList'].getList():
 						try:
-							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
+							remove(file[0][3])
+							remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
 						except Exception as ex:
-							write_log('remove images : ' + str(ex))
+							AELglobs.write_log('remove images : ' + str(ex))
 							continue
 				self.eventCountry.value = ''
 				self.eventFSK.value = ''
@@ -1102,18 +1031,18 @@ class Editor(Screen, ConfigListScreen):
 				if self.cSource == 0:
 					for file in self['cList'].getList():
 						try:
-							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
+							remove(file[0][3])
+							remove(file[0][3].replace('/cover/', '/cover/thumbnails/'))
 						except Exception as ex:
-							write_log('remove images : ' + str(ex))
+							AELglobs.write_log('remove images : ' + str(ex))
 							continue
 				if self.pSource == 0:
 					for file in self['pList'].getList():
 						try:
-							os.remove(file[0][3])
-							os.remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
+							remove(file[0][3])
+							remove(file[0][3].replace('/poster/', '/poster/thumbnails/'))
 						except Exception as ex:
-							write_log('remove images : ' + str(ex))
+							AELglobs.write_log('remove images : ' + str(ex))
 							continue
 				self.eventCountry.value = ''
 				self.eventFSK.value = ''
@@ -1124,50 +1053,50 @@ class Editor(Screen, ConfigListScreen):
 			elif ret[0] == 'Poster löschen':
 				try:
 					selection = self['pList'].l.getCurrentSelection()[0]
-					if selection and os.path.isfile(selection[3]):
-						os.remove(selection[3])
-						os.remove(selection[3].replace('/poster/', '/poster/thumbnails/'))
+					if selection and isfile(selection[3]):
+						remove(selection[3])
+						remove(selection[3].replace('/poster/', '/poster/thumbnails/'))
 						self.afterInit(True, False)
 				except Exception as ex:
-					write_log('remove image : ' + str(ex))
+					AELglobs.write_log('remove image : ' + str(ex))
 			elif ret[0] == 'Cover löschen':
 				try:
 					selection = self['cList'].l.getCurrentSelection()[0]
-					if selection and os.path.isfile(selection[3]):
-						os.remove(selection[3])
-						os.remove(selection[3].replace('/cover/', '/cover/thumbnails/').replace('/preview/', '/preview/thumbnails/'))
+					if selection and isfile(selection[3]):
+						remove(selection[3])
+						remove(selection[3].replace('/cover/', '/cover/thumbnails/').replace('/preview/', '/preview/thumbnails/'))
 						self.afterInit(False, True)
 				except Exception as ex:
-					write_log('remove image : ' + str(ex))
+					AELglobs.write_log('remove image : ' + str(ex))
 			elif ret[0] == 'BlackList löschen':
 				self.db.cleanblackList()
 			elif ret[0] == 'Thumbnails löschen':
 				tmp = config.plugins.AdvancedEventLibrary.Location.value + 'cover/thumbnails/'
-				if os.path.exists(tmp):
-					filelist = glob.glob(os.path.join(tmp, "*.jpg"))
+				if exists(tmp):
+					filelist = glob(join(tmp, "*.jpg"))
 					for f in filelist:
-						os.remove(f)
+						remove(f)
 					del filelist
 				tmp = config.plugins.AdvancedEventLibrary.Location.value + 'poster/thumbnails/'
-				if os.path.exists(tmp):
-					filelist = glob.glob(os.path.join(tmp, "*.jpg"))
+				if exists(tmp):
+					filelist = glob(join(tmp, "*.jpg"))
 					for f in filelist:
-						os.remove(f)
+						remove(f)
 					del filelist
 				tmp = config.plugins.AdvancedEventLibrary.Location.value + 'preview/thumbnails/'
-				if os.path.exists(tmp):
-					filelist = glob.glob(os.path.join(tmp, "*.jpg"))
+				if exists(tmp):
+					filelist = glob(join(tmp, "*.jpg"))
 					for f in filelist:
-						os.remove(f)
+						remove(f)
 					del filelist
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (nicht vorhandene)':
-				thread = threading.Thread(target=AEL.downloadAllImagesfromAELImageServer, args=())
+				thread = Thread(target=AEL.downloadAllImagesfromAELImageServer, args=())
 				thread.start()
 			elif ret[0] == 'lade Bilder von AEL-Image-Server (ersetzen)':
-				thread = threading.Thread(target=AEL.downloadAllImagesfromAELImageServer, args=(True,))
+				thread = Thread(target=AEL.downloadAllImagesfromAELImageServer, args=(True,))
 				thread.start()
 			elif ret[0] == 'Bilder überprüfen':
-				thread = threading.Thread(target=AEL.checkAllImages, args=())
+				thread = Thread(target=AEL.checkAllImages, args=())
 				thread.start()
 			elif ret[0] == 'lade Cover':
 				waitList = []
@@ -1175,7 +1104,7 @@ class Editor(Screen, ConfigListScreen):
 				waitList.append((itm,))
 				self.cSource = 1
 				self['cList'].setList(waitList)
-				thread = threading.Thread(target=self.searchPics, args=(False, True))
+				thread = Thread(target=self.searchPics, args=(False, True))
 				thread.start()
 			elif ret[0] == 'lade Poster':
 				waitList = []
@@ -1183,7 +1112,7 @@ class Editor(Screen, ConfigListScreen):
 				waitList.append((itm,))
 				self.pSource = 1
 				self['pList'].setList(waitList)
-				thread = threading.Thread(target=self.searchPics, args=(False, True))
+				thread = Thread(target=self.searchPics, args=(False, True))
 				thread.start()
 			elif 'Screenshot' in ret[0]:
 				if self.activeList == "cover":
@@ -1195,12 +1124,11 @@ class Editor(Screen, ConfigListScreen):
 				elif 'Cover' in ret[0]:
 					self.activeList = 'screenshot cover'
 				self.hide()
-
-			write_log('Menü : ' + str(ret[0]) + ' - ' + str(self.ptr))
+			AELglobs.write_log('Menü : ' + str(ret[0]) + ' - ' + str(self.ptr))
 
 	def languageCallBack(self, ret=None):
 		if ret:
-			write_log('current language: ' + str(ret[0]))
+			AELglobs.write_log('current language: ' + str(ret[0]))
 			self.language = str(ret[1])
 
 	def key_up_handler(self):
@@ -1258,7 +1186,6 @@ class Editor(Screen, ConfigListScreen):
 			self.ptr = self.ptr2
 			self.evt = None
 			self.eid = None
-
 		eventData = self.db.getTitleInfo(AEL.convertSearchName(AEL.convert2base64(self.ptr)))
 		if not eventData:
 			eventData = self.db.getTitleInfo(AEL.convertSearchName(AEL.convert2base64(AEL.convertTitle(self.ptr))))
@@ -1266,28 +1193,18 @@ class Editor(Screen, ConfigListScreen):
 				eventData = self.db.getTitleInfo(AEL.convertSearchName(AEL.convert2base64(AEL.convertTitle2(self.ptr))))
 		if not eventData:
 			eventData = [AEL.convertSearchName(AEL.convert2base64(self.ptr)), self.ptr, '', '', '', '', '']
-
 		if not self.db.checkTitle(AEL.convert2base64(self.ptr)):
 			if self.ptr != 'nothing found':
 				self.db.addTitleInfo(AEL.convertSearchName(AEL.convert2base64(self.ptr)), self.ptr, '', '', '', '', '')
-
 		self.eventData = [AEL.convertSearchName(AEL.convert2base64(self.ptr)), self.ptr, '', '', '', '', '']
 		if self.evt:  # genre
-			if len(str(self.evt[0][14]).strip()) > 0:
-				self.eventData[2] = self.evt[0][14]
-			else:
-				self.eventData[2] = eventData[2]
+			self.eventData[2] = self.evt[0][14] if len(str(self.evt[0][14]).strip()) > 0 else eventData[2]
 		else:
 			self.eventData[2] = eventData[2]
-
 		if self.evt:  # year
-			if len(str(self.evt[0][4]).strip()) > 0:
-				self.eventData[3] = self.evt[0][4]
-			else:
-				self.eventData[3] = eventData[3]
+			self.eventData[3] = self.evt[0][4] if len(str(self.evt[0][4]).strip()) > 0 else eventData[3]
 		else:
 			self.eventData[3] = eventData[3]
-
 		#if self.evt:  # rating
 		#	if len(str(self.evt[0][6]).strip()) > 0:
 		#		self.eventData[4] = self.evt[0][6]
@@ -1295,7 +1212,6 @@ class Editor(Screen, ConfigListScreen):
 		#		self.eventData[4] = eventData[4]
 		#else:
 		#	self.eventData[4] = eventData[4]
-
 		if self.evt:  # fsk
 			if len(str(self.evt[0][5]).strip()) > 0:
 #				try:
@@ -1325,22 +1241,16 @@ class Editor(Screen, ConfigListScreen):
 			self.eventData[5] = eventData[5]
 
 		if self.evt:  # country
-			if len(str(self.evt[0][15]).strip()) > 0:
-				self.eventData[6] = self.evt[0][15]
-			else:
-				self.eventData[6] = eventData[6]
+			self.eventData[6] = self.evt[0][15] if len(str(self.evt[0][15]).strip()) > 0 else eventData[6]
 		else:
 			self.eventData[6] = eventData[6]
-
 		self.eventTitle.value = self.eventData[1]
 		self.eventGenre.value = self.eventData[2]
 		self.eventYear.value = self.eventData[3]
 		self.eventRating.value = self.eventData[4]
 		self.eventFSK.value = self.eventData[5]
 		self.eventCountry.value = self.eventData[6]
-
 		self.buildConfigList()
-
 		self.afterInit()
 		self.key_down_handler()
 
@@ -1350,37 +1260,35 @@ class Editor(Screen, ConfigListScreen):
 				pName1 = AEL.convert2base64(self.ptr) + '.jpg'
 				pName2 = AEL.convert2base64(AEL.convertTitle(self.ptr)) + '.jpg'
 				pName3 = AEL.convert2base64(AEL.convertTitle2(self.ptr)) + '.jpg'
-				write_log('1. possible picture name : ' + str(self.ptr) + " as " + str(pName1))
+				AELglobs.write_log('1. possible picture name : ' + str(self.ptr) + " as " + str(pName1))
 				if pName1 != pName2:
-					write_log('2. possible picture name : ' + str(AEL.convertTitle(self.ptr)) + " as " + str(pName2))
+					AELglobs.write_log('2. possible picture name : ' + str(AEL.convertTitle(self.ptr)) + " as " + str(pName2))
 				if pName2 != pName3:
-					write_log('3. possible picture name : ' + str(AEL.convertTitle2(self.ptr)) + " as " + str(pName3))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName1)):
-					write_log('found 1. possible cover : ' + str(pName1))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName2)) and pName1 != pName2:
-					write_log('found 2. possible cover : ' + str(pName2))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName3)) and pName2 != pName3:
-					write_log('found 3. possible cover : ' + str(pName3))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName1)):
-					write_log('found 1. possible poster : ' + str(pName1))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName2)) and pName1 != pName2:
-					write_log('found 2. possible poster: ' + str(pName2))
-				if os.path.isfile(os.path.join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName3)) and pName2 != pName3:
-					write_log('found 3. possible poster : ' + pName3)
-
+					AELglobs.write_log('3. possible picture name : ' + str(AEL.convertTitle2(self.ptr)) + " as " + str(pName3))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName1)):
+					AELglobs.write_log('found 1. possible cover : ' + str(pName1))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName2)) and pName1 != pName2:
+					AELglobs.write_log('found 2. possible cover : ' + str(pName2))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', pName3)) and pName2 != pName3:
+					AELglobs.write_log('found 3. possible cover : ' + str(pName3))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName1)):
+					AELglobs.write_log('found 1. possible poster : ' + str(pName1))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName2)) and pName1 != pName2:
+					AELglobs.write_log('found 2. possible poster: ' + str(pName2))
+				if isfile(join(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', pName3)) and pName2 != pName3:
+					AELglobs.write_log('found 3. possible poster : ' + pName3)
 			self.coverList = []
 			self.posterList = []
 			waitList = []
 			itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 			waitList.append((itm,))
-
 			if refreshCover:
-				coverFiles = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(self.ptr.strip()) + '.jpg')
-				c2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle(self.ptr).strip()) + '.jpg')
+				coverFiles = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(self.ptr.strip()) + '.jpg')
+				c2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle(self.ptr).strip()) + '.jpg')
 				for file in c2:
 					if file not in coverFiles:
 						coverFiles.append(file)
-				c2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle2(self.ptr).strip()) + '.jpg')
+				c2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle2(self.ptr).strip()) + '.jpg')
 				for file in c2:
 					if file not in coverFiles:
 						coverFiles.append(file)
@@ -1388,17 +1296,16 @@ class Editor(Screen, ConfigListScreen):
 				coverFile = getImageFile(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', self.ptr)
 				if coverFile and coverFile not in coverFiles:
 					coverFiles.append(coverFile)
-
 				if self.orgName and self.orgName != self.ptr:
-					coverFiles2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(self.orgName.strip()) + '.jpg')
+					coverFiles2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(self.orgName.strip()) + '.jpg')
 					for file in coverFiles2:
 						if file not in coverFiles:
 							coverFiles.append(file)
-					p2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle(self.orgName).strip()) + '.jpg')
+					p2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle(self.orgName).strip()) + '.jpg')
 					for file in p2:
 						if file not in coverFiles:
 							coverFiles.append(file)
-					c2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle2(self.orgName).strip()) + '.jpg')
+					c2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'cover/' + AEL.convert2base64(AEL.convertTitle2(self.orgName).strip()) + '.jpg')
 					for file in p2:
 						if file not in coverFiles:
 							coverFiles.append(file)
@@ -1406,13 +1313,12 @@ class Editor(Screen, ConfigListScreen):
 					coverFile = getImageFile(config.plugins.AdvancedEventLibrary.Location.value + 'cover/', self.orgName)
 					if coverFile and coverFile not in coverFiles:
 						coverFiles.append(coverFile)
-
 				for files in coverFiles:
-					name = os.path.basename(files).replace('.jpg', '')
+					name = basename(files).replace('.jpg', '')
 #					try:
-					fn = base64.b64decode(os.path.basename(files).replace('.jpg', ''))
+					fn = b64decode(basename(files).replace('.jpg', ''))
 #					except:
-#						fn = os.path.basename(files).replace('.jpg', '')
+#						fn = basename(files).replace('.jpg', '')
 					if 'cover' in files:
 						itm = [fn, 'Cover', name, files]
 					elif 'preview' in files:
@@ -1420,7 +1326,6 @@ class Editor(Screen, ConfigListScreen):
 					else:
 						itm = [files, 'unknown', name, files]
 					self.coverList.append((itm,))
-
 				if self.coverList:
 					self.coverList.sort(key=lambda x: x[0], reverse=False)
 					self.cSource = 0
@@ -1434,17 +1339,16 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.cSource = 1
 					self['cList'].setList(waitList)
-					thread = threading.Thread(target=self.searchPics, args=(False, True))
+					thread = Thread(target=self.searchPics, args=(False, True))
 					thread.start()
 				del coverFiles
-
 			if refreshPoster:
-				posterFiles = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(self.ptr.strip()) + '.jpg')
-				p2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle(self.ptr).strip()) + '.jpg')
+				posterFiles = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(self.ptr.strip()) + '.jpg')
+				p2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle(self.ptr).strip()) + '.jpg')
 				for file in p2:
 					if file not in posterFiles:
 						posterFiles.append(file)
-				c2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle2(self.ptr).strip()) + '.jpg')
+				c2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle2(self.ptr).strip()) + '.jpg')
 				for file in p2:
 					if file not in posterFiles:
 						posterFiles.append(file)
@@ -1454,15 +1358,15 @@ class Editor(Screen, ConfigListScreen):
 					posterFiles.append(posterFile)
 
 				if self.orgName and self.orgName != self.ptr:
-					posterFiles2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(self.orgName.strip()) + '.jpg')
+					posterFiles2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(self.orgName.strip()) + '.jpg')
 					for file in posterFiles2:
 						if file not in posterFiles:
 							posterFiles.append(file)
-					p2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle(self.orgName).strip()) + '.jpg')
+					p2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle(self.orgName).strip()) + '.jpg')
 					for file in p2:
 						if file not in posterFiles:
 							posterFiles.append(file)
-					c2 = glob.glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle2(self.orgName).strip()) + '.jpg')
+					c2 = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(AEL.convertTitle2(self.orgName).strip()) + '.jpg')
 					for file in p2:
 						if file not in posterFiles:
 							posterFiles.append(file)
@@ -1470,16 +1374,14 @@ class Editor(Screen, ConfigListScreen):
 					posterFile = getImageFile(config.plugins.AdvancedEventLibrary.Location.value + 'poster/', self.orgName)
 					if posterFile and posterFile not in posterFiles:
 							posterFiles.append(posterFile)
-
 				for files in posterFiles:
-					name = os.path.basename(files).replace('.jpg', '')
+					name = basename(files).replace('.jpg', '')
 #					try:
-					fn = base64.b64decode(os.path.basename(files).replace('.jpg', ''))
+					fn = b64decode(basename(files).replace('.jpg', ''))
 #					except:
-#						fn = os.path.basename(files).replace('.jpg', '')
+#						fn = basename(files).replace('.jpg', '')
 					itm = [fn, 'Poster', name, files]
 					self.posterList.append((itm,))
-
 				if self.posterList:
 					self.posterList.sort(key=lambda x: x[0], reverse=False)
 					self.pSource = 0
@@ -1493,22 +1395,17 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.pSource = 1
 					self['pList'].setList(waitList)
-					thread = threading.Thread(target=self.searchPics, args=(False, True))
+					thread = Thread(target=self.searchPics, args=(False, True))
 					thread.start()
 				del posterFiles
-
 			self['sList'].setList(waitList)
-
 			del self.posterList
 			del self.coverList
 
 	def searchPics(self, poster=True, cover=True):
-		regexfinder = re.compile(r"\([12][90]\d{2}\)", re.IGNORECASE)
+		regexfinder = compile(r"\([12][90]\d{2}\)", IGNORECASE)
 		ex = regexfinder.findall(self.eventTitle.value)
-		if self.eventYear.value and self.eventYear.value != "" and not ex:
-			searchtext = self.eventTitle.value + " (" + self.eventYear.value + ")"
-		else:
-			searchtext = self.eventTitle.value
+		searchtext = self.eventTitle.value + " (" + self.eventYear.value + ")" if self.eventYear.value and self.eventYear.value != "" and not ex else self.eventTitle.value
 		if poster:
 			if "Serie" in self.eventGenre.value:
 				self['pList'].setList(AEL.get_PictureList(searchtext, 'Poster', self.ImageCount, self.eventData[0], self.language, " Serie"))
@@ -1554,13 +1451,13 @@ class Editor(Screen, ConfigListScreen):
 			if self.db.checkTitle(self.eventData[0]):
 				self.db.updateTitleInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eventData[0])
 				if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
-					if self.fileName and not os.path.isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
+					if self.fileName and not isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
 						if self.eventOverview:
 							txt = open(self.fileName + ".txt", "w")
 							txt.write(self.eventOverview)
 							txt.close()
-					if self.fileName and not os.path.isfile(self.fileName + ".meta"):
-						filedt = int(os.stat(self.fileName).st_mtime)
+					if self.fileName and not isfile(self.fileName + ".meta"):
+						filedt = int(stat(self.fileName).st_mtime)
 						txt = open(self.fileName + ".meta", "w")
 						minfo = "1:0:0:0:B:0:C00000:0:0:0:\n" + str(self.eventTitle.value) + "\n"
 						if str(self.eventGenre.value) != "":
@@ -1616,8 +1513,8 @@ class Editor(Screen, ConfigListScreen):
 		self.buildConfigList()
 		cur = self["config"].getCurrent()
 		self["config"].setList(self.configlist)
-		#if cur and cur is not None:
-		#	self["config"].updateConfigListView(cur)
+#		if cur and cur is not None:
+#			self["config"].updateConfigListView(cur)
 
 	def doClose(self):
 		if self.activeList == 'choiceBox':

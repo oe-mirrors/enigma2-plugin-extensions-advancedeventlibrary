@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-# -*- encoding: utf-8 -*-
-# Coded by tsiegel (c) 2020
-from Components.Renderer.Renderer import Renderer
+from os.path import isdir
+from glob import glob
+from random import randint
 from enigma import ePixmap, eTimer, loadJPG
+from Components.Renderer.Renderer import Renderer
 from Tools.AdvancedEventLibrary import getPictureDir
-import os
-import glob
-import random
 
 
 class AdvancedEventLibraryRandomPicture(Renderer):
@@ -26,7 +23,7 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 			else:
 				attribs.append((attrib, value))
 		self.skinAttributes = attribs
-		if os.path.isdir(self.Path):
+		if isdir(self.Path):
 			self.animate(self.Path)
 		return Renderer.applySkin(self, desktop, parent)
 
@@ -36,7 +33,7 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 		pass
 
 	def animate(self, path):
-		self.piclist = glob.glob(path + "*.jpg")
+		self.piclist = glob(path + "*.jpg")
 		self.picchanger = eTimer()
 		self.picchanger.callback.append(self.changepic)
 		self.picchanger.start(100, True)
@@ -44,9 +41,6 @@ class AdvancedEventLibraryRandomPicture(Renderer):
 	def changepic(self):
 		self.picchanger.stop()
 		self.instance.setScale(1)
-		try:
-			number = random.randint(1, len(self.piclist) - 1)
-			self.instance.setPixmap(loadJPG(self.piclist[number]))
-		except Exception:
-			pass
+		number = randint(1, len(self.piclist) - 1)
+		self.instance.setPixmap(loadJPG(self.piclist[number]))
 		self.picchanger.start(self.delay, True)

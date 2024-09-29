@@ -1,29 +1,25 @@
-
-import os
-import sqlite3
-import struct
-from threading import Thread
-import threading
-import time
-import bisect
-import ctypes
+from bisect import bisect_left, insort
+from ctypes import py_object, pythonapi, c_long
+from difflib import SequenceMatcher
 from gettext import gettext as _
-
-BASEINIT = None
-
-from Components.Task import Task, Job, job_manager
+from os import remove, stat, walk, mknod
+from os.path import exists, dirname, realpath, isdir, join, basename, split
+from sqlite3 import connect, ProgrammingError, OperationalError, DatabaseError
+from struct import unpack
+from threading import Thread, Lock, current_thread
+from time import sleep, time
 from enigma import eServiceCenter, eServiceReference, iServiceInformation, eTimer
+from Components.Task import Task, Job, job_manager
 from Components.config import config
 from Components.FunctionTimer import functionTimer
 from Screens.MessageBox import MessageBox
 from Tools.Notifications import AddPopup
 from Tools.MovieInfoParser import getExtendedMovieDescription
 from Tools.CoreUtils import getUniqueID
+
+BASEINIT = None
 has_e2 = True
-lock = threading.Lock()
-
-
-from difflib import SequenceMatcher
+lock = Lock()
 
 
 class LOGLEVEL:
@@ -40,7 +36,7 @@ class LOGLEVEL:
 		db_path = config.misc.db_path.value
 		if not db_path.endswith('/'):
 			db_path += '/'
-		if not os.path.exists(db_path):
+		if not exists(db_path):
 			db_path = '/media/hdd/'
 		return db_path + "db_error.log"
 
@@ -82,12 +78,12 @@ class globalThreads():
 	def terminate_thread(self, mythread):
 		if not mythread.isAlive():
 			return
-		exc = ctypes.py_object(SystemExit)
-		res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(mythread.ident), exc)
+		exc = py_object(SystemExit)
+		res = pythonapi.PyThreadState_SetAsyncExc(c_long(mythread.ident), exc)
 		if res == 0:
 			print("[DataBaseAPI] can not kill list update")
 		elif res > 1:
-			ctypes.pythonapi.PyThreadState_SetAsyncExc(mythread.ident, None)
+			pythonapi.PyThreadState_SetAsyncExc(mythread.ident, None)
 			print("[DataBaseAPI] can not terminate list update")
 		elif res == 1:
 			print("[DataBaseAPI] successfully terminate thread")
@@ -143,9 +139,9 @@ class databaseTask(Task):
 		Task.processFinished(self, 0)
 		self.stop_fnc()
 		debugPrint("job finished", LOGLEVEL.INFO)
-		#from Screens.Standby import inStandby
-		#if not inStandby:
-		#	AddPopup(text = self.msgtxt, type = MessageBox.TYPE_INFO, timeout = 20, id = "db_update_stopped")
+#		from Screens.Standby import inStandby
+#		if not inStandby:
+#			AddPopup(text = self.msgtxt, type = MessageBox.TYPE_INFO, timeout = 20, id = "db_update_stopped")
 
 	def abort(self):
 		self.msgtxt = _("Database update was cancelled")
@@ -154,7 +150,6 @@ class databaseTask(Task):
 
 
 class DatabaseState(object):
-
 	def __init__(self, dbfile, boxid):
 		self.lockfile = dbfile + '.lock'
 		self.boxid = boxid
@@ -167,7 +162,7 @@ class DatabaseState(object):
 			self.unlockDB()
 
 	def lockFileCleanUp(self):
-		if os.path.exists(self.lockfile):
+		if exists(self.lockfile):
 			try:
 				with open(self.lockfile, 'r') as f:
 					content = f.readlines()
@@ -177,7 +172,7 @@ class DatabaseState(object):
 				lockid = content[0]
 				if lockid.startswith(self.boxid):
 					try:
-						os.remove(self.lockfile)
+						remove(self.lockfile)
 					except OSError as e:
 							pass
 
@@ -189,7 +184,7 @@ class DatabaseState(object):
 		for i in range(0, max_recursion):
 			lockid = ''
 			ret = False
-			if os.path.exists(self.lockfile):
+			if exists(self.lockfile):
 				try:
 					with open(self.lockfile, 'r') as f:
 						content = f.readlines()
@@ -204,10 +199,10 @@ class DatabaseState(object):
 								#AddPopup(text = txt, type = MessageBox.TYPE_INFO, timeout = 20, id = "db_locked")
 								ret = True
 							else:
-								time.sleep(0.1)
+								sleep(0.1)
 						else:
 							try:
-								os.remove(self.lockfile)
+								remove(self.lockfile)
 							except OSError as e:
 								pass
 							break
@@ -215,7 +210,7 @@ class DatabaseState(object):
 						break
 				else:
 					try:
-						os.remove(self.lockfile)
+						remove(self.lockfile)
 					except OSError as e:
 						pass
 					break
@@ -227,27 +222,25 @@ class DatabaseState(object):
 		if not self.check_remote_lock:
 			return
 		try:
-			f = open(self.lockfile, 'w')
-			f.write(self.boxid)
-			f.close()
+			with open(self.lockfile, 'w') as f:
+				f.write(self.boxid)
 		except OSError as e:
 			pass
 
 	def unlockDB(self):
 		if self.check_remote_lock and not self.isRemoteLocked():
 			try:
-				os.remove(self.lockfile)
+				remove(self.lockfile)
 			except OSError as e:
 				pass
 
 
 class CommonDataBase():
-
 	def __init__(self, db_file=None):
 		db_path = config.misc.db_path.value
 		if not db_path.endswith('/'):
 			db_path += '/'
-		if not os.path.exists(db_path):
+		if not exists(db_path):
 			db_path = '/media/hdd/'
 		if not db_file:
 			self.db_file = db_path + 'vtidb.db'
@@ -277,7 +270,7 @@ class CommonDataBase():
 		if not self.is_initiated:
 			self.doInit()
 		if not self.ignore_thread_check and self.dbthread_id is not None and not readonly:
-			cur_id = threading.current_thread().ident
+			cur_id = current_thread().ident
 			if cur_id != self.dbthread_id:
 				debugPrint("connecting failed --> THREAD error! another thread is using the database", LOGLEVEL.ERROR)
 				return False
@@ -291,12 +284,12 @@ class CommonDataBase():
 			else:
 				self.dbstate.lockDB()
 			debugPrint("connect table %s of database: %s" % (self.table, self.db_file), LOGLEVEL.ALL)
-			db_dir = os.path.dirname(self.db_file)
-			if not os.path.exists(db_dir):
+			db_dir = dirname(self.db_file)
+			if not exists(db_dir):
 				debugPrint("connect table failed --> %s does not exist" % (db_dir), LOGLEVEL.ERROR)
 				return False
 			chk_same_thread = not self.ignore_thread_check and True or False
-			self.db = sqlite3.connect(self.db_file, check_same_thread=chk_same_thread)
+			self.db = connect(self.db_file, check_same_thread=chk_same_thread)
 			self.c = self.db.cursor()
 			sqlcmd = 'PRAGMA case_sensitive_like=ON;'
 			self.executeSQL(sqlcmd, readonly=True)
@@ -315,9 +308,9 @@ class CommonDataBase():
 			if self.db:
 				self.db.commit()
 			has_error = False
-		except sqlite3.ProgrammingError as er:
+		except ProgrammingError as er:
 			txt = _("ERROR at committing database changes: ProgrammingError")
-		except sqlite3.OperationalError as er:
+		except OperationalError as er:
 			txt = _("ERROR at committing database changes: OperationalError")
 		finally:
 			lock.release()
@@ -341,9 +334,9 @@ class CommonDataBase():
 			if self.db:
 				self.db.close()
 			has_error = False
-		except sqlite3.ProgrammingError as er:
+		except ProgrammingError as er:
 			txt = _("Programming ERROR at closing database")
-		except sqlite3.OperationalError as er:
+		except OperationalError as er:
 			txt = _("Operational ERROR at closing database")
 		finally:
 			lock.release()
@@ -372,13 +365,13 @@ class CommonDataBase():
 					self.c.execute(sqlcmd, args)
 					ret = self.c.fetchall()
 				has_error = False
-			except sqlite3.ProgrammingError as er:
+			except ProgrammingError as er:
 				txt = "Programming ERROR at SQL command: %s" % sqlcmd
 				if len(args):
 					txt += '\n'
 					for arg in args:
 						txt += arg + '\n'
-			except sqlite3.DatabaseError as er:
+			except DatabaseError as er:
 				txt = "Database ERROR at SQL command: %s" % sqlcmd
 				if len(args):
 					txt += '\n'
@@ -391,7 +384,7 @@ class CommonDataBase():
 				if er.message.find('malformed') != -1:
 					txt += "\n---> try to delete malformed database"
 					try:
-						os.remove(self.db_file)
+						remove(self.db_file)
 					except OSError:
 						pass
 					self.is_initiated = False
@@ -406,16 +399,15 @@ class CommonDataBase():
 				debugPrint(txt, LOGLEVEL.ERROR)
 				self.disconnectDataBase()
 				txt = _("Error during database transaction")
-				#AddPopup(text = txt, type = MessageBox.TYPE_ERROR, timeout = 0, id = 'db_error')
-			if not readonly:
+			if not readonly:  # AddPopup(text = txt, type = MessageBox.TYPE_ERROR, timeout = 0, id = 'db_error')
 				self.locked = False
 			return (not has_error, ret)
 
 	def disconnectDataBase(self, readonly=False):
-		if not self.c is None:
+		if self.c is not None:
 			debugPrint("disconnect table %s of database: %s" % (self.table, self.db_file), LOGLEVEL.ALL)
 			if self.dbthread_id is not None:
-				cur_id = threading.current_thread().ident
+				cur_id = current_thread().ident
 				if cur_id != self.dbthread_id:
 					debugPrint("connecting failed --> THREAD error! another thread is using the database", LOGLEVEL.ERROR)
 					return False
@@ -447,7 +439,7 @@ class CommonDataBase():
 				if column not in struc:
 					sqlcmd = 'ALTER TABLE ' + self.table + ' ADD COLUMN ' + column + ' ' + fields[column] + ';'
 					self.executeSQL(sqlcmd)
-			if force_remove:
+			if force_remove and self.table:
 				columns_str = ''
 				for column in fields:
 					columns_str += column + ' ' + fields[column] + ','
@@ -861,9 +853,9 @@ class MovieDataBase(CommonDataBase):
 			self.disconnectDataBase()
 
 	def reInitializeDB(self):
-		if os.path.exists(self.db_file):
+		if exists(self.db_file):
 			try:
-				os.remove(self.db_file)
+				remove(self.db_file)
 			except OSError:
 				pass
 		self.is_initiated = False
@@ -882,7 +874,7 @@ class MovieDataBase(CommonDataBase):
 	def getVideoDirs(self):
 		dirs = []
 		for x in config.movielist.videodirs.value:
-			if not os.path.exists(x):
+			if not exists(x):
 				continue
 			if not x.endswith('/'):
 				x += '/'
@@ -897,7 +889,7 @@ class MovieDataBase(CommonDataBase):
 		global hase_e2
 		if not has_e2:
 			return
-		self.dbthread_id = threading.current_thread().ident
+		self.dbthread_id = current_thread().ident
 		items = self.searchDBContent({self.box_path: ''}, (self.box_path, 'fsize'))
 		this_job = None
 		joblist = job_manager.getPendingJobs()
@@ -917,7 +909,7 @@ class MovieDataBase(CommonDataBase):
 				if this_job:
 					this_job.database_job.setProgress(progress)
 			delete_data = False
-			if not os.path.exists(item[0]):
+			if not exists(item[0]):
 				delete_data = True
 			else:
 				if item[1] is not None and float(item[1]) != self.getFileSize(item[0]):
@@ -948,8 +940,7 @@ class MovieDataBase(CommonDataBase):
 
 	def getFileSize(self, fpath):
 		try:
-			stat = os.stat(fpath)
-			fsize = stat.st_size
+			fsize = stat(fpath).st_size
 		except OSError:
 			fsize = -1
 		return fsize
@@ -993,7 +984,7 @@ class MovieDataBase(CommonDataBase):
 							return 1
 				return None
 		elif int(config.misc.timer_show_movie_available.value) == 1:
-			pos = bisect.bisect_left(self.titlelist_list, mytitle)
+			pos = bisect_left(self.titlelist_list, mytitle)
 			try:
 				if self.titlelist_list[pos] == mytitle:
 					return pos
@@ -1057,7 +1048,7 @@ class MovieDataBase(CommonDataBase):
 			else:
 				self.titlelist[mytitle] = [[shortDesc], [extDesc]]
 		elif int(config.misc.timer_show_movie_available.value) == 1:
-			bisect.insort(self.titlelist_list, mytitle)
+			insort(self.titlelist_list, mytitle)
 
 	def BackgroundTitleListUpdate(self):
 		if int(config.misc.timer_show_movie_available.value) > 0:
@@ -1083,7 +1074,7 @@ class MovieDataBase(CommonDataBase):
 			for x in content:
 				if x[0]:
 					orig_path = eServiceReference(x[0]).getPath()
-					real_path = os.path.realpath(orig_path)
+					real_path = realpath(orig_path)
 					if not real_path[-3:] in ('mp3', 'ogg', 'wav'):
 						self.addToTitleList(x[1], x[2], x[3])
 
@@ -1128,12 +1119,12 @@ class MovieDataBase(CommonDataBase):
 							ret.append(movie[x])
 					if ret not in checked_res:
 						checked_res.append(ret)
-				elif movie[0] is not None and os.path.exists(movie[0]):
+				elif movie[0] is not None and exists(movie[0]):
 					for x in range(4, fields_count):
 						if ref_idx and ref_idx == x:
 							if movie[3]:
 								ret.append(movie[3] + movie[0])
-							elif os.path.isdir(movie[0]):
+							elif isdir(movie[0]):
 								m = eServiceReference(eServiceReference.idFile, eServiceReference.flagDirectory, '')
 								p = movie[0]
 								if not p.endswith('/'):
@@ -1156,9 +1147,9 @@ class MovieDataBase(CommonDataBase):
 						p += movie[2]
 						p = str(p.encode('utf-8'))
 						pp = str(pp.encode('utf-8'))
-						if os.path.exists(p):
+						if exists(p):
 							do_update = True
-						elif os.path.exists(pp):
+						elif exists(pp):
 							do_update = True
 							p = pp
 						if do_update:
@@ -1191,7 +1182,7 @@ class MovieDataBase(CommonDataBase):
 		return (ret, fsize)
 
 	def getDeprecatedTrashEntries(self, as_ref=False):
-		now = time.time()
+		now = time()
 		diff_rec = config.usage.movielist_use_autodel_trash.value * 60.0 * 60.0 * 24.0
 		diff_trash = config.usage.movielist_use_autodel_in_trash.value * 60.0 * 60.0 * 24.0
 		if as_ref:
@@ -1232,7 +1223,7 @@ class MovieDataBase(CommonDataBase):
 		global hase_e2
 		if not has_e2:
 			return
-		self.dbthread_id = threading.current_thread().ident
+		self.dbthread_id = current_thread().ident
 		pathes = []
 		is_killed = False
 		this_job = None
@@ -1245,7 +1236,7 @@ class MovieDataBase(CommonDataBase):
 			if self.dbthread_kill:
 				is_killed = True
 				break
-			for root, subFolders, files in os.walk(folder):
+			for root, subFolders, files in walk(folder):
 				if self.dbthread_kill:
 					is_killed = True
 					break
@@ -1284,8 +1275,8 @@ class MovieDataBase(CommonDataBase):
 		hidden_items = []
 
 		m_list = serviceHandler.list(root)
-		hidden_entries_file = os.path.realpath(root.getPath()) + "/.hidden_movielist_entries"
-		if os.path.exists(hidden_entries_file):
+		hidden_entries_file = realpath(root.getPath()) + "/.hidden_movielist_entries"
+		if exists(hidden_entries_file):
 			with open(hidden_entries_file, "r") as f:
 				for line in f:
 					entry = line.strip()
@@ -1300,7 +1291,7 @@ class MovieDataBase(CommonDataBase):
 			serviceref = m_list.getNext()
 			if not serviceref.valid():
 				break
-			filepath = os.path.realpath(serviceref.getPath())
+			filepath = realpath(serviceref.getPath())
 			if hidden_items:
 				if filepath in hidden_items:
 					continue
@@ -1311,38 +1302,38 @@ class MovieDataBase(CommonDataBase):
 			video_dirs = self.getVideoDirs()
 
 		if isinstance(serviceref, str):
-			if not os.path.exists(serviceref):
+			if not exists(serviceref):
 				return
-			filepath = os.path.realpath(serviceref)
+			filepath = realpath(serviceref)
 			if filepath.endswith('.ts'):
 				serviceref = eServiceReference(1, 0, filepath)
 			else:
 				serviceref = eServiceReference(4097, 0, filepath)
 
 		serviceHandler = eServiceCenter.getInstance()
-		filepath = os.path.realpath(serviceref.getPath())
+		filepath = realpath(serviceref.getPath())
 		trashfile = filepath + '.del'
 
 		if filepath.endswith('_pvrdesc.ts'):
 			return
 
 		if isTrash[0]:
-			if isTrash[1] == 1 and not os.path.exists(trashfile):
+			if isTrash[1] == 1 and not exists(trashfile):
 				try:
-					os.mknod(trashfile)
+					mknod(trashfile)
 				except OSError:
 					pass
 			else:
-				if os.path.exists(trashfile):
+				if exists(trashfile):
 					try:
-						os.remove(trashfile)
+						remove(trashfile)
 					except OSError:
 						pass
 		is_dvd = None
 		if serviceref.flags & eServiceReference.mustDescent:
 			possible_path = ("VIDEO_TS", "video_ts", "VIDEO_TS.IFO", "video_ts.ifo")
 			for mypath in possible_path:
-				if os.path.exists(os.path.join(filepath, mypath)):
+				if exists(join(filepath, mypath)):
 					is_dvd = True
 					serviceref = eServiceReference(4097, 0, filepath)
 					break
@@ -1350,15 +1341,14 @@ class MovieDataBase(CommonDataBase):
 			fields = {self.box_path: filepath, 'IsDir': '1', 'fname': filepath, 'fsize': '0', 'ref': '2:47:1:0:0:0:0:0:0:0:', }
 			if isTrash[0]:
 				fields['IsTrash'] = str(isTrash[1])
-				fields['TrashTime'] = str(0) if isTrash[1] == 0 else str(time.time())
+				fields['TrashTime'] = str(0) if isTrash[1] == 0 else str(time())
 			else:
-				if os.path.exists(trashfile):
+				if exists(trashfile):
 					fields['IsTrash'] = str(1)
 					try:
-						stat = os.stat(trashfile)
-						fields['TrashTime'] = str(stat.st_mtime)
+						fields['TrashTime'] = str(stat(trashfile).st_mtime)
 					except OSError:
-						fields['TrashTime'] = str(time.time())
+						fields['TrashTime'] = str(time())
 				else:
 					return
 			if with_box_path:
@@ -1375,9 +1365,9 @@ class MovieDataBase(CommonDataBase):
 		if file_extension in ("dat",):
 			return
 		is_rec = 0
-		if os.path.exists(file_path + '.rec'):
+		if exists(file_path + '.rec'):
 			is_rec = 1
-		cur_item = os.path.basename(filepath)
+		cur_item = basename(filepath)
 		if cur_item.lower().startswith("timeshift_"):
 			return
 		info = serviceHandler.info(serviceref)
@@ -1386,7 +1376,7 @@ class MovieDataBase(CommonDataBase):
 		m_db_begin = info.getInfo(serviceref, iServiceInformation.sTimeCreate)
 		m_db_tags = info.getInfoString(serviceref, iServiceInformation.sTags)
 		m_db_fullpath = filepath
-		m_db_path, m_db_fname = os.path.split(filepath)
+		m_db_path, m_db_fname = split(filepath)
 		m_db_title = info.getName(serviceref)
 		m_db_evt = info.getEvent(serviceref)
 		m_db_shortDesc = ''
@@ -1451,19 +1441,18 @@ class MovieDataBase(CommonDataBase):
 				fields['TrashTime'] = str(0)
 				self.addToTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 			else:
-				fields['TrashTime'] = str(time.time())
+				fields['TrashTime'] = str(time())
 				if len(is_in_db):
 					self.removeFromTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 		else:
-			if os.path.exists(trashfile):
+			if exists(trashfile):
 				fields['IsTrash'] = str(1)
 				if len(is_in_db):
 					self.removeFromTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 				try:
-					stat = os.stat(trashfile)
-					fields['TrashTime'] = str(stat.st_mtime)
+					fields['TrashTime'] = str(stat(trashfile).st_mtime)
 				except OSError:
-					fields['TrashTime'] = str(time.time())
+					fields['TrashTime'] = str(time())
 			else:
 				self.addToTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 		if with_box_path:
@@ -1474,14 +1463,14 @@ class MovieDataBase(CommonDataBase):
 			self.disconnectDataBase()
 
 	def calcMovieLen(self, fname):
-		if os.path.exists(fname):
+		if exists(fname):
 			try:
 				with open(fname, "rb") as f:
 					packed = f.read()
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = struct.unpack('>QI', packedCue)
+					cue = unpack('>QI', packedCue)
 					if cue[1] == 5:
 						movie_len = cue[0] / 90000
 						return movie_len
@@ -1491,7 +1480,7 @@ class MovieDataBase(CommonDataBase):
 
 	def getPlayProgress(self, moviename, movie_len):
 		cut_list = []
-		if os.path.exists(moviename):
+		if exists(moviename):
 			try:
 				f = open(moviename, "rb")
 				packed = f.read()
@@ -1500,7 +1489,7 @@ class MovieDataBase(CommonDataBase):
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = struct.unpack('>QI', packedCue)
+					cue = unpack('>QI', packedCue)
 					cut_list.append(cue)
 			except Exception as ex:
 				debugPrint("failure at downloading cut list", LOGLEVEL.ERROR)
@@ -1576,8 +1565,8 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 				print("[MovieDB] found movie with similiar extended description -> skip this event")
 				break
 	if movie_found:
-		real_path = os.path.realpath(eServiceReference(movie[0]).getPath())
-		if not real_path in trash_movies or os.path.exists(real_path + '.del'):
+		real_path = realpath(eServiceReference(movie[0]).getPath()) if movie else ""
+		if real_path not in trash_movies or exists(real_path + '.del'):
 			movie_found = True
 		else:
 			movie_found = False

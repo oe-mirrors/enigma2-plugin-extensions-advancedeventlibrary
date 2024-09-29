@@ -1,40 +1,26 @@
-# coding=utf-8
-from __future__ import absolute_import
-from operator import itemgetter
-from Screens.Screen import Screen
-from Screens.Standby import TryQuitMainloop
-from Screens.MessageBox import MessageBox
-from Screens.ChannelSelection import service_types_tv
-from Screens.ChoiceBox import ChoiceBox
-from Screens.TimerEntry import TimerEntry
-from Screens.InfoBar import MoviePlayer
-from Screens.Setup import Setup
-from Components.Label import Label
-from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
-from Components.Pixmap import Pixmap
-from time import time, localtime, mktime
-import datetime
-import os
-import re
-import json
-import NavigationInstance
-import pickle
-import skin
+from time import time, localtime
+from os.path import join, isfile
+from pickle import load
 from html.parser import HTMLParser
-from skin import loadSkin
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
-from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer, Thread
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
-from Tools.Directories import fileExists
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP
+from skin import loadSkin, variables
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.config import config
+from Components.Label import Label
 from Components.Sources.Event import Event
+from Components.Sources.StaticText import StaticText
+from Components.Pixmap import Pixmap
+from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
+from Screens.ChannelSelection import service_types_tv
+from Screens.InfoBar import MoviePlayer
+from Screens.MessageBox import MessageBox
+from Screens.Screen import Screen
+from Screens.Setup import Setup
+from Screens.Standby import TryQuitMainloop
+from Screens.TimerEntry import TimerEntry
+from ServiceReference import ServiceReference
+from Tools.Directories import fileExists
+import NavigationInstance
 
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
@@ -45,10 +31,7 @@ htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
-if desktopSize.width() == 1920:
-	skinpath = pluginpath + 'skin/1080/'
-else:
-	skinpath = pluginpath + 'skin/720/'
+skinpath = pluginpath + 'skin/1080/' if desktopSize.width() == 1920 else pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 
@@ -99,10 +82,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		Screen.__init__(self, session)
 		self.title = "Favoriten-Planer"
 		self.viewType = viewType
-		if self.viewType == 'Listenansicht':
-			self.skinName = "AdvancedEventLibraryListPlaners"
-		else:
-			self.skinName = "AdvancedEventLibraryWallPlaners"
+		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 'Listenansicht' else "AdvancedEventLibraryWallPlaners"
 		self.db = getDB()
 		self.isinit = False
 		self.lastidx = 0
@@ -110,12 +90,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.pageCount = 0
 		self.timers = []
 		self.epgcache = eEPGCache.getInstance()
-
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Timer hinzufügen")
 		self["key_yellow"] = StaticText("")
 		self["key_blue"] = StaticText("Umschalten")
-
 		self["Content"] = StaticText("")
 		if self.viewType == 'Listenansicht':
 			self["eventList"] = AdvancedEventLibraryLists.EPGList()
@@ -126,18 +104,13 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			if fileExists(imgpath + "shaper.png"):
-				self.shaper = LoadPixmap(imgpath + "shaper.png")
-			else:
-				self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
-
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			self.shaper = LoadPixmap(imgpath + "shaper.png") if fileExists(imgpath + "shaper.png") else LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 		self["trailer"] = Pixmap()
 		self["Event"] = Event()
 		self["genreList"] = AdvancedEventLibraryLists.MenuList()
 		self["genreList"].connectsel_changed(self.menu_sel_changed)
 		self.current_event = None
-
 		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
@@ -151,7 +124,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				playable = not (eServiceReference(serviceref).flags & mask)
 				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != ".":
 					self.slist[serviceref] = servicename
-
 		recordHandler = NavigationInstance.instance.RecordTimer
 		for timer in recordHandler.timer_list:
 			if timer and timer.service_ref:
@@ -161,13 +133,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if timer and timer.eit:
 				_timer = str(timer.eit)
 				self.timers.append(_timer)
-
-		if fileExists(os.path.join(pluginpath, 'favourites.data')):
-			self.favourites = self.load_pickle(os.path.join(pluginpath, 'favourites.data'))
-		else:
-			self.favourites = {'genres': {'Nachrichten': [2, time()]}, 'titles': {}}
+		self.favourites = self.load_pickle(join(pluginpath, 'favourites.data')) if fileExists(join(pluginpath, 'favourites.data')) else {'genres': {'Nachrichten': [2, time()]}, 'titles': {}}
 		self.myFavourites = self.getFavourites()
-
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_red": self.key_red_handler,
@@ -233,7 +200,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def load_pickle(self, filename):
 		with open(filename, 'rb') as f:
-			data = pickle.load(f)
+			data = load(f)
 		return data
 
 	def key_menu_handler(self):
@@ -282,8 +249,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self.substituteImage = str(self.parameter[5])
 				self.FontOrientation = self.getFontOrientation(self.parameter[25])
 				self.Coverings = eval(str(self.parameter[23]))
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			ptr = LoadPixmap(join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
 			self.menu_sel_changed()
@@ -330,10 +297,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].right()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (old_idx + 1) >= self.listlen:
-						dest = 0
-					else:
-						dest = old_idx + 1
+					dest = 0 if (old_idx + 1) >= self.listlen else old_idx + 1
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -351,10 +315,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].left()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - 1) < 0:
-						dest = self.listlen - 1
-					else:
-						dest = old_idx - 1
+					dest = self.listlen - 1 if (new_idx - 1) < 0 else old_idx - 1
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -371,10 +332,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].down()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (new_idx + self.parameter[14]) >= self.listlen:
-						dest = 0
-					else:
-						dest = new_idx + self.parameter[14]
+					dest = 0 if (new_idx + self.parameter[14]) >= self.listlen else new_idx + self.parameter[14]
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -392,10 +350,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].up()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - self.parameter[14]) < 0:
-						dest = self.listlen - 1
-					else:
-						dest = new_idx - self.parameter[14]
+					dest = self.listlen - 1 if (new_idx - self.parameter[14]) < 0 else new_idx - self.parameter[14]
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -415,18 +370,16 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		try:
 			if self.viewType == 'Listenansicht':
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
-				if selected_element:
-					if selected_element[8]:
-						sRef = eServiceReference(4097, 0, str(selected_element[8]))
-						sRef.setName(str(selected_element[0]))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element[8]:
+					sRef = eServiceReference(4097, 0, str(selected_element[8]))
+					sRef.setName(str(selected_element[0]))
+					self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventWall"].getcurrentselection()
-				if selected_element:
-					if selected_element.hasTrailer:
-						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
-						sRef.setName(str(selected_element.name))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element.hasTrailer:
+					sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
+					sRef.setName(str(selected_element.name))
+					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
@@ -640,28 +593,21 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						hasTimer = False
 						if cleanname in self.timers or str(eit) in self.timers:
 							hasTimer = True
-
 						desc = name + ' ' + shortdesc + ' ' + extdesc
-						if extdesc and extdesc != '':
-							edesc = extdesc
-						else:
-							edesc = shortdesc
+						edesc = extdesc if extdesc and extdesc != '' else shortdesc
 						sname = self.slist.get(serviceref, None)
 						image = None
 						hasTrailer = None
 						evt = self.db.getliveTV(eit, name, begin)
-						if evt:
-							if evt[0][16].endswith('mp4'):
-								hasTrailer = evt[0][16]
+						if evt and evt[0][16].endswith('mp4'):
+							hasTrailer = evt[0][16]
 						if hasTrailer is None:
 							dbdata = self.db.getTitleInfo(convert2base64(name))
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
 						if self.viewType != 'Listenansicht':
-							if self.imageType == "cover":
-								if evt:
-									if evt[0][3] != '':
-										image = getImageFile(getPictureDir() + self.imageType + '/', evt[0][3])
+							if self.imageType == "cover" and evt and evt[0][3] != '':
+								image = getImageFile(getPictureDir() + self.imageType + '/', evt[0][3])
 							if image is None:
 								image = getImageFile(getPictureDir() + self.imageType + '/', name)
 						itm = (name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
@@ -699,10 +645,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			maxLength = self.parameter[2]
 			if len(entrys.sname) > maxLength:
 				entrys.sname = str(entrys.sname)[:maxLength] + '...'
-			if len(entrys.name) > maxLength:
-				name = str(entrys.name)[:maxLength] + '...'
-			else:
-				name = str(entrys.name)
+			name = str(entrys.name)[:maxLength] + '...' if len(entrys.name) > maxLength else str(entrys.name)
 			self.picloader = PicLoader(int(self.parameter[0]), int(self.parameter[1]))
 			if entrys.image:
 				image = self.picloader.load(entrys.image)
@@ -751,14 +694,13 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, service + ".png")
+			if isfile(pngname):
 				return pngname
 		if serviceName is not None:
-			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, serviceName + ".png")
+			if isfile(pngname):
 				return pngname
-		return None
 
 ####################################################################################
 

@@ -26,7 +26,6 @@ def getExtendedMovieDescription(ref):
 		if path.exists(info_file + ext):
 			f = info_file + ext
 			break
-
 	if not f:
 		ext_pos = info_file.rfind('.')
 		name_len = len(info_file)
@@ -37,12 +36,10 @@ def getExtendedMovieDescription(ref):
 				if path.exists(info_file + ext):
 					f = info_file + ext
 					break
-
 	if f:
 		try:
 			with open(f, 'r') as txtfile:
 				extended_desc = txtfile.read()
 		except IOError:
 			pass
-
 	return (name, extended_desc)
