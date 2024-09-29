@@ -10,14 +10,12 @@ PLUGINPATH = resolveFilename(SCOPE_PLUGINS, "Extensions/AdvancedEventLibrary/")
 
 
 def localeInit():
-    bindtextdomain("AdvancedEventLibrary", join(PLUGINPATH, "locale"))
+	bindtextdomain("AdvancedEventLibrary", join(PLUGINPATH, "locale"))
 
 
 def _(txt):
-    t = dgettext("AdvancedEventLibrary", txt)
-    if t == txt:
-        t = gettext(txt)
-    return t
+	t = dgettext("AdvancedEventLibrary", txt)
+	t = gettext(txt) if t == txt else t
 
 
 localeInit()

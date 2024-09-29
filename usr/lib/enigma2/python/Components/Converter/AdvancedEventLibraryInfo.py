@@ -1,32 +1,17 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#################################################################################
-#																				#
-#								AdvancedEventLibrary							#
-#																				#
-#							Copyright: tsiegel 2019								#
-#																				#
-#################################################################################
-
+from json import loads
+from html import unescape
+from linecache import getline
+from os import path
+from re import findall, sub, search, compile, match, MULTILINE, DOTALL
+from time import localtime
+from enigma import iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
 from Components.Converter.Converter import Converter
 from Components.Element import cached
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
-from Components.Sources.Event import Event
 from Components.Sources.CurrentService import CurrentService
-from Components.Sources.ServiceEvent import ServiceEvent
-from enigma import iServiceInformation, iPlayableService, iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
-from Components.config import config, ConfigSubsection, ConfigYesNo
+from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
 from ServiceReference import ServiceReference
-from time import localtime
-import glob
-import json
-import html
-import re
-import os
-import linecache
 
 log = "/var/tmp/AdvancedEventLibrary.log"
-
 countrys = {
 	'USA': ['United States', 'US', 'USA'],
 	'DE': ['Deutschland', 'DE', 'BRD', 'Germany', 'DDR'],
@@ -68,16 +53,7 @@ countrys = {
 	}
 
 
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AEL_log = open(log, "a")
-	AEL_log.write(str(logtime) + " : [AdvancedEventLibraryInfo] - " + str(svalue) + "\n")
-	AEL_log.close()
-
-
-class AdvancedEventLibraryInfo(Converter, object):
-	#Input Parameter per Skin
+class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 	EPISODE_NUM = "EpisodeNum"									# optional formatierung angeben -> z.B. EpisodeNum(Staffel [s] Episode[ee])
 	TITLE = "Title"												# optional mit Prefix angabe -> z.B. Titel oder Titel(Titel:)
 	SUBTITLE = "Subtitle"										# mit MaxWord angabe -> z.B. Subtitle(10)
@@ -89,32 +65,23 @@ class AdvancedEventLibraryInfo(Converter, object):
 	RATING = "Rating"											# optional mit Prefix angabe -> z.B. Rating(Bewertung)
 	RATING_STARS = "RatingStars"								# optional mit Prefix angabe -> z.B. RatingStars(star) -> Output: 65 -> kann für Images verwendet werden
 	RATING_STARS_AS_TEXT = "RatingStarsAsText"					# optional mit Prefix angabe -> z.B. RatingStars(star) -> Output: 65 -> kann für Images verwendet werden
-
 	CATEGORY = "Category"										# optional mit Prefix angabe -> z.B. Category(Kategorie:)
 	LEADTEXT = "Leadtext"										# optional mit Prefix angabe -> z.B. Leadtext(Kurzbeschreibung:)
 	CONCLUSION = "Conclusion"									# optional mit Prefix angabe -> z.B. Conclusion(Kritik:)
-
 	EXTENDED_DESCRIPTION = "ExtendedDescription"				# optional mit Prefix angabe -> z.B. ExtendedDescription oder ExtendedDescription(Land:)
 	EXTENDED_DESCRIPTION_CLEAN = "ExtendedDescriptionClean"		# optional mit Prefix angabe -> z.B. ExtendedDescriptionClean oder ExtendedDescriptionClean(Land:), ohne Episode, Rating, etc. Infos
-
 	POWER_DESCRIPTION = "PowerDescription"
 	ONE_LINE_DESCRIPTION = "OneLineDescription"
 	SIMILAR_EVENTS = "SimilarEvents"
-
 	WideInfo = "WideInfo"
 	DolbyInfo = "DolbyInfo"
 	HDInfo = "HDInfo"
 	DolbyA = "DolbyA"
 	DolbyB = "DolbyB"
-
-	#Parser fuer Serien- und Episodennummer
 	seriesNumParserList = [('(\d+)[.]\sStaffel[,]\sFolge\s(\d+)'),
 							_('(\d+)[.]\sStaffel[,]\sEpisode\s(\d+)'),
 							_('(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
-							_('[(](\d+)[.](\d+)[)]')]
-
-	htmlParser = html
-
+							_('[(](\d+)[.](\d+)[)]')]  # Parser fuer Serien- und Episodennummer
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE = 0
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE = 1
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR = 2
@@ -122,7 +89,6 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def __init__(self, type):
 		Converter.__init__(self, type)
-
 		self.inputString = type
 		self.types = str(type).split(",")
 		self.coverPath = getPictureDir() + 'cover/'
@@ -140,7 +106,6 @@ class AdvancedEventLibraryInfo(Converter, object):
 			event = self.source.event
 		if not event:
 			return False
-
 		if (isinstance(event, tuple) and event):
 			event = event[0]
 		data = str(event.getComponentData())
@@ -175,221 +140,183 @@ class AdvancedEventLibraryInfo(Converter, object):
 	def getText(self):
 		isMovieFile = None
 		event = None
-		try:
-			if hasattr(self.source, 'getEvent'):
-				event = self.source.getEvent()
-			else:
-				event = self.source.event
-				if hasattr(self.source, 'service'):
-					path = None
-					service = self.source.service
-					if service:
-						if isinstance(service, eServiceReference):
-							path = service.getPath()
-						elif isinstance(service, str):
-							if ':' in service:
-								path = service.rsplit(':', 1)[1].strip()
-							else:
-								path = ServiceReference(service).ref.getPath()
-						if path:
-							if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
-								isMovieFile = path
-		except Exception as ex:
-			write_log('Fehler in findEvent : ' + str(ex))
-		try:
+		if hasattr(self.source, 'getEvent'):
+			event = self.source.getEvent()
+		else:
+			event = self.source.event
 			if hasattr(self.source, 'service'):
+				path = None
 				service = self.source.service
-				if not isinstance(self.source, CurrentService):
-					serviceHandler = eServiceCenter.getInstance()
-					info = serviceHandler.info(service)
-					path = service.getPath()
-					if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
-						isMovieFile = path
-#					else:
-#						isMovieFile = info.getName(service)
-				elif not '<Components.Sources.ServiceEvent.ServiceEvent' in str(self.source):
-					if isinstance(service, iPlayableServicePtr):
-						info = service and service.info()
-						ref = None
-					else:  # reference
-						info = service and self.source.info
-						ref = service
-					if info != None:
-						name = ref and info.getName(ref)
-						if name is None:
-							if ref is None:
-								if isinstance(self.source, CurrentService):
-									ref = self.source.getCurrentServiceReference()
-							if ref:
-								if ref.getPath():
-									isMovieFile = str(ref.getPath())
-									serviceHandler = eServiceCenter.getInstance()
-									info_tmp = serviceHandler.info(ref)
-									if info_tmp:
-										event = info_tmp.getEvent(ref)
-		except:
-			pass
-
-		# Prüfen ob event tuple ist
-		if (isinstance(event, tuple) and event):
+				if service:
+					if isinstance(service, eServiceReference):
+						path = service.getPath()
+					elif isinstance(service, str):
+						path = service.rsplit(':', 1)[1].strip() if ':' in service else ServiceReference(service).ref.getPath()
+					if path:
+						if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
+							isMovieFile = path
+		if hasattr(self.source, 'service'):
+			service = self.source.service
+			if not isinstance(self.source, CurrentService):
+				serviceHandler = eServiceCenter.getInstance()
+				info = serviceHandler.info(service)
+				path = service.getPath()
+				if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
+					isMovieFile = path
+#				else:
+#					isMovieFile = info.getName(service)
+			elif not '<Components.Sources.ServiceEvent.ServiceEvent' in str(self.source):
+				if isinstance(service, iPlayableServicePtr):
+					info = service and service.info()
+					ref = None
+				else:  # reference
+					info = service and self.source.info
+					ref = service
+				if info != None:
+					name = ref and info.getName(ref)
+					if name is None:
+						if ref is None:
+							if isinstance(self.source, CurrentService):
+								ref = self.source.getCurrentServiceReference()
+						if ref:
+							if ref.getPath():
+								isMovieFile = str(ref.getPath())
+								serviceHandler = eServiceCenter.getInstance()
+								info_tmp = serviceHandler.info(ref)
+								if info_tmp:
+									event = info_tmp.getEvent(ref)
+		if (isinstance(event, tuple) and event):  # Prüfen ob event tuple ist
 			event = event[0]
-
-		if self.types != '':
+		if event and self.types != '':
 			result = []
-			try:
-				if not isMovieFile:
-					try:
-						self.eventName = self.removeExtension(event.getEventName())
-					except:
-						return ""
+			if not isMovieFile:
+				self.eventName = self.removeExtension(event.getEventName())
+			else:
+				if path.isfile(str(isMovieFile) + '.meta'):
+					self.eventName = self.removeExtension(getline(str(isMovieFile) + '.meta', 2).replace("\n", "").strip())
 				else:
-					if os.path.isfile(str(isMovieFile) + '.meta'):
-						self.eventName = self.removeExtension(linecache.getline(str(isMovieFile) + '.meta', 2).replace("\n", "").strip())
-					else:
-						self.eventName = self.removeExtension(((str(isMovieFile).split('/')[-1]).rsplit('.', 1)[0]).replace('_', ' '))
-				self.eventName = convertDateInFileName(convertSearchName(self.eventName))
-				values = None
-				if not isMovieFile and event != None:
-					try:
-						eventid = None
-						ename = None
-						val = None
-						ename = event.getEventName()
-						eventid = event.getEventId()
-						eventTime = event.getBeginTime()
-						if eventid and ename:
-							val = self.db.getliveTV(eventid, ename, eventTime)
-							if val:
-								values = {
-									'subtitle': str(val[0][2]),
-									'vote': str(val[0][6]),
-									'year': str(val[0][4]),
-									'ageRating': str(val[0][5]),
-									'title': str(val[0][7]),
-									'leadText': str(val[0][9]),
-									'conclusion': str(val[0][10]),
-									'categoryName': str(val[0][11]),
-									'season': str(val[0][12]),
-									'genre': str(val[0][14]),
-									'episode': str(val[0][13]),
-									'country': str(val[0][15])
-									}
-					except:
-						values = None
-				dbData = None
-				try:
-					dbData = self.db.getTitleInfo(convert2base64(self.eventName))
+					self.eventName = self.removeExtension(((str(isMovieFile).split('/')[-1]).rsplit('.', 1)[0]).replace('_', ' '))
+			self.eventName = convertDateInFileName(convertSearchName(self.eventName))
+			values = None
+			if not isMovieFile and event != None:
+				eventid = None
+				ename = None
+				val = None
+				ename = event.getEventName()
+				eventid = event.getEventId()
+				eventTime = event.getBeginTime()
+				if eventid and ename:
+					val = self.db.getliveTV(eventid, ename, eventTime)
+					if val:
+						values = {
+							'subtitle': str(val[0][2]),
+							'vote': str(val[0][6]),
+							'year': str(val[0][4]),
+							'ageRating': str(val[0][5]),
+							'title': str(val[0][7]),
+							'leadText': str(val[0][9]),
+							'conclusion': str(val[0][10]),
+							'categoryName': str(val[0][11]),
+							'season': str(val[0][12]),
+							'genre': str(val[0][14]),
+							'episode': str(val[0][13]),
+							'country': str(val[0][15])
+							}
+			dbData = None
+			try:
+				dbData = self.db.getTitleInfo(convert2base64(self.eventName))
+				if not dbData:
+					dbData = self.db.getTitleInfo(convert2base64(convertTitle(self.eventName)))
 					if not dbData:
-						dbData = self.db.getTitleInfo(convert2base64(convertTitle(self.eventName)))
+						dbData = self.db.getTitleInfo(convert2base64(convertTitle2(self.eventName)))
+			except Exception:
+				if values:
+					dbData = self.db.getTitleInfo(convert2base64(str(values['title']).strip()))
+					if not dbData:
+						dbData = self.db.getTitleInfo(convert2base64(convertTitle(str(values['title']).strip())))
 						if not dbData:
-							dbData = self.db.getTitleInfo(convert2base64(convertTitle2(self.eventName)))
-				except:
-					if values:
-						dbData = self.db.getTitleInfo(convert2base64(str(values['title']).strip()))
-						if not dbData:
-							dbData = self.db.getTitleInfo(convert2base64(convertTitle(str(values['title']).strip())))
-							if not dbData:
-								dbData = self.db.getTitleInfo(convert2base64(convertTitle2(str(values['title']).strip())))
-
-				for type in self.types:
-					type.strip()
-					if self.POWER_DESCRIPTION in type:
-						powerDescription = self.getPowerDescription(self.inputString, event, values, dbData, isMovieFile)
-						if (powerDescription != None):
-							return powerDescription
-						else:
-							return ''
-					elif self.EPISODE_NUM in type:
-						episodeNum = self.getEpisodeNum(type, event, values, isMovieFile)
-						if (episodeNum != None):
-							result.append(episodeNum)
-					elif self.SIMILAR_EVENTS in type:
-						similarEvents = self.getSimilarEvents(type, self.eventName)
-						if (similarEvents != None and len(similarEvents) > 0 and similarEvents != ' '):
-							result.append(similarEvents)
-					elif self.TITLE in type:
-						title = self.getTitleWithPrefix(type, event, values)
-						if (title != None and len(title) > 0 and title != ' '):
-							result.append(title)
-					elif self.SUBTITLE in type:
-						if (self.SUBTITLE_CLEAN in type):
-							subtitle = self.getSubtitle(type, event, values, dbData, True)
-						else:
-							subtitle = self.getSubtitle(type, event, values, dbData, False)
-						if (subtitle != None and len(subtitle) > 0 and subtitle != ' '):
-							result.append(subtitle)
-					elif self.PARENTAL_RATING in type:
-						parentialRating = self.getParentalRating(type, event, values, dbData, isMovieFile)
-						if (parentialRating != None):
-							result.append(parentialRating)
-					elif self.RATING in type:
-						rating = None
-						if (self.RATING_STARS_AS_TEXT in type):
-							rating = self.getRating(type, values, event, False, dbData, isMovieFile, True)
-						elif (self.RATING_STARS in type):
-							#gerundetes Rating, kann z.B. für Rating Images verwendet werden
-							rating = self.getRating(type, values, event, True, dbData, isMovieFile)
-						else:
-							#Rating als Kommazahl
-							rating = self.getRating(type, values, event, False, dbData, isMovieFile)
-						if (rating != None):
-							result.append(rating)
-					elif self.CATEGORY in type:
-						category = self.getCategory(type, values)
-						if (category != None):
-							result.append(category)
-					elif self.GENRE in type:
-						genre = self.getGenre(type, values, event, dbData, isMovieFile)
-						if (genre != None):
-							result.append(genre)
-					elif self.YEAR in type:
-						year = self.getYear(type, values, event, dbData, isMovieFile)
-						if (year != None):
-							result.append(year)
-					elif self.COUNTRY in type:
-						country = self.getCountry(type, values, event, dbData, isMovieFile)
-						if (country != None):
-							result.append(country)
-					elif self.LEADTEXT in type:
-						leadtext = self.getLeadText(type, values)
-						if (leadtext != None):
-							result.append(leadtext)
-					elif self.CONCLUSION in type:
-						conclusion = self.getConclusion(type, values)
-						if (conclusion != None):
-							result.append(conclusion)
-					elif self.EXTENDED_DESCRIPTION in type:
-						if (self.EXTENDED_DESCRIPTION_CLEAN in type):
-							extendedDescription = self.getExtendedDescription(type, values, event, True, dbData, isMovieFile)
-						else:
-							extendedDescription = self.getExtendedDescription(type, values, event, False, dbData, isMovieFile)
-						if (extendedDescription != None):
-							result.append(extendedDescription)
-					elif self.ONE_LINE_DESCRIPTION in type:
-						oneLineDescription = self.getOneLineDescription(type, event, isMovieFile)
-						if (oneLineDescription != None):
-							result.append(oneLineDescription)
+							dbData = self.db.getTitleInfo(convert2base64(convertTitle2(str(values['title']).strip())))
+			for type in self.types:
+				type.strip()
+				if self.POWER_DESCRIPTION in type:
+					powerDescription = self.getPowerDescription(self.inputString, event, values, dbData, isMovieFile)
+					return powerDescription if (powerDescription != None) else ''
+				elif self.EPISODE_NUM in type:
+					episodeNum = self.getEpisodeNum(type, event, values, isMovieFile)
+					if (episodeNum != None):
+						result.append(episodeNum)
+				elif self.SIMILAR_EVENTS in type:
+					similarEvents = self.getSimilarEvents(type, self.eventName)
+					if (similarEvents != None and len(similarEvents) > 0 and similarEvents != ' '):
+						result.append(similarEvents)
+				elif self.TITLE in type:
+					title = self.getTitleWithPrefix(type, event, values)
+					if (title != None and len(title) > 0 and title != ' '):
+						result.append(title)
+				elif self.SUBTITLE in type:
+					subtitle = self.getSubtitle(type, event, values, dbData, True) if (self.SUBTITLE_CLEAN in type) else self.getSubtitle(type, event, values, dbData, False)
+					if (subtitle != None and len(subtitle) > 0 and subtitle != ' '):
+						result.append(subtitle)
+				elif self.PARENTAL_RATING in type:
+					parentialRating = self.getParentalRating(type, event, values, dbData, isMovieFile)
+					if (parentialRating != None):
+						result.append(parentialRating)
+				elif self.RATING in type:
+					rating = None
+					if (self.RATING_STARS_AS_TEXT in type):
+						rating = self.getRating(type, values, event, False, dbData, isMovieFile, True)
+					elif (self.RATING_STARS in type):
+						#gerundetes Rating, kann z.B. für Rating Images verwendet werden
+						rating = self.getRating(type, values, event, True, dbData, isMovieFile)
 					else:
-						result.append("!!! invalid parameter '%s' !!!" % (type))
-
-				sep = ' %s ' % str(self.htmlParser.unescape('&#xB7;'))
-				return sep.join(result)
-			except Exception as ex:
-				write_log("Fehler in getText :" + str(ex))
-				return ""
+						#Rating als Kommazahl
+						rating = self.getRating(type, values, event, False, dbData, isMovieFile)
+					if (rating != None):
+						result.append(rating)
+				elif self.CATEGORY in type:
+					category = self.getCategory(type, values)
+					if (category != None):
+						result.append(category)
+				elif self.GENRE in type:
+					genre = self.getGenre(type, values, event, dbData, isMovieFile)
+					if (genre != None):
+						result.append(genre)
+				elif self.YEAR in type:
+					year = self.getYear(type, values, event, dbData, isMovieFile)
+					if (year != None):
+						result.append(year)
+				elif self.COUNTRY in type:
+					country = self.getCountry(type, values, event, dbData, isMovieFile)
+					if (country != None):
+						result.append(country)
+				elif self.LEADTEXT in type:
+					leadtext = self.getLeadText(type, values)
+					if (leadtext != None):
+						result.append(leadtext)
+				elif self.CONCLUSION in type:
+					conclusion = self.getConclusion(type, values)
+					if (conclusion != None):
+						result.append(conclusion)
+				elif self.EXTENDED_DESCRIPTION in type:
+					extendedDescription = self.getExtendedDescription(type, values, event, True, dbData, isMovieFile) if (self.EXTENDED_DESCRIPTION_CLEAN in type) else self.getExtendedDescription(type, values, event, False, dbData, isMovieFile)
+					if (extendedDescription != None):
+						result.append(extendedDescription)
+				elif self.ONE_LINE_DESCRIPTION in type:
+					oneLineDescription = self.getOneLineDescription(type, event, isMovieFile)
+					if (oneLineDescription != None):
+						result.append(oneLineDescription)
+				else:
+					result.append("!!! invalid parameter '%s' !!!" % (type))
+			sep = ' %s ' % str(unescape('&#xB7;'))
+			return sep.join(result)
 		return ""
 
 	text = property(getText)
 
 	def getPowerDescription(self, input, event, values, dbData, isMovie):
 		condition = None
-
-		#InputParser ohne Condition
-		inputParser = re.match(r'^PowerDescription[[](.*)[]$]', input, re.MULTILINE | re.DOTALL)
-
-		#InputParser mit Condition
-		inputParserWithCondition = re.match(r'^PowerDescription[[](True|False|true|false|isImageAvailable|isPosterAvailable|isNoImageAvailable|isNoPosterAvailable)[]][[](.*)[]$]', input, re.MULTILINE | re.DOTALL)
-
+		inputParser = match(r'^PowerDescription[[](.*)[]$]', input, MULTILINE | DOTALL)  # InputParser ohne Condition
+		inputParserWithCondition = match(r'^PowerDescription[[](True|False|true|false|isImageAvailable|isPosterAvailable|isNoImageAvailable|isNoPosterAvailable)[]][[](.*)[]$]', input, MULTILINE | DOTALL)  # InputParser mit Condition
 		if (inputParserWithCondition != None):
 			condition = inputParserWithCondition.group(1)
 			input = inputParserWithCondition.group(2)
@@ -397,26 +324,19 @@ class AdvancedEventLibraryInfo(Converter, object):
 			input = inputParser.group(1)
 		else:
 			input = None
-
 		if (input != None):
 			if (condition != None and condition == 'isImageAvailable' and not self.isImageAvailable(event, values)):
-				return None
+				return
 			elif (condition != None and condition == 'isPosterAvailable' and not self.isPosterAvailable(event, values)):
-				return None
+				return
 			elif (condition != None and condition == 'isNoImageAvailable' and self.isImageAvailable(event, values)):
-				return None
+				return
 			elif (condition != None and condition == 'isNoPosterAvailable' and self.isPosterAvailable(event, values)):
-				return None
-
+				return
 			if (self.TITLE in input):
 				type = self.getParsedTyp(self.TITLE, input)
-
 				title = self.getTitleWithPrefix(type, event, values)
-				if (title != None and len(title) > 0 and title != ' '):
-					input = input.replace(type, title)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, title) if (title != None and len(title) > 0 and title != ' ') else str(input).replace(type, "")
 			if (self.SUBTITLE in input):
 				if (self.SUBTITLE_CLEAN in input):
 					type = self.getParsedTyp(self.SUBTITLE_CLEAN, input)
@@ -424,116 +344,54 @@ class AdvancedEventLibraryInfo(Converter, object):
 				else:
 					type = self.getParsedTyp(self.SUBTITLE, input)
 					subtitle = self.getSubtitle(type, event, values, dbData, False)
-				if (subtitle != None and len(subtitle) > 0 and subtitle != ' '):
-					input = input.replace(type, subtitle)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, subtitle) if (subtitle != None and len(subtitle) > 0 and subtitle != ' ') else str(input).replace(type, "")
 			if (self.GENRE in input):
 				type = self.getParsedTyp(self.GENRE, input)
-
 				genre = self.getGenre(type, values, event, dbData, isMovie)
-				if (genre != None):
-					input = input.replace(type, genre)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, genre) if (genre != None) else str(input).replace(type, "")
 			if (self.EPISODE_NUM in input):
 				type = self.getParsedTyp(self.EPISODE_NUM, input)
-
 				episodeNum = self.getEpisodeNum(type, event, values, isMovie)
-				if (episodeNum != None):
-					input = input.replace(type, episodeNum)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, episodeNum) if (episodeNum != None) else str(input).replace(type, "")
 			if (self.CATEGORY in input):
 				type = self.getParsedTyp(self.CATEGORY, input)
-
 				category = self.getCategory(type, values)
-				if (category != None):
-					input = input.replace(type, category)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, category) if (category != None) else str(input).replace(type, "")
 			if (self.SIMILAR_EVENTS in input):
 				type = self.getParsedTyp(self.SIMILAR_EVENTS, input)
 				similarEvents = self.getSimilarEvents(type, self.eventName)
-				if (similarEvents != None):
-					input = input.replace(type, similarEvents)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, similarEvents) if (similarEvents != None) else str(input).replace(type, "")
 			if (self.PARENTAL_RATING in input):
 				type = self.getParsedTyp(self.PARENTAL_RATING, input)
-
 				parentialRating = self.getParentalRating(type, event, values, dbData, isMovie)
-				if (parentialRating != None):
-					input = input.replace(type, parentialRating)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, parentialRating) if (parentialRating != None) else str(input).replace(type, "")
 			if (self.RATING in input):
 				type = self.getParsedTyp(self.RATING, input)
-
 				rating = self.getRating(type, values, event, False, dbData, isMovie)
-				if (rating != None):
-					input = input.replace(type, rating)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, rating) if (rating != None) else str(input).replace(type, "")
 			if (self.RATING_STARS_AS_TEXT in input):
 				type = self.getParsedTyp(self.RATING, input)
-
 				rating = self.getRating(type, values, event, False, dbData, isMovieFile, True)
-				if (rating != None):
-					input = input.replace(type, rating)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, rating) if (rating != None) else str(input).replace(type, "")
 			if (self.YEAR in input):
 				type = self.getParsedTyp(self.YEAR, input)
-
 				year = self.getYear(type, values, event, dbData, isMovie)
-				if (year != None):
-					input = input.replace(type, year)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, year) if (year != None) else str(input).replace(type, "")
 			if (self.COUNTRY in input):
 				type = self.getParsedTyp(self.COUNTRY, input)
-
 				country = self.getCountry(type, values, event, dbData, isMovie)
-				if (country != None):
-					input = input.replace(type, country)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, country) if (country != None) else str(input).replace(type, "")
 			if (self.LEADTEXT in input):
 				type = self.getParsedTyp(self.LEADTEXT, input)
-
 				leadtext = self.getLeadText(type, values)
-				if (leadtext != None):
-					input = input.replace(type, leadtext)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, leadtext) if (leadtext != None) else str(input).replace(type, "")
 			if (self.CONCLUSION in input):
 				type = self.getParsedTyp(self.CONCLUSION, input)
-
 				conclusion = self.getConclusion(type, values)
-				if (conclusion != None):
-					input = input.replace(type, conclusion)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, conclusion) if (conclusion != None) else str(input).replace(type, "")
 			if self.ONE_LINE_DESCRIPTION in input:
 				oneLineDescription = self.getOneLineDescription(type, event, isMovie)
-				if (oneLineDescription != None):
-					input = input.replace(type, oneLineDescription)
-				else:
-					input = str(input).replace(type, "")
-
+				input = input.replace(type, oneLineDescription) if (oneLineDescription != None) else str(input).replace(type, "")
 			if (self.EXTENDED_DESCRIPTION in input):
 				if (self.EXTENDED_DESCRIPTION_CLEAN in input):
 					type = self.getParsedTyp(self.EXTENDED_DESCRIPTION_CLEAN, input)
@@ -541,24 +399,13 @@ class AdvancedEventLibraryInfo(Converter, object):
 				else:
 					type = self.getParsedTyp(self.EXTENDED_DESCRIPTION, input)
 					extendedDescription = self.getExtendedDescription(type, values, event, False, dbData, isMovie)
-
-				if (extendedDescription != None):
-					input = input.replace(type, extendedDescription)
-				else:
-					input = str(input).replace(type, "")
-
-			# '\,' in MiddleDot umwandeln
-			middleDot = str(self.htmlParser.unescape('&#xB7;'))
+				input = input.replace(type, extendedDescription) if (extendedDescription != None) else str(input).replace(type, "")
+			middleDot = str(unescape('&#xB7;'))  # '\,' in MiddleDot umwandeln
 			sep = ' %s ' % middleDot
 			input = input.replace('\\,', sep)
-
-			# Doppelte MiddleDot in einen umwandeln
-			input = input.replace('%s  %s' % (middleDot, middleDot), middleDot)
-
+			input = input.replace('%s  %s' % (middleDot, middleDot), middleDot)  # Doppelte MiddleDot in einen umwandeln
 			input = input.replace('%s \\n' % middleDot, "\\n")
-
-			#falls input mit newline beginnt -> entfernen
-			if (input.startswith('\\n\\n\\n')):
+			if (input.startswith('\\n\\n\\n')):  # falls input mit newline beginnt -> entfernen
 				return input[6:]
 			elif (input.startswith('\\n\\n')):
 				return input[4:]
@@ -573,11 +420,8 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getParsedTyp(self, type, input):
 		parseString = r'(%s[(].*?[)])' % (type)
-
-		parser = re.search(parseString, input)
-		if (parser):
-			type = parser.group(1)
-		return type
+		parser = search(parseString, input)
+		return parser.group(1) if parser else type
 
 	def getSimilarEvents(self, type, name):
 		text = ''
@@ -605,47 +449,28 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getCountry(self, type, values, event, dbData, isMovie):
 		country = None
-		if (values != None and len(values) > 0 and country == None):
-			if 'country' in values:
-				if len(str(values['country']).strip()) > 0:
-					country = str(values['country']).strip()
+		if (values != None and len(values) > 0 and country == None) and 'country' in values and len(str(values['country']).strip()) > 0:
+			country = str(values['country']).strip()
 
-		if (country == None and isMovie != None):
-			if os.path.isfile(isMovie + '.meta'):
-				desc = linecache.getline(isMovie + '.meta', 3)
-				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY)
-				if (parsedDesc != None):
-					country = parsedDesc
-				else:
-					country = self.findCountry(desc)[0]
-
+		if (country == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+			desc = getline(isMovie + '.meta', 3)
+			parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY)
+			country = parsedDesc if (parsedDesc != None) else self.findCountry(desc)[0]
 		if dbData and country == None:
 			if len(dbData[6]) > 0:
 				country = str(dbData[6])
-
 		if (country == None and event != None):
-			try:
-				desc = event.getShortDescription()
-
-				if (desc == ''):
-					#Rückfalllösung über FullDescription
-					desc = self.getFullDescription(event)
-
-				if desc != "":
-					country = self.findCountry(self.getFullDescription(event))[0]
-
-					if country == None:
-						#Spezielle EPG Formate parsen
-						parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY)
-						if (parsedDesc != None):
-							country = parsedDesc
-
-				#country aus FullDescription parsen -> Foromat ' xx Min.\n Land Jahr'
-				if (country == None):
-					country = self.getParsedCountryOrYear(self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY, event.getExtendedDescription(), event)
-			except Exception as ex:
-				write_log('Fehler in getCountry from desc : ' + str(ex))
-
+			desc = event.getShortDescription()
+			if (desc == ''):  # Rückfalllösung über FullDescription
+				desc = self.getFullDescription(event)
+			if desc != "":
+				country = self.findCountry(self.getFullDescription(event))[0]
+				if country == None:  # Spezielle EPG Formate parsen
+					parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY)
+					if (parsedDesc != None):
+						country = parsedDesc
+			if (country == None):  # country aus FullDescription parsen -> Foromat ' xx Min.\n Land Jahr'
+				country = self.getParsedCountryOrYear(self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY, event.getExtendedDescription(), event)
 		prefix = self.getPrefixParser(type)
 		if (country != None and prefix != None):
 			country = '%s%s' % (prefix, country)
@@ -654,49 +479,38 @@ class AdvancedEventLibraryInfo(Converter, object):
 	def getExtendedDescription(self, type, values, event, clean, dbData, isMovie):
 		desc = None
 		if isMovie:
-			if os.path.isfile(isMovie + '.txt'):
+			if path.isfile(isMovie + '.txt'):
 				with open(isMovie + '.txt', "r") as f:
 					desc = f.read()
-			elif os.path.isfile(self.removeExtension(isMovie) + '.txt'):
+			elif path.isfile(self.removeExtension(isMovie) + '.txt'):
 				with open(self.removeExtension(isMovie) + '.txt', "r") as f:
 					desc = f.read()
-
 		if event != None:
-			try:
-				if desc:
-					ext = event.getExtendedDescription()
-					if ext and ext != "":
-						ext += '\n\n'
-					else:
-						ext = ""
-					ext += desc
-					desc = ext
+			if desc:
+				ext = event.getExtendedDescription()
+				if ext and ext != "":
+					ext += '\n\n'
 				else:
-					desc = event.getExtendedDescription()
-			except Exception as ex:
-				write_log('Fehler in getExtendedDescription from desc : ' + str(ex))
-
+					ext = ""
+				ext += desc
+				desc = ext
+			else:
+				desc = event.getExtendedDescription()
 			if (desc != "" and desc != None):
 				prefix = self.getPrefixParser(type)
 				if (desc != None and prefix != None):
 					desc = '%s%s' % (prefix, desc)
-
 			if (clean):
-				# Episoden Nummer entfernen
-				if (desc != None and ". Staffel, Folge" in desc):
+				if (desc != None and ". Staffel, Folge" in desc):  # Episoden Nummer entfernen
 					episodeNum = self.getEpisodeNum("EpisodeNum([s]. Staffel, Folge [e]: )", event, values, isMovie)
 					if (episodeNum != None):
 						desc = desc.replace(episodeNum, "")
-
-				# ParentalRating entfernen
-				if (desc != None):
+				if (desc != None):  # ParentalRating entfernen
 					desc = desc.replace("Ab 0 Jahren", "").replace("Ab 6 Jahren", "").replace("Ab 12 Jahren", "").replace("Ab 16 Jahren", "").replace("Ab 18 Jahren", "")
 					desc = desc.replace("Ab 0 Jahre", "").replace("Ab 6 Jahre", "").replace("Ab 12 Jahre", "").replace("Ab 16 Jahre", "").replace("Ab 18 Jahre", "")
 					desc = desc.replace("Altersfreigabe: ab 6", "").replace("Altersfreigabe: ab 12", "").replace("Altersfreigabe: ab 16", "").replace("Altersfreigabe: ab 18", "").replace("Altersfreigabe: ab 0", "")
 					desc = desc.replace("FSK0", "").replace("FSK6", "").replace("FSK12", "").replace("FSK16", "").replace("FSK18", "").replace("FSK 0", "").replace("FSK 6", "").replace("FSK 12", "").replace("FSK 16", "").replace("FSK 18", "")
-
-				# Country und Year entfernen
-				if (desc != None):
+				if (desc != None):  # Country und Year entfernen
 					country = self.getCountry("Country", values, event, dbData, isMovie)
 					year = self.getYear("Year", values, event, dbData, isMovie)
 					if (country != None and year != None):
@@ -704,9 +518,7 @@ class AdvancedEventLibraryInfo(Converter, object):
 						desc = desc.replace("%s %s." % (country, year), "")
 						desc = desc.replace("%s %s, " % (country, year), "")
 						desc = desc.replace("%s %s" % (country, year), "")
-
-				# Rating entfernen
-				if (desc != None and 'IMDb rating:' in desc):
+				if (desc != None and 'IMDb rating:' in desc):  # Rating entfernen
 					rating = self.getRating(self.RATING, values, event, False, dbData, isMovie)
 					if (rating != None):
 						rating = rating.replace(",", ".")
@@ -715,82 +527,57 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getOneLineDescription(self, type, event, isMovie=None):
 		desc = None
-
 		if (event != None):
-			try:
-				desc = event.getShortDescription()
-			except:
-				pass
+			desc = event.getShortDescription()
 
 		if (desc == None and isMovie):
-			if os.path.isfile(isMovie + '.meta'):
-				desc = linecache.getline(isMovie + '.meta', 3)
+			if path.isfile(isMovie + '.meta'):
+				desc = getline(isMovie + '.meta', 3)
 
 		if (desc != "" and desc != None):
 			if '\n' in desc:
-				desc = desc.replace('\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
+				desc = desc.replace('\n', ' ' + str(unescape('&#xB7;')) + ' ')
 			else:
 				tdesc = desc.split("\n")
-				desc = tdesc[0].replace('\\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
-
+				desc = tdesc[0].replace('\\n', ' ' + str(unescape('&#xB7;')) + ' ')
 			prefix = self.getPrefixParser(type)
 			if (desc != None and prefix != None):
 				desc = '%s%s' % (prefix, desc)
 			if desc.find(' Altersfreigabe: Ohne Altersbe') > 0:
 				desc = desc[:desc.find(' Altersfreigabe: Ohne Altersbe')] + ' FSK: 0'
-			desc = (" ".join(re.findall(r"[A-Za-z0-9üäöÜÄÖß:.,!?()]*", desc))).replace("  ", " ").replace('Altersfreigabe: ab', 'FSK:')
+			desc = (" ".join(findall(r"[A-Za-z0-9üäöÜÄÖß:.,!?()]*", desc))).replace("  ", " ").replace('Altersfreigabe: ab', 'FSK:')
 			return desc
-		return None
+		return
 
 	def getYear(self, type, values, event, dbData, isMovie):
 		year = None
-		if (values != None and len(values) > 0 and year == None):
-			if 'year' in values:
-				if len(str(values['year']).strip()) > 0:
-					year = str(values['year']).strip()
-
+		if (values != None and len(values) > 0 and year == None) and 'year' in values and len(str(values['year']).strip()) > 0:
+			year = str(values['year']).strip()
 		if (year == None and event != None):
-			try:
-				desc = event.getShortDescription()
-				if (desc == ''):
-					#Rückfalllösung über FullDescription
-					desc = self.getFullDescription(event)
-			except Exception as ex:
-				desc = ""
-				write_log('Fehler in getYear from desc : ' + str(ex))
-
-			if desc != "":
-				#Spezielle EPG Formate parsen
+			desc = event.getShortDescription()
+			if (desc == ''):  # Rückfalllösung über FullDescription
+				desc = self.getFullDescription(event)
+			else:  # Spezielle EPG Formate parsen
 				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR)
 				if (parsedDesc != None):
 					year = parsedDesc
-
-			#Year aus FullDescription parsen -> Foromat ' xx Min.\n Land Jahr'
-			if (year == None):
+			if (year == None):  # Year aus FullDescription parsen -> Foromat ' xx Min.\n Land Jahr'
 				year = self.getParsedCountryOrYear(self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR, event.getExtendedDescription(), event)
-
 		if (year == None and isMovie != None):
-			if os.path.isfile(isMovie + '.meta'):
-				desc = linecache.getline(isMovie + '.meta', 3)
+			if path.isfile(isMovie + '.meta'):
+				desc = getline(isMovie + '.meta', 3)
 				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR)
-				if (parsedDesc != None):
-					year = parsedDesc
-				else:
-					year = self.findYear(desc)
-
+				year = parsedDesc if (parsedDesc != None) else self.findYear(desc)
 		if (year == None and event != None):
 			year = self.findYear(self.getFullDescription(event))
-
-		if dbData and year == None:
-			if len(dbData[3]) > 0:
-				if len(dbData[2]) > 0:
-					if "Serie" in str(dbData[2]) or "Soap" in str(dbData[2]):
-						year = "(EA) " + str(dbData[3])
-					else:
-						year = str(dbData[3])
+		if dbData and year == None and len(dbData[3]) > 0:
+			if len(dbData[2]) > 0:
+				if "Serie" in str(dbData[2]) or "Soap" in str(dbData[2]):
+					year = "(EA) " + str(dbData[3])
 				else:
 					year = str(dbData[3])
-
+			else:
+				year = str(dbData[3])
 		prefix = self.getPrefixParser(type)
 		if (year != None and prefix != None):
 			year = '%s%s' % (prefix, year)
@@ -798,64 +585,41 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getGenre(self, type, values, event, dbData, isMovie):
 		genre = None
-		if (values != None and len(values) > 0 and genre == None):
-			if 'genre' in values:
-				if len(str(values['genre']).strip()) > 0:
-					genre = str(values['genre']).strip()
-
-		if dbData and genre == None:
-			if len(dbData[2]) > 0:
-				genre = str(dbData[2])
-
-		if (genre == None and isMovie != None):
-			if os.path.isfile(isMovie + '.meta'):
-				name = linecache.getline(isMovie + '.meta', 2).replace('\n', '')
-				desc = linecache.getline(isMovie + '.meta', 3).replace(name, '').replace('Altersfreigabe', ' Altersfreigabe').replace('\n', '')
-				genre = self.getCompareGenreWithGenreList(desc, None)
-				if not genre:
-					parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE)
-					if (parsedDesc != None):
-						genre = parsedDesc
-
+		if (values != None and len(values) > 0 and genre == None) and 'genre' in values and len(str(values['genre']).strip()) > 0:
+			genre = str(values['genre']).strip()
+		if dbData and genre == None and len(dbData[2]) > 0:
+			genre = str(dbData[2])
+		if (genre == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+			name = getline(isMovie + '.meta', 2).replace('\n', '')
+			desc = getline(isMovie + '.meta', 3).replace(name, '').replace('Altersfreigabe', ' Altersfreigabe').replace('\n', '')
+			genre = self.getCompareGenreWithGenreList(desc, None)
+			if not genre:
+				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE)
+				if (parsedDesc != None):
+					genre = parsedDesc
 		if (genre == None and event != None):
-			try:
-				desc = event.getShortDescription().replace('\n', ' ')
-				if (desc == ''):
-					#Rückfalllösung über FullDescription
-					desc = self.getFullDescription(event)
-			except Exception as ex:
-				desc = ""
-				write_log('Fehler in getGenre from desc : ' + str(ex))
-
+			desc = event.getShortDescription().replace('\n', ' ')
+			if (desc == ''):  # Rückfalllösung über FullDescription
+				desc = self.getFullDescription(event)
 			if desc != "":
 				genre = self.getCompareGenreWithGenreList(desc, None)
-
-				#Spezielle EPG Formate parsen
-				if (genre == None):
+				if (genre == None):  # Spezielle EPG Formate parsen
 					parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE)
 					if (parsedDesc != None):
 						genre = parsedDesc
-
 		if genre != None:
 			maxGenres = genre.split()
-			if maxGenres:
-				if len(maxGenres) >= 1:
-					genre = maxGenres[0]  # + ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ' + maxGenres[1]
-
+			if maxGenres and len(maxGenres) >= 1:
+				genre = maxGenres[0]  # + ' ' + str(unescape('&#xB7;')) + ' ' + maxGenres[1]
 		prefix = self.getPrefixParser(type)
 		if (genre != None and prefix != None):
 			genre = '%s%s' % (prefix, genre)
-
 		return genre
 
 	def getCategory(self, type, values):
 		category = None
-
-		if (values != None and len(values) > 0):
-			if 'categoryName' in values:
-				if len(str(values['categoryName']).strip()) > 0:
-					category = str(values['categoryName']).strip()
-
+		if (values != None and len(values) > 0) and 'categoryName' in values and len(str(values['categoryName']).strip()) > 0:
+			category = str(values['categoryName']).strip()
 		prefix = self.getPrefixParser(type)
 		if (category != None and prefix != None):
 			category = '%s%s' % (prefix, category)
@@ -863,207 +627,170 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getLeadText(self, type, values):
 		leadtext = None
-
-		if (values != None and len(values) > 0):
-			if 'leadText' in values:
-				if len(str(values['leadText']).strip()) > 0:
-					leadtext = str(values['leadText']).strip()
-
+		if (values != None and len(values) > 0) and 'leadText' in values and len(str(values['leadText']).strip()) > 0:
+			leadtext = str(values['leadText']).strip()
 		prefix = self.getPrefixParser(type)
 		if (leadtext != None and prefix != None):
 			leadtext = '%s%s' % (prefix, leadtext)
-
 		return leadtext
 
 	def getConclusion(self, type, values):
 		conclusion = None
-
-		if (values != None and len(values) > 0):
-			if 'conclusion' in values:
-				if len(str(values['conclusion']).strip()) > 0:
-					conclusion = str(values['conclusion']).strip()
-
+		if (values != None and len(values) > 0) and 'conclusion' in values and len(str(values['conclusion']).strip()) > 0:
+			conclusion = str(values['conclusion']).strip()
 		prefix = self.getPrefixParser(type)
 		if (conclusion != None and prefix != None):
 			conclusion = '%s%s' % (prefix, conclusion)
-
 		return conclusion
 
 	def getRating(self, type, values, event, isStars, dbData, isMovie, starsAsText=False):
 		rating = None
-		if dbData:
-			if len(dbData[4]) > 0:
-				tmp = str(dbData[4]).strip()
-				rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
-
-		if (values != None and len(values) > 0 and rating == None):
-			if 'vote' in values:
-				if len(str(values['vote']).strip()) > 0:
-					tmp = str(values['vote']).strip()
-					rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
-
+		if dbData and len(dbData[4]) > 0:
+			tmp = str(dbData[4]).strip()
+			rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
+		if (values != None and len(values) > 0 and rating == None) and 'vote' in values and len(str(values['vote']).strip()) > 0:
+			tmp = str(values['vote']).strip()
+			rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
 		if (rating == None and event != None) or (rating == str(0) and event != None):
-			try:
-				#Rating aus Description extrahieren
-				desc = self.getFullDescription(event)
-
-				parser = re.search(r'IMDb rating:\s(\d+\.\d+)[/]', desc)
-				if (parser):
-					tmp = str(parser.group(1))
-					rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
-			except Exception as ex:
-				write_log('Fehler in getRating from desc : ' + str(ex))
-
+			desc = self.getFullDescription(event)  # Rating aus Description extrahieren
+			parser = search(r'IMDb rating:\s(\d+\.\d+)[/]', desc)
+			if (parser):
+				tmp = str(parser.group(1))
+				rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
 		prefix = self.getPrefixParser(type)
 		if (rating != None and prefix != None):
 			rating = '%s%s' % (prefix, rating)
-
 		return rating
 
 	def getRatingAsNumber(self, strRating, isStars, starsAsText=False):
 		if (self.isNumber(strRating)):
-			# Nur anzeigen wenn Rating > 0
-			if (float(strRating) > 0):
+			if (float(strRating) > 0):  # Nur anzeigen wenn Rating > 0
 				if (isStars):
 					return str(round(float(strRating) * 2) / 2).replace(".", "")
 				elif (starsAsText):
-					return str(self.htmlParser.unescape('&#9733;')) * int(round(float(strRating) * 2) / 2)
+					return str(unescape('&#9733;')) * int(round(float(strRating) * 2) / 2)
 				else:
 					return str(round(float(strRating), 1)).replace(".", ",")
 			else:
 				if (isStars or starsAsText):
-					return None
+					return
 		else:
 			if (isStars or starsAsText):
-				return None
+				return
 
 	def getParentalRating(self, type, event, values, dbData, isMovie):
 		parentialRating = None
 		if (parentialRating == None and event != None):
-			try:
-				desc = self.getFullDescription(event)
+			desc = self.getFullDescription(event)
+			parser = search(r'Ab\s(\d+)\s[Jahren|Jahre]', desc)
+			if not parser:
+				if desc.find('Altersfreigabe: Ohne Altersbe') > 0:
+					parentialRating = str(0)
+				elif 'Altersfreigabe: ab 0' in desc:
+					parentialRating = str(0)
+				elif 'Altersfreigabe: ab 6' in desc:
+					parentialRating = str(6)
+				elif 'Altersfreigabe: ab 12' in desc:
+					parentialRating = str(12)
+				elif 'Altersfreigabe: ab 16' in desc:
+					parentialRating = str(16)
+				elif 'Altersfreigabe: ab 18' in desc:
+					parentialRating = str(18)
+				elif 'FSK0' in desc:
+					parentialRating = str(0)
+				elif 'FSK6' in desc:
+					parentialRating = str(6)
+				elif 'FSK12' in desc:
+					parentialRating = str(12)
+				elif 'FSK16' in desc:
+					parentialRating = str(16)
+				elif 'FSK18' in desc:
+					parentialRating = str(18)
+				elif 'FSK 0' in desc:
+					parentialRating = str(0)
+				elif 'FSK 6' in desc:
+					parentialRating = str(6)
+				elif 'FSK 12' in desc:
+					parentialRating = str(12)
+				elif 'FSK 16' in desc:
+					parentialRating = str(16)
+				elif 'FSK 18' in desc:
+					parentialRating = str(18)
+			if (parser):
+				parentialRating = parser.group(1)
 
-				parser = re.search(r'Ab\s(\d+)\s[Jahren|Jahre]', desc)
-				if not parser:
-					if desc.find('Altersfreigabe: Ohne Altersbe') > 0:
+		if (parentialRating == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+			desc = getline(isMovie + '.meta', 3)
+			parser = search(r'Ab\s(\d+)\s[Jahren|Jahre]', desc)
+			if not parser:
+				if desc.find('Altersfreigabe: Ohne Altersbe') > 0:
+					parentialRating = str(0)
+				elif 'Altersfreigabe: ab 0' in desc:
+					parentialRating = str(0)
+				elif 'Altersfreigabe: ab 6' in desc:
+					parentialRating = str(6)
+				elif 'Altersfreigabe: ab 12' in desc:
+					parentialRating = str(12)
+				elif 'Altersfreigabe: ab 16' in desc:
+					parentialRating = str(16)
+				elif 'Altersfreigabe: ab 18' in desc:
+					parentialRating = str(18)
+				elif 'FSK0' in desc:
+					parentialRating = str(0)
+				elif 'FSK6' in desc:
+					parentialRating = str(6)
+				elif 'FSK12' in desc:
+					parentialRating = str(12)
+				elif 'FSK16' in desc:
+					parentialRating = str(16)
+				elif 'FSK18' in desc:
+					parentialRating = str(18)
+				elif 'FSK 0' in desc:
+					parentialRating = str(0)
+				elif 'FSK 6' in desc:
+					parentialRating = str(6)
+				elif 'FSK 12' in desc:
+					parentialRating = str(12)
+				elif 'FSK 16' in desc:
+					parentialRating = str(16)
+				elif 'FSK 18' in desc:
+					parentialRating = str(18)
+			if (parser):
+				parentialRating = parser.group(1)
+		if (values != None and len(values) > 0 and parentialRating == None) and 'ageRating' in values:
+			if len(str(values['ageRating']).strip()) > 0:
+				tmp = str(values['ageRating']).strip()
+				try:
+					tmp = int(tmp)
+					if tmp in range(0, 6):
 						parentialRating = str(0)
-					elif 'Altersfreigabe: ab 0' in desc:
-						parentialRating = str(0)
-					elif 'Altersfreigabe: ab 6' in desc:
+					elif tmp in range(6, 12):
 						parentialRating = str(6)
-					elif 'Altersfreigabe: ab 12' in desc:
+					elif tmp in range(12, 16):
 						parentialRating = str(12)
-					elif 'Altersfreigabe: ab 16' in desc:
+					elif tmp in range(16, 18):
 						parentialRating = str(16)
-					elif 'Altersfreigabe: ab 18' in desc:
+					elif tmp >= 18:
 						parentialRating = str(18)
-					elif 'FSK0' in desc:
+				except Exception:
+					if tmp.find('Ohne Altersbe') > 0:
 						parentialRating = str(0)
-					elif 'FSK6' in desc:
-						parentialRating = str(6)
-					elif 'FSK12' in desc:
-						parentialRating = str(12)
-					elif 'FSK16' in desc:
-						parentialRating = str(16)
-					elif 'FSK18' in desc:
+					elif (tmp == 'KeineJugendfreigabe' or tmp == 'KeineJugendfreige'):
 						parentialRating = str(18)
-					elif 'FSK 0' in desc:
-						parentialRating = str(0)
-					elif 'FSK 6' in desc:
-						parentialRating = str(6)
-					elif 'FSK 12' in desc:
-						parentialRating = str(12)
-					elif 'FSK 16' in desc:
-						parentialRating = str(16)
-					elif 'FSK 18' in desc:
-						parentialRating = str(18)
-				if (parser):
-					parentialRating = parser.group(1)
-			except Exception as e:
-				write_log('Fehler in getParentalRating from desc : ' + str(e))
-
-		if (parentialRating == None and isMovie != None):
-			if os.path.isfile(isMovie + '.meta'):
-				desc = linecache.getline(isMovie + '.meta', 3)
-				parser = re.search(r'Ab\s(\d+)\s[Jahren|Jahre]', desc)
-				if not parser:
-					if desc.find('Altersfreigabe: Ohne Altersbe') > 0:
-						parentialRating = str(0)
-					elif 'Altersfreigabe: ab 0' in desc:
-						parentialRating = str(0)
-					elif 'Altersfreigabe: ab 6' in desc:
-						parentialRating = str(6)
-					elif 'Altersfreigabe: ab 12' in desc:
-						parentialRating = str(12)
-					elif 'Altersfreigabe: ab 16' in desc:
-						parentialRating = str(16)
-					elif 'Altersfreigabe: ab 18' in desc:
-						parentialRating = str(18)
-					elif 'FSK0' in desc:
-						parentialRating = str(0)
-					elif 'FSK6' in desc:
-						parentialRating = str(6)
-					elif 'FSK12' in desc:
-						parentialRating = str(12)
-					elif 'FSK16' in desc:
-						parentialRating = str(16)
-					elif 'FSK18' in desc:
-						parentialRating = str(18)
-					elif 'FSK 0' in desc:
-						parentialRating = str(0)
-					elif 'FSK 6' in desc:
-						parentialRating = str(6)
-					elif 'FSK 12' in desc:
-						parentialRating = str(12)
-					elif 'FSK 16' in desc:
-						parentialRating = str(16)
-					elif 'FSK 18' in desc:
-						parentialRating = str(18)
-				if (parser):
-					parentialRating = parser.group(1)
-
-		if (values != None and len(values) > 0 and parentialRating == None):
-			if 'ageRating' in values:
-				if len(str(values['ageRating']).strip()) > 0:
-					tmp = str(values['ageRating']).strip()
-
-					try:
-						tmp = int(tmp)
-						if tmp in range(0, 6):
-							parentialRating = str(0)
-						elif tmp in range(6, 12):
-							parentialRating = str(6)
-						elif tmp in range(12, 16):
-							parentialRating = str(12)
-						elif tmp in range(16, 18):
-							parentialRating = str(16)
-						elif tmp >= 18:
-							parentialRating = str(18)
-					except:
-						if tmp.find('Ohne Altersbe') > 0:
-							parentialRating = str(0)
-						elif (tmp == 'KeineJugendfreigabe' or tmp == 'KeineJugendfreige'):
-							parentialRating = str(18)
-						elif (tmp != 'Unbekannt'):
-							parentialRating = tmp
-
-		if dbData and parentialRating == None:
-			if len(dbData[5]) > 0:
-				parentialRating = str(dbData[5])
-
+					elif (tmp != 'Unbekannt'):
+						parentialRating = tmp
+		if dbData and parentialRating == None and len(dbData[5]) > 0:
+			parentialRating = str(dbData[5])
 		prefix = self.getPrefixParser(type)
 		if (parentialRating != None and prefix != None):
 			parentialRating = '%s%s' % (prefix, parentialRating)
-
 		return parentialRating
 
-	def getTitle(self, event, values):
-		#Nur Title ohne Prefix, wird zum vergleichen benötigt
+	def getTitle(self, event, values):  # Nur Title ohne Prefix, wird zum vergleichen benötigt
 		title = None
 		if (values != None and len(values) > 0):
 			if len(str(values['title']).strip()) > 0:
 				title = str(values['title']).strip()
-
 		if (title == None):
 			title = self.eventName
 		return title
@@ -1081,23 +808,18 @@ class AdvancedEventLibraryInfo(Converter, object):
 			if len(str(values['subtitle']).strip()) > 0:
 				subtitle = str(values['subtitle']).strip()
 		if (subtitle == None and event != None):
-			try:
-				maxWords = int(self.getMaxSubtitleWords(type))
-				result = self.getSubtitleFromDescription(event, maxWords, clean)
-				if (result != None):
-					subtitle = result
-			except Exception as ex:
-				subtitle = str(ex)
-		#Falls Subtitle = Title -> dann nichts zurück geben
-		if (subtitle != None and subtitle.rstrip('.') == self.getTitle(event, values)):
+			maxWords = int(self.getMaxSubtitleWords(type))
+			result = self.getSubtitleFromDescription(event, maxWords, clean)
+			if (result != None):
+				subtitle = result
+		if (subtitle != None and subtitle.rstrip('.') == self.getTitle(event, values)):  # Falls Subtitle = Title -> dann nichts zurück geben
 			subtitle = None
-
 		if (subtitle != "" and subtitle != None):
 			if '\n' in subtitle:
 				if clean:
 					pos = subtitle.find('\n')
 					subtitle = subtitle[:pos].strip()
-				subtitle = subtitle.replace('\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
+				subtitle = subtitle.replace('\n', ' ' + str(unescape('&#xB7;')) + ' ')
 			else:
 				tdesc = subtitle.split("\n")
 				if clean:
@@ -1106,36 +828,29 @@ class AdvancedEventLibraryInfo(Converter, object):
 					else:
 						pos = len(tdesc[0])
 					subtitle = tdesc[0][:pos].strip()
-				subtitle = tdesc[0].replace('\\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
-
+				subtitle = tdesc[0].replace('\\n', ' ' + str(unescape('&#xB7;')) + ' ')
 			if subtitle.find(' Altersfreigabe: Ohne Altersbe') > 0:
 				subtitle = subtitle[:subtitle.find(' Altersfreigabe: Ohne Altersbe')] + ' FSK: 0'
-			subtitle = (" ".join(re.findall(r"[A-Za-z0-9üäöÜÄÖß:.,!?()]*", subtitle))).replace("  ", " ").replace('Altersfreigabe: ab', 'FSK:')
-
-			if (clean):
-				# Episoden Nummer entfernen
+			subtitle = (" ".join(findall(r"[A-Za-z0-9üäöÜÄÖß:.,!?()]*", subtitle))).replace("  ", " ").replace('Altersfreigabe: ab', 'FSK:')
+			if (clean):  # Episoden Nummer entfernen
 				if (subtitle != None and ". Staffel, Folge" in subtitle):
 					episodeNum = self.getEpisodeNum("EpisodeNum([s]. Staffel, Folge [e]: )", event, values, None)
 					if (episodeNum != None):
 						subtitle = subtitle.replace(episodeNum, "")
-
-				# ParentalRating entfernen
-				if (subtitle != None):
+				if (subtitle != None):  # ParentalRating entfernen
 					se = self.findEpisode(subtitle)
 					if se:
 						subtitle = subtitle.replace(str(se[0]), '').replace(str(se[1]), '')
-					extractEpisode = re.search('\sFolge\s(\d+)', subtitle)
+					extractEpisode = search('\sFolge\s(\d+)', subtitle)
 					if not extractEpisode:
-						extractEpisode = re.search('Folge\s(\d+)', subtitle)
+						extractEpisode = search('Folge\s(\d+)', subtitle)
 					if (extractEpisode):
 						subtitle = subtitle.replace(str(extractEpisode.group(0).strip()), '').replace(str(extractEpisode.group(1).strip()), '')
-
 					subtitle = subtitle.replace("Ab 0 Jahren", "").replace("Ab 6 Jahren", "").replace("Ab 12 Jahren", "").replace("Ab 16 Jahren", "").replace("Ab 18 Jahren", "")
 					subtitle = subtitle.replace("Ab 0 Jahre", "").replace("Ab 6 Jahre", "").replace("Ab 12 Jahre", "").replace("Ab 16 Jahre", "").replace("Ab 18 Jahre", "")
 					subtitle = subtitle.replace("Altersfreigabe: ab 6", "").replace("Altersfreigabe: ab 12", "").replace("Altersfreigabe: ab 16", "").replace("Altersfreigabe: ab 18", "").replace("Altersfreigabe: ab 0", "")
 					subtitle = subtitle.replace("FSK0", "").replace("FSK6", "").replace("FSK12", "").replace("FSK16", "").replace("FSK18", "").replace("FSK 0", "").replace("FSK 6", "").replace("FSK 12", "").replace("FSK 16", "").replace("FSK 18", "")
 					subtitle = subtitle.replace("FSK: 0", "").replace("FSK: 6", "").replace("FSK: 12", "").replace("FSK: 16", "").replace("FSK: 18", "")
-
 					country = self.getCountry("Country", values, event, dbData, None)
 					year = self.getYear("Year", values, event, dbData, None)
 					if (country != None and year != None):
@@ -1144,33 +859,27 @@ class AdvancedEventLibraryInfo(Converter, object):
 						subtitle = subtitle.replace("%s %s, " % (country, year), "")
 						subtitle = subtitle.replace("%s %s" % (country, year), "")
 						subtitle = subtitle.replace("%s %s" % ("D", year), "")
-
 					country = self.findCountry(subtitle)
 					if country:
 						subtitle = subtitle.replace(str(country[1]), '')
-
 					year = self.findYear(subtitle)
 					if year:
 						subtitle = subtitle.replace(str(year), '')
-
 					if (values != None and len(values) > 0):
 						if 'genre' in values:
 							if len(str(values['genre']).strip()) > 0:
 								subtitle = subtitle.replace(' ' + str(values['genre']) + ' ', '')
-
 					fileName = "/usr/lib/enigma2/python/Components/Converter/AdvancedEventLibrary_Genre.json"
-					if (os.path.isfile(fileName)):
+					if (path.isfile(fileName)):
 						with open(fileName) as file:
 							jsonString = str(file.read())
-							genreData = json.loads(jsonString)
+							genreData = loads(jsonString)
 							for genre in genreData:
 								genre = genre.encode('utf-8')
 								subtitle = subtitle.replace(' ' + str(genre) + ' ', '')
-
 					if (values != None and len(values) > 0):
 						if len(str(values['title']).strip()) > 0:
 							subtitle = subtitle.replace(str(values['title']), '')
-
 					subtitle = subtitle.replace(str(self.eventName), '').strip()
 					if subtitle.startswith(','):
 						subtitle = subtitle[1:]
@@ -1179,51 +888,29 @@ class AdvancedEventLibraryInfo(Converter, object):
 		return subtitle
 
 	def getSubtitleFromDescription(self, event, maxWords, clean=False):
-		try:
-			desc = None
-			desc = event.getShortDescription()
-			if not desc and not clean:
-				#Rückfalllösung über FullDescription
-				desc = self.getFullDescription(event)
+		desc = None
+		desc = event.getShortDescription()
+		if not desc and not clean:  # Rückfalllösung über FullDescription
+			desc = self.getFullDescription(event)
+		if desc:  # Spezielle EPG Formate parsen
+			parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE)
+			if (parsedDesc != None):
+				return parsedDesc
+			result = self.getMaxWords(desc, maxWords)  # maxWords verwenden
+			if (result != None):
+				genre = self.getCompareGenreWithGenreList(result, None)
+				if (genre != None) and (genre == result):  # Prüfen Subtitle = Genre, dann nichts zurück geben
+					return
+				return result
+			else:  # Wenn Wörter in shortDescription > maxWords, dann nach Zeichen suchen und bis dahin zurück geben und prüfen ob < maxWord EXPERIMENTAL
+				return self.getSubtitleFromDescriptionUntilChar(event, desc, maxWords)
 
-			if desc:
-				#Spezielle EPG Formate parsen
-				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE)
-				if (parsedDesc != None):
-					return parsedDesc
-
-				#maxWords verwenden
-				result = self.getMaxWords(desc, maxWords)
-				if (result != None):
-
-					genre = self.getCompareGenreWithGenreList(result, None)
-					if (genre != None):
-					#Prüfen Subtitle = Genre, dann nichts zurück geben
-						if (genre == result):
-							return None
-					return result
-				else:
-					#Wenn Wörter in shortDescription > maxWords, dann nach Zeichen suchen und bis dahin zurück geben und prüfen ob < maxWord EXPERIMENTAL
-					return self.getSubtitleFromDescriptionUntilChar(event, desc, maxWords)
-			else:
-				return None
-		except Exception as ex:
-			return "[Error] getSubtitleFromDescription: %s" % (str(ex))
-		return None
-
-	def getSpecialFormatDescription(self, desc, resultTyp):
-		#Spezielle Formate raus werfen
+	def getSpecialFormatDescription(self, desc, resultTyp):  # Spezielle Formate raus werfen
 		desc = desc.replace("Thema u. a.: ", "")
-
 		wordList = desc.split(", ")
-
-		#Format: 'Subtitle, Genre, Land Jahr'
-		if len(wordList) == 3:
-			parser = re.match(r'^[^.:?;]+[,]\s[^.:?;]+[,]\s[^.:?;]+\s\d+$', desc)
-
-			if (desc.count(", ") == 2 and parser):
-				#Pruefen 2x ', ' vorhanden ist und ob letzter Eintrag im Format 'Land Jahr'
-				#return desc.replace(", ", " %s " % str(self.htmlParser.unescape('&#xB7;')))
+		if len(wordList) == 3:  # Format: 'Subtitle, Genre, Land Jahr'
+			parser = match(r'^[^.:?;]+[,]\s[^.:?;]+[,]\s[^.:?;]+\s\d+$', desc)
+			if (desc.count(", ") == 2 and parser):  # Pruefen 2x ', ' vorhanden ist und ob letzter Eintrag im Format 'Land Jahr', return desc.replace(", ", " %s " % str(unescape('&#xB7;')))
 				if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE):
 					return wordList[0]
 				elif (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE):
@@ -1236,17 +923,12 @@ class AdvancedEventLibraryInfo(Converter, object):
 					country = self.getParsedCountryOrYear(resultTyp, wordList[2], None)
 					if (country != None):
 						return country
-
-		#Format: 'Subtitle/Genre, Land Jahr' | 'Genre, Land Jahr' | 'Subtitle Genre, Land Jahr'
 		#TODO: Abgleich mit Genre einfügen
-		elif len(wordList) == 2:
-			parser = re.match(r'^[^.:?!;]+[,]\s[^.:?!;]+\s\d+$', desc)
+		elif len(wordList) == 2:  # Format: 'Subtitle/Genre, Land Jahr' | 'Genre, Land Jahr' | 'Subtitle Genre, Land Jahr'
+			parser = match(r'^[^.:?!;]+[,]\s[^.:?!;]+\s\d+$', desc)
 			if (desc.count(", ") == 1 and parser):
-
 				genre = self.getCompareGenreWithGenreList(wordList[0], ', ')
-				if (genre != None):
-				#Format 'Genre, Land Jahr'
-				#Prüfen ob Wort vor Koma in Genre List ist -> Genre
+				if (genre != None):  # Format 'Genre, Land Jahr, Prüfen ob Wort vor Koma in Genre List ist -> Genre
 					if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE):
 						return ''
 					elif (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE):
@@ -1259,13 +941,9 @@ class AdvancedEventLibraryInfo(Converter, object):
 						country = self.getParsedCountryOrYear(resultTyp, wordList[1], None)
 						if (country != None):
 							return country
-
-				#Format 'Subtitle Genre, Land Jahr'
-				#Genre herausfiltern
-				genre = self.getCompareGenreWithGenreList(wordList[0], None)
+				genre = self.getCompareGenreWithGenreList(wordList[0], None)  # Format 'Subtitle Genre, Land Jahr', Genre herausfiltern
 				if (genre != None):
 					subtitle = wordList[0].replace(genre + ". ", "").replace(genre, "").strip()
-
 					if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE):
 						return subtitle
 					elif (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE):
@@ -1278,182 +956,122 @@ class AdvancedEventLibraryInfo(Converter, object):
 						country = self.getParsedCountryOrYear(resultTyp, wordList[1], None)
 						if (country != None):
 							return country
-
 				if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE):
-					#Format 'Subtitle, Land Jahr'
-					return wordList[0]
 
-		#Wird nur für Genre angewendet
-		if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE):
+					return wordList[0]  # Format 'Subtitle, Land Jahr'
+		if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE):  # Wird nur für Genre angewendet
 			genre = self.getCompareGenreWithGenreList(desc, None)
 			if (genre != None):
 				return genre
-		return None
 
 	def getSubtitleFromDescriptionUntilChar(self, event, desc, maxWords):
-		firstChar = re.findall(r'[.]\s|[?]\s|[:]\s|$', desc)[0]
+		firstChar = findall(r'[.]\s|[?]\s|[:]\s|$', desc)[0]
 		if (firstChar != "" and len(firstChar) > 0):
 			firstCharPos = desc.find(firstChar)
 			result = desc[0:firstCharPos]
-
-			#Kann ggf. Genre sein, dann raus filtern
-			genre = self.getCompareGenreWithGenreList(result, ". ")
+			genre = self.getCompareGenreWithGenreList(result, ". ")  # Kann ggf. Genre sein, dann raus filtern
 			if (genre != None):
 				if (genre == result):
-					#genre = genre + "."
-					desc = desc.replace(genre + ". ", "")
+					desc = desc.replace(f"{genre}. ", "")  # genre = genre + "."
 					firstCharPos = desc.find(firstChar)
 					result = desc[0:firstCharPos]
-
-					#maxWords verwenden
-					result = self.getMaxWords(result, maxWords)
+					result = self.getMaxWords(result, maxWords)  # maxWords verwenden
 					if (result != None):
 						return result
-			#maxWords verwenden
-			if (result != None):
+			if (result != None):  # maxWords verwenden
 				result = self.getMaxWords(result, maxWords)
 				if (result != None):
 					return result
-		return None
 
 	def getMaxWords(self, desc, maxWords):
-		try:
-			wordList = desc.split(" ")
-			if (len(wordList) >= maxWords):
-				del wordList[maxWords:len(wordList)]
-				sep = ' '
-				res = sep.join(wordList)
-				return res + '...'
-			return desc
-		except Exception as ex:
-			write_log("getMaxWords : " + str(ex))
-			return "[Error] getMaxWords: %s" % (str(ex))
-		return None
+		wordList = desc.split(" ")
+		if (len(wordList) >= maxWords):
+			del wordList[maxWords:len(wordList)]
+			sep = ' '
+			res = sep.join(wordList)
+			return res + '...'
+		return desc
 
-	def getMaxSubtitleWords(self, type):
-		#max Anzahl an erlaubten Wörten aus Parameter von Skin lesen
+	def getMaxSubtitleWords(self, type):  # max Anzahl an erlaubten Wörten aus Parameter von Skin lesen
 		maxSubtitleWordsParser = r'Subtitle[(](\d+)[)]'
-		maxSubtitleWords = re.search(maxSubtitleWordsParser, type)
-
+		maxSubtitleWords = search(maxSubtitleWordsParser, type)
 		if (maxSubtitleWords):
 			return maxSubtitleWords.group(1)
 		else:
 			maxSubtitleWordsParser = r'SubtitleClean[(](\d+)[)]'
-			maxSubtitleWords = re.search(maxSubtitleWordsParser, type)
+			maxSubtitleWords = search(maxSubtitleWordsParser, type)
 			if (maxSubtitleWords):
 				return maxSubtitleWords.group(1)
 		return "!!! invalid type '%s' !!!" % (type)
 
 	def getEpisodeNum(self, type, event, values, isMovie=None):
-		try:
-			episodeNum = None
-			sNum = None
-			eNum = None
-
-			if (values != None and len(values) > 0):
-				if 'season' in values and 'episode' in values:
-					if len(str(values['season']).strip()) > 0 and len(str(values['episode']).strip()) > 0:
-						sNum = str(values['season'])
-						eNum = str(values['episode'])
-					elif len(str(values['episode']).strip()) > 0:
-						sNum = '99'
-						eNum = str(values['episode'])
-
-			if (sNum == None and eNum == None and event != None):
-				try:
-					desc = self.getFullDescription(event)
-
-					for parser in self.seriesNumParserList:
-						extractSeriesNums = re.search(parser, str(desc))
-
-						if (extractSeriesNums):
-							sNum = extractSeriesNums.group(1)
-							eNum = extractSeriesNums.group(2)
-							break
-					if (sNum == None and eNum == None):
-						extractEpisode = re.search('\sFolge\s(\d+)', str(desc))
-						if (extractEpisode):
-							sNum = '99'
-							eNum = extractEpisode.group(1).strip()
-				except Exception as ex:
-					write_log('Fehler in getEpisodeNum from desc : ' + str(ex))
-
-			if (sNum == None and eNum == None and self.eventName):
-				SE = self.findEpisode(self.eventName)
-				if SE:
-					sNum = SE[0]
-					eNum = SE[1]
-
-			if (sNum == None and eNum == None and isMovie):
-				SE = self.findEpisode(isMovie)
-				if SE:
-					sNum = SE[0]
-					eNum = SE[1]
-
-			#individuelle Formatierung extrahieren
-			episodeFormat = self.getPrefixParser(type)
-			if (sNum != None and eNum != None):
-				if (episodeFormat != None):
-					#Staffel Format parsen
-					sFormatParser = re.search(r"[[]([s]+|[s])[]]", episodeFormat)
-					if (sFormatParser != None):
-						sFormat = sFormatParser.group(1)
-						sDigits = len(sFormat)
-
-						if str(sNum) != '99':
-							episodeNum = episodeFormat.replace('[%s]' % (sFormat), sNum.zfill(sDigits))
-						else:
-							episodeNum = episodeFormat.replace('[%s]' % (sFormat), '').replace('Staffel', '').replace('S', '').replace(', ', '')
-
-					#Episoden Format parsen
-					eFormatParser = re.search(r"[[]([e]+|[e])[]]", episodeFormat)
-					if (eFormatParser != None):
-						eFormat = eFormatParser.group(1)
-						eDigits = len(eFormat)
-
-						if str(sNum) != '99':
-							episodeNum = episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits))
-						else:
-							episodeNum = episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits)).replace('Episode', 'Folge ').replace('E', 'Folge ')
-				else:
-					#Standard falls kein individuelles Format angeben ist
-					if str(sNum) == '99':
-						episodeNum = 'Folge %s' % (eNum.zfill(2))
-					else:
-						episodeNum = 'S%sE%s' % (sNum.zfill(2), eNum.zfill(2))
-
+		episodeNum = None
+		sNum = None
+		eNum = None
+		if (values != None and len(values) > 0):
+			if 'season' in values and 'episode' in values:
+				if len(str(values['season']).strip()) > 0 and len(str(values['episode']).strip()) > 0:
+					sNum = str(values['season'])
+					eNum = str(values['episode'])
+				elif len(str(values['episode']).strip()) > 0:
+					sNum = '99'
+					eNum = str(values['episode'])
+		if (sNum == None and eNum == None and event != None):
+			desc = self.getFullDescription(event)
+			for parser in self.seriesNumParserList:
+				extractSeriesNums = search(parser, str(desc))
+				if (extractSeriesNums):
+					sNum = extractSeriesNums.group(1)
+					eNum = extractSeriesNums.group(2)
+					break
+			if (sNum == None and eNum == None):
+				extractEpisode = search('\sFolge\s(\d+)', str(desc))
+				if (extractEpisode):
+					sNum = '99'
+					eNum = extractEpisode.group(1).strip()
+		if (sNum == None and eNum == None and self.eventName):
+			SE = self.findEpisode(self.eventName)
+			if SE:
+				sNum = SE[0]
+				eNum = SE[1]
+		if (sNum == None and eNum == None and isMovie):
+			SE = self.findEpisode(isMovie)
+			if SE:
+				sNum = SE[0]
+				eNum = SE[1]
+		episodeFormat = self.getPrefixParser(type)  # individuelle Formatierung extrahieren
+		if (sNum != None and eNum != None):
+			if (episodeFormat != None):
+				sFormatParser = search(r"[[]([s]+|[s])[]]", episodeFormat)  # Staffel Format parsen
+				if (sFormatParser != None):
+					sFormat = sFormatParser.group(1)
+					sDigits = len(sFormat)
+					episodeNum = episodeFormat.replace('[%s]' % (sFormat), sNum.zfill(sDigits)) if str(sNum) != '99' else episodeFormat.replace('[%s]' % (sFormat), '').replace('Staffel', '').replace('S', '').replace(', ', '')
+				eFormatParser = search(r"[[]([e]+|[e])[]]", episodeFormat)  # Episoden Format parsen
+				if (eFormatParser != None):
+					eFormat = eFormatParser.group(1)
+					eDigits = len(eFormat)
+					episodeNum = episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits)) if str(sNum) != '99' else episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits)).replace('Episode', 'Folge ').replace('E', 'Folge ')
+			else:  # Standard falls kein individuelles Format angeben ist
+				episodeNum = 'Folge %s' % (eNum.zfill(2)) if str(sNum) == '99' else 'S%sE%s' % (sNum.zfill(2), eNum.zfill(2))
 				return episodeNum
-			return None
-		except Exception as ex:
-			write_log("Fehler in getEpisodeNum : " + str(ex) + " : " + str(isMovie))
-			return None
 
 	def getFullDescription(self, event):
 		if event != None:
-			try:
-				ext_desc = event.getExtendedDescription()
-			except Exception as ex:
-				ext_desc = ""
-			try:
-				short_desc = event.getShortDescription()
-			except Exception as ex:
-				short_desc = ""
-			if short_desc == "":
-				return ext_desc
-			elif ext_desc == "":
-				return short_desc
-			else:
-				return "%s\n\n%s" % (short_desc, ext_desc)
-		return None
+			ext_desc = event.getExtendedDescription()
+			short_desc = event.getShortDescription()
+		if short_desc == "":
+			return ext_desc
+		elif ext_desc == "":
+			return short_desc
+		else:
+			return "%s\n\n%s" % (short_desc, ext_desc)
 
-	def getPrefixParser(self, type):
-		#Prefix aus Parameter von Skin lesen
+	def getPrefixParser(self, type):  # Prefix aus Parameter von Skin lesen
 		prefixParser = '.*[(](.*)[)]'
-		prefix = re.search(prefixParser, type)
+		prefix = search(prefixParser, type)
 		if (prefix):
 			return prefix.group(1)
-		else:
-			return None
 
 	def isNumber(self, inp):
 		try:
@@ -1468,40 +1086,31 @@ class AdvancedEventLibraryInfo(Converter, object):
 
 	def getCompareGenreWithGenreList(self, desc, splitChar):
 		if (splitChar == None):
-			desc = re.sub('[.,]', '', desc)			#Hinter Genre kann direkt ein Zeichen folgen
+			desc = sub('[.,]', '', desc)  # Hinter Genre kann direkt ein Zeichen folgen
 			descWordList = desc.split(' ')
 		else:
-			descWordList = desc.split(splitChar)		#WortList zum Vergleichen erzeugen
+			descWordList = desc.split(splitChar)  # WortList zum Vergleichen erzeugen
 		setWordList = set(descWordList)
 		fileName = "/usr/lib/enigma2/python/Components/Converter/AdvancedEventLibrary_Genre.json"
 		if 'Folge' in setWordList or 'Staffel' in setWordList or 'Episode' in setWordList:
 			return 'Serie'
-		if (os.path.isfile(fileName)):
+		if (path.isfile(fileName)):
 			with open(fileName) as file:
 				jsonString = str(file.read())
-
-				# in Uncode umwandeln, da sonst json parsing nicht möglich
-				#jsonString = jsonString.decode("iso-8859-1")
-				genreData = json.loads(jsonString)
-
-				#exakten Treffer suchen
-				for genre in genreData:
-					# in utf-8 zurück wandeln
-					genre = genre.encode('utf-8')
-
+#				jsonString = jsonString.decode("iso-8859-1")  # in Uncode umwandeln, da sonst json parsing nicht möglich
+				genreData = loads(jsonString)
+				for genre in genreData:  # exakten Treffer suchen
+					genre = genre.encode('utf-8')  # in utf-8 zurück wandeln
 					setGenre = set([genre])
 					for words in setWordList:
 						if words == genre:
 							return str(genre)
-
 					if setGenre & setWordList:
 						return genre
-		return None
 
 	def getParsedCountryOrYear(self, resultTyp, desc, event):
 		if (event == None and desc):
-		#verwendet von getSpecialFormatDescription
-			parser = re.match(r'^([^.:?; ]+)\s(\d+)$', desc)
+			parser = match(r'^([^.:?; ]+)\s(\d+)$', desc)  # verwendet von getSpecialFormatDescription
 			if (parser):
 				if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY):
 					return parser.group(1)
@@ -1509,18 +1118,16 @@ class AdvancedEventLibraryInfo(Converter, object):
 					return parser.group(2)
 		else:
 			if (desc != ""):
-				parser = re.search(r'\s\d+\s[Min.]+\n([^.:?;]+)\s(\d+)', desc)
+				parser = search(r'\s\d+\s[Min.]+\n([^.:?;]+)\s(\d+)', desc)
 				if (parser):
 					if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY):
 						return parser.group(1)
 					elif (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR):
 						return parser.group(2)
 
-				parser = re.search(r'\s\d+\s[Min.]+\n(\d+)', desc)
-				if (parser):
-					if (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR):
-						return parser.group(1)
-		return None
+				parser = search(r'\s\d+\s[Min.]+\n(\d+)', desc)
+				if (parser) and (resultTyp == self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR):
+					return parser.group(1)
 
 	def isImageAvailable(self, event, values):
 		if getImageFile(self.coverPath, self.eventName):
@@ -1533,47 +1140,35 @@ class AdvancedEventLibraryInfo(Converter, object):
 		return False
 
 	def findYear(self, desc):
-		try:
-			regexfinder = re.compile('\d{4}.', re.MULTILINE | re.DOTALL)
-			ex = regexfinder.findall(desc)
-			if ex:
-				year = str(ex[0].replace('.', '').replace('\n', '').replace('\xc2', ''))
-				if int(year) in range(1950, 2030):
-					return year
-			regexfinder = re.compile('\d{4}', re.MULTILINE | re.DOTALL)
-			ex = regexfinder.findall(desc)
-			if ex:
-				year = str(ex[0].replace('\n', '').replace('\xc2', ''))
-				if int(year) in range(1950, 2030):
-					return year
-			return None
-		except:
-			return None
+		regexfinder = compile('\d{4}.', MULTILINE | DOTALL)
+		ex = regexfinder.findall(desc)
+		if ex:
+			year = str(ex[0].replace('.', '').replace('\n', '').replace('\xc2', ''))
+			if int(year) in range(1950, 2030):
+				return year
+		regexfinder = compile('\d{4}', MULTILINE | DOTALL)
+		ex = regexfinder.findall(desc)
+		if ex:
+			year = str(ex[0].replace('\n', '').replace('\xc2', ''))
+			if int(year) in range(1950, 2030):
+				return year
 
 	def findEpisode(self, desc):
-		try:
-			regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE | re.DOTALL)
-			ex = regexfinder.findall(str(desc))
-			if ex:
-				SE = ex[0].lower().replace('s','').split('e')
-				return (SE[0], SE[1])
-			return None
-		except:
-			return None
+		regexfinder = compile('[Ss]\d{2}[Ee]\d{2}', MULTILINE | DOTALL)
+		ex = regexfinder.findall(str(desc))
+		if ex:
+			SE = ex[0].lower().replace('s', '').split('e')
+			return (SE[0], SE[1])
 
 	def findCountry(self, desc):
-		try:
-			desc = re.sub('[.,]', '', str(desc))
-			descWordList = desc.replace('\n', ' ').split(' ')
-			setWordList = set(descWordList)
-			for words in setWordList:
-				for k, v in countrys.items():
-					for country in v:
-						if str(country) == str(words):
-							return (str(k), country)
-		except Exception as ex:
-			write_log('Fehler in findCountry from desc : ' + str(ex))
-			return (None, None)
+		desc = sub('[.,]', '', str(desc))
+		descWordList = desc.replace('\n', ' ').split(' ')
+		setWordList = set(descWordList)
+		for words in setWordList:
+			for k, v in countrys.items():
+				for country in v:
+					if str(country) == str(words):
+						return (str(k), country)
 		return (None, None)
 
 	def removeExtension(self, ext):

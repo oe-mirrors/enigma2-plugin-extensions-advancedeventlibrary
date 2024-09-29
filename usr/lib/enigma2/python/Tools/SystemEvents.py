@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from gettext import gettext as _
+from os import makedirs, chmod
+from os.path import exists
 from enigma import eConsoleAppContainer
-import os
 
 
 class SystemEvents:
@@ -61,22 +58,21 @@ class SystemEvents:
 		dummy_txt += "# PLEASE NOTE !!!!\n"
 		dummy_txt += "# Event hook calls can have some command-line arguments, which can be accessed via $1, $2 ...\n\n"
 		dummy_txt += "exit 0\n"
-
 		for evt in self.event_ids:
 			self.event_list[evt] = []
-		if not os.path.exists(self.cmd_path):
+		if not exists(self.cmd_path):
 			try:
-				os.makedirs(self.cmd_path)
+				makedirs(self.cmd_path)
 			except OSError:
 				pass
 		for key in self.event_list:
 			script_file = self.cmd_path + key + self.cmd_filetype
-			if not os.path.exists(script_file):
+			if not exists(script_file):
 				try:
 					with open(script_file, "w") as f:
 						f.write(dummy_txt)
-					os.chmod(script_file, 0o0775)
-				except:
+					chmod(script_file, 0o0775)
+				except Exception:
 					pass
 				self.ignore_script_exec.append(key)
 			else:
@@ -84,7 +80,7 @@ class SystemEvents:
 				try:
 					with open(script_file, "r") as f:
 						t = f.read()
-				except:
+				except Exception:
 					pass
 				if t == dummy_txt or t == "":
 					self.ignore_script_exec.append(key)

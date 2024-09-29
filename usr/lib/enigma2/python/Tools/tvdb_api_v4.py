@@ -1,4 +1,4 @@
-import base64
+from base64 import b64decode
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from json import dumps, load
@@ -6,27 +6,19 @@ from json import dumps, load
 
 class Auth:
 	def __init__(self, url, pin=""):
-		loginInfo = {"apikey": base64.b64decode('N2UwYTVjN2EtNTQ0NS00YWU2LTg4OTItOGZlYWQyYzc2ZTI3').decode()}
+		loginInfo = {"apikey": b64decode('N2UwYTVjN2EtNTQ0NS00YWU2LTg4OTItOGZlYWQyYzc2ZTI3').decode()}
 		if pin != "":
 			loginInfo["pin"] = pin
-
 		self.token = None
 		loginInfoBytes = dumps(loginInfo, indent=2).encode('utf-8')
-		try:
-			req = Request(url, data=loginInfoBytes)
-			req.add_header("Content-Type", "application/json")
-			response = urlopen(req, data=loginInfoBytes, timeout=5)
-			if response:
-				try:
-					res = load(response)
-					if "data" in res:
-						if "token" in res["data"]:
-							if res["data"]["token"] is not None:
-								self.token = res["data"]["token"]
-				except Exception:
-					pass
-		except Exception:
-			pass
+		req = Request(url, data=loginInfoBytes)
+		req.add_header("Content-Type", "application/json")
+		response = urlopen(req, data=loginInfoBytes, timeout=5)
+		if response:
+			res = load(response)
+			if "data" in res:
+				if "token" in res["data"] and res["data"]["token"] is not None:
+					self.token = res["data"]["token"]
 
 	def get_token(self):
 		return self.token
@@ -46,8 +38,6 @@ class Request:
 			data = res.get("data", None)
 			if data and res.get('status', 'failure') != 'failure':
 				return data
-			else:
-				return None
 
 
 class Url:

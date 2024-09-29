@@ -1,17 +1,11 @@
-# -*- coding: utf-8 -*-
-#
-# PrimeTime - Converter
-#
-# Coded by tsiegel (c) 2020
-
-from Components.Converter.Converter import Converter
-from Components.Element import cached
-from Components.config import config, ConfigClock, ConfigSubsection
-from Components.Sources.CurrentService import CurrentService
-from enigma import eEPGCache, eServiceReference, iServiceInformation, iPlayableService
-from time import localtime, strftime, mktime, time
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
+from time import localtime, strftime, mktime, time
+from enigma import eEPGCache, eServiceReference, iServiceInformation, iPlayableService
+from Components.Converter.Converter import Converter
+from Components.config import config
+from Components.Element import cached
+from Components.Sources.CurrentService import CurrentService
 
 
 class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
@@ -37,14 +31,12 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		ref = self.getServiceRef()
 		if ref:
 			return self.getResult(ref, 0)
-		return None
 
 	@cached
 	def getEvent(self):
 		ref = self.getServiceRef()
 		if ref:
 			return self.getResult(ref, 1)
-		return None
 
 	text = property(getText)
 	event = property(getEvent)
@@ -62,20 +54,11 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		if not self.epgcache.startTimeQuery(ref, primeTime):
 			event = self.epgcache.getNextTimeEntry()
 			if event and (event.getBeginTime() <= int(mktime(dt.timetuple()))):
-				if what == 0:
-					return self.getPrimeTimeEvent(event)
-				else:
-					return event
+				return self.getPrimeTimeEvent(event) if what == 0 else event
 			else:
-				if what == 0:
-					return ""
-				else:
-					return None
+				return "" if what == 0 else None
 		else:
-			if what == 0:
-				return ""
-			else:
-				return None
+			return "" if what == 0 else None
 
 	def getPrimeTimeEvent(self, event):
 		time = "%s - %s" % (strftime("%H:%M", localtime(event.getBeginTime())), strftime("%H:%M", localtime(event.getBeginTime() + event.getDuration())))
@@ -99,15 +82,12 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		return ""
 
 	def getMaxWords(self, desc, maxWords):
-		try:
-			wordList = desc.split(" ")
-			if (len(wordList) >= maxWords):
-				del wordList[maxWords:len(wordList)]
-				sep = ' '
-				return sep.join(wordList) + '...'
-			return desc
-		except Exception as ex:
-			return ""
+		wordList = desc.split(" ")
+		if (len(wordList) >= maxWords):
+			del wordList[maxWords:len(wordList)]
+			sep = ' '
+			return sep.join(wordList) + '...'
+		return desc
 
 	def changed(self, what):
 		if what[0] != self.CHANGED_SPECIFIC or what[1] in (iPlayableService.evStart,):

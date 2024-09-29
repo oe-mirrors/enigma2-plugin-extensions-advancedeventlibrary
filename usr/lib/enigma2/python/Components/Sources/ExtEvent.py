@@ -3,7 +3,6 @@ from Components.Sources.Source import Source
 
 
 class ExtEvent(Source, object):
-
 	def __init__(self):
 		Source.__init__(self)
 		self.srv = None

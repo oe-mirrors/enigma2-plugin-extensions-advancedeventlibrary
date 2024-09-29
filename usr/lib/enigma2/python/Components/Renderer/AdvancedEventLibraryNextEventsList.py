@@ -1,35 +1,27 @@
+from datetime import datetime
+from math import trunc
+from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_TOP, ePicLoad
+from skin import variables, parameters
+from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, loadJPG, ePixmap, ePicLoad
-from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
-from Components.Pixmap import Pixmap
-from Components.config import config, ConfigSubsection, ConfigYesNo
-from time import localtime, time
-from ServiceReference import ServiceReference
-from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN
-import skin
-import datetime
-import os
-import re
-import math
+from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, clearMem
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):
-
 	def __init__(self):
 		Renderer.__init__(self)
 		self.nameCache = {}
-		self.imageType = str(skin.variables.get('EventLibraryEPGListsImageType', ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
+		self.imageType = str(variables.get('EventLibraryEPGListsImageType', ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
 		self.imagePath = getPictureDir() + self.imageType + '/thumbnails/'
 		self.x = 1
 		self.y = 140
 		self.onSelChanged = []
 		self.epgcache = eEPGCache.getInstance()
 		self.l = eListboxPythonMultiContent()
-		self.defaultImage = str(skin.variables.get('EventLibraryEPGListsDefaultImage', ('/usr/share/enigma2/AELImages/movies.png',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		ffont, fsize = skin.parameters.get('EventLibraryEPGSingleListFirstFont', ('Regular', 26))
-		sfont, ssize = skin.parameters.get('EventLibraryEPGSingleListSecondFont', ('Regular', 30))
-		self.l.setItemHeight(int(skin.parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0]))
+		self.defaultImage = str(variables.get('EventLibraryEPGListsDefaultImage', ('/usr/share/enigma2/AELImages/movies.png',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
+		ffont, fsize = parameters.get('EventLibraryEPGSingleListFirstFont', ('Regular', 26))
+		sfont, ssize = parameters.get('EventLibraryEPGSingleListSecondFont', ('Regular', 30))
+		self.l.setItemHeight(int(parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0]))
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		self.l.setBuildFunc(self.buildSingleEntry)
@@ -44,7 +36,6 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 				self.x, self.y = int(x), int(y)
 			else:
 				attribs.append((attrib, value))
-
 		self.skinAttributes = attribs
 		return Renderer.applySkin(self, desktop, parent)
 
@@ -67,8 +58,8 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 			self.text = ''
 		else:
 			elist = self.epgcache.lookupEvent(['RIBDT', (self.source.text, 0, -1, 720)])
-			count = self.y / int(skin.parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0])
-			liste = elist[:math.trunc(count)]
+			count = self.y / int(parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0])
+			liste = elist[:trunc(count)]
 			if liste and len(liste):
 				liste.sort(key=lambda x: x[2])
 			self.l.setList(liste)
@@ -79,13 +70,12 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		return _itm
 
 	def buildSingleEntry(self, service, eventId, beginTime, duration, EventName):
-		xp, yp, wp, hp = skin.parameters.get('EventLibraryEPGSingleListImagePosition', (10, 5, 100, 60))
-		xrp, yrp, wrp, hrp = skin.parameters.get('EventLibraryEPGSingleListRecordPiconPosition', (130, 5, 55, 30))
-		x1, y1, w1, h1 = skin.parameters.get('EventLibraryEPGSingleListFirstLine', (130, 0, 1100, 30))
-		x2, y2, w2, h2 = skin.parameters.get('EventLibraryEPGSingleListSecondLine', (130, 25, 1100, 60))
+		xp, yp, wp, hp = parameters.get('EventLibraryEPGSingleListImagePosition', (10, 5, 100, 60))
+		xrp, yrp, wrp, hrp = parameters.get('EventLibraryEPGSingleListRecordPiconPosition', (130, 5, 55, 30))
+		x1, y1, w1, h1 = parameters.get('EventLibraryEPGSingleListFirstLine', (130, 0, 1100, 30))
+		x2, y2, w2, h2 = parameters.get('EventLibraryEPGSingleListSecondLine', (130, 25, 1100, 60))
 		width = self.l.getItemSize().width()
 		height = self.l.getItemSize().height()
-
 		flc = '#00ffffff'
 		flcs = '#00ffffff'
 		slc = '#00ffffff'
@@ -98,11 +88,10 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 			flcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
 			slcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColorSelected").argb())
-
 		res = [None]
-		timeobj = datetime.datetime.fromtimestamp(beginTime)
+		timeobj = datetime.fromtimestamp(beginTime)
 		_time = timeobj.strftime('%a   %d.%m.%Y   %H:%M')
-		timeobj = datetime.datetime.fromtimestamp(beginTime + duration)
+		timeobj = datetime.fromtimestamp(beginTime + duration)
 		_timeend = timeobj.strftime(' - %H:%M')
 		dauer = '   (%d Min.)' % (duration / 60)
 		dauer = str(dauer).replace('+', '')
@@ -130,7 +119,6 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 
 
 class PicLoader:
-
 	def __init__(self, width, height):
 		self.picload = ePicLoad()
 		self.picload.setPara((width, height, 1, 1, False, 1, '#ff000000'))
