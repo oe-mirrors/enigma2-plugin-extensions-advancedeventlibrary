@@ -29,7 +29,7 @@ from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
-from Tools.AdvancedEventLibrary import getDB, convert2base64, getallEventsfromEPG, createBackup, AELglobs
+from Tools.AdvancedEventLibrary import getDB, convert2base64, getallEventsfromEPG, createBackup, aelGlobals
 import Tools.AutoTimerHook as AutoTimerHook
 
 global leavePlayerfromTrailer

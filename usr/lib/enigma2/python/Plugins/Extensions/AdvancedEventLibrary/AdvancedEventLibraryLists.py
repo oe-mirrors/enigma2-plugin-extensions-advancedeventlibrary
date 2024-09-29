@@ -11,7 +11,10 @@ from Components.VariableText import VariableText
 from Tools.Alternatives import GetWithAlternative
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import AELglobs
+from Tools.AdvancedEventLibrary import aelGlobals
+
+
+DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
 
 class ImageList(GUIComponent, object):
@@ -939,7 +942,7 @@ class AELBaseWall(GUIComponent, object):
 			for fnc in self.onselectionchanged:
 				fnc()
 		except Exception as ex:
-			AELglobs.write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex))
+			aelGlobals.write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def itemupdated(self, index=0):
 		self.l.invalidateEntry(index)
@@ -958,7 +961,7 @@ class AELBaseWall(GUIComponent, object):
 			cur = self.l.getCurrentSelection()
 			return cur[0] if cur else None
 		except Exception as ex:
-			AELglobs.write_log('AEL BaseWall getcurrentselectiond : ' + str(cur) + '  ' + str(ex))
+			aelGlobals.write_log('AEL BaseWall getcurrentselectiond : ' + str(cur) + '  ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def postWidgetCreate(self, instance):
 		self.instance = instance
@@ -980,7 +983,7 @@ class AELBaseWall(GUIComponent, object):
 			self.l.setList(l)
 			self.list = l
 		except Exception as ex:
-			AELglobs.write_log('set list : ' + str(ex))
+			aelGlobals.write_log('set list : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def getlist(self):
 		return self.list

@@ -29,6 +29,8 @@ from . import tvdb_api_v4
 import tmdbsimple as tmdb
 import tvdbsimple as tvdb
 
+DEFAULT_MODULE_NAME = __name__.split(".")[-1]
+
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
 config.plugins.AdvancedEventLibrary.Location = ConfigText(default=defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/')
 config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
@@ -1157,17 +1159,17 @@ def getSizeStr(value, u=0):
 
 
 def clearMem(screenName=""):
-	AELglobs.write_log(str(screenName) + ' - Speicherauslastung vor Bereinigung : ' + str(getMemInfo('Mem')))
+	aelGlobals.write_log(str(screenName) + ' - Speicherauslastung vor Bereinigung : ' + str(getMemInfo('Mem')))
 	system('sync')
 	system('sh -c "echo 3 > /proc/sys/vm/drop_caches"')
-	AELglobs.write_log(str(screenName) + ' - Speicherauslastung nach Bereinigung : ' + str(getMemInfo('Mem')))
+	aelGlobals.write_log(str(screenName) + ' - Speicherauslastung nach Bereinigung : ' + str(getMemInfo('Mem')))
 
 
 def createBackup():
 	global STATUS
 	backuppath = config.plugins.AdvancedEventLibrary.Backup.value
 	STATUS = f"erzeuge Backup in {backuppath}"
-	AELglobs.write_log(f"create backup in {backuppath}")
+	aelGlobals.write_log(f"create backup in {backuppath}")
 	try:
 		if not exists(backuppath):
 			makedirs(backuppath)
@@ -1199,9 +1201,9 @@ def createBackup():
 						STATUS = f"({progress}/{pics} sichere Poster : {file}"
 						copied += 1
 			except Exception as ex:
-				AELglobs.write_log(f"Fehler beim kopieren : {ex}")
+				aelGlobals.write_log(f"Fehler beim kopieren : {ex}")
 				continue
-		AELglobs.write_log(f"have copied {copied} poster to {backuppath} poster/")
+		aelGlobals.write_log(f"have copied {copied} poster to {backuppath} poster/")
 		del files
 
 		files = glob(getPictureDir() + 'cover/*.jpg')
@@ -1224,15 +1226,15 @@ def createBackup():
 						STATUS = "(" + str(progress) + "/" + str(pics) + ") sichere Cover : " + str(file)
 						copied += 1
 			except Exception as ex:
-				AELglobs.write_log("Fehler beim kopieren : " + str(ex))
+				aelGlobals.write_log("Fehler beim kopieren : " + str(ex))
 				continue
-		AELglobs.write_log("have copied " + str(copied) + " cover to " + str(backuppath) + "cover/")
+		aelGlobals.write_log("have copied " + str(copied) + " cover to " + str(backuppath) + "cover/")
 		del files
 	except Exception as ex:
-		AELglobs.write_log("Fehler in createBackup : " + str(ex))
+		aelGlobals.write_log("Fehler in createBackup : " + str(ex))
 	STATUS = None
 	clearMem("createBackup")
-	AELglobs.write_log("backup finished")
+	aelGlobals.write_log("backup finished")
 
 
 def checkUsedSpace(db=None):
@@ -1248,8 +1250,8 @@ def checkUsedSpace(db=None):
 			coverSize = float(check_output(['du', '-sk', CDIR]).split()[0])
 			previewSize = float(check_output(['du', '-sk', PRDIR]).split()[0])
 			inodes = check_output(['df', '-i', dir]).split()[-2]
-			AELglobs.write_log('benutzte Inodes = ' + str(inodes))
-			AELglobs.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
+			aelGlobals.write_log('benutzte Inodes = ' + str(inodes))
+			aelGlobals.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
 			usedInodes = int(inodes[:-1])
 			if (((int(posterSize) + int(coverSize) + int(previewSize)) > int(maxSize)) or usedInodes >= config.plugins.AdvancedEventLibrary.MaxUsedInodes.value):
 				removeList = glob(join(PRDIR, "*.jpg"))
@@ -1259,7 +1261,7 @@ def checkUsedSpace(db=None):
 				while i < 100:
 					titles = db.getUnusedTitles()
 					if titles:
-						AELglobs.write_log(str(i + 1) + '. Bereinigung des Speicherplatzes.')
+						aelGlobals.write_log(str(i + 1) + '. Bereinigung des Speicherplatzes.')
 						for title in titles:
 							try:
 								if str(title[1]) not in recordings:
@@ -1281,19 +1283,19 @@ def checkUsedSpace(db=None):
 								continue
 						posterSize = float(check_output(['du', '-sk', PDIR]).split()[0])
 						coverSize = float(check_output(['du', '-sk', CDIR]).split()[0])
-						AELglobs.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
+						aelGlobals.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
 					if (posterSize + coverSize) < maxSize:
 						break
 					i += 1
 				db.vacuumDB()
-				AELglobs.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
+				aelGlobals.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
 	except Exception as ex:
-		AELglobs.write_log("Fehler in getUsedSpace : " + str(ex))
+		aelGlobals.write_log("Fehler in getUsedSpace : " + str(ex))
 
 
 def removeLogs():
-	if fileExists(AELglobs.LOGFILE):
-		remove(AELglobs.LOGFILE)
+	if fileExists(aelGlobals.LOGFILE):
+		remove(aelGlobals.LOGFILE)
 
 
 def startUpdate():
@@ -1301,7 +1303,7 @@ def startUpdate():
 		thread = Thread(target=getallEventsfromEPG, args=())
 		thread.start()
 	else:
-		AELglobs.write_log("AdvancedEventLibrary not installed")
+		aelGlobals.write_log("AdvancedEventLibrary not installed")
 
 
 def isconnected():
@@ -1309,7 +1311,7 @@ def isconnected():
 	try:
 		return system("ping -c 2 -W 2 -w 4 8.8.8.8")
 	except Exception as ex:
-		AELglobs.write_log("no internet connection! " + str(ex))
+		aelGlobals.write_log("no internet connection! " + str(ex))
 		return False
 
 
@@ -1352,7 +1354,7 @@ def createMovieInfo(db):
 														}
 													try:
 														STATUS = 'suche meta-Informationen für ' + str(title)
-														AELglobs.write_log('suche meta-Informationen für ' + str(title), ADDLOG)
+														aelGlobals.write_log('suche meta-Informationen für ' + str(title), ADDLOG)
 														search = tmdb.Search()
 														res = search.movie(query=title, language='de', year=jahr) if jahr != '' else search.movie(query=title, language='de')
 														if res:
@@ -1386,7 +1388,7 @@ def createMovieInfo(db):
 																			titleinfo['country'] = titleinfo['country'][:-3]
 																		break
 													except Exception as ex:
-														AELglobs.write_log('Fehler in createMovieInfo themoviedb movie : ' + str(ex))
+														aelGlobals.write_log('Fehler in createMovieInfo themoviedb movie : ' + str(ex))
 
 													try:
 														if not foundAsMovie:
@@ -1454,7 +1456,7 @@ def createMovieInfo(db):
 																							titleinfo['genre'] = maxGenres[0]
 																			break
 													except Exception as ex:
-														AELglobs.write_log('Fehler in createMovieInfo themoviedb tv : ' + str(ex))
+														aelGlobals.write_log('Fehler in createMovieInfo themoviedb tv : ' + str(ex))
 
 													try:
 														if not foundAsMovie and not foundOnTMDbTV:
@@ -1539,13 +1541,13 @@ def createMovieInfo(db):
 																		if 'overview' in response:
 																			titleinfo['overview'] = response['overview']
 													except Exception as ex:
-														AELglobs.write_log('Fehler in createMovieInfo TVDb : ' + str(ex))
+														aelGlobals.write_log('Fehler in createMovieInfo TVDb : ' + str(ex))
 
 													if titleinfo['overview'] != "":
 														txt = open(join(root, removeExtension(filename) + ".txt"), "w")
 														txt.write(titleinfo['overview'])
 														txt.close()
-														AELglobs.write_log('createMovieInfo for : ' + str(filename))
+														aelGlobals.write_log('createMovieInfo for : ' + str(filename))
 
 													if foundAsMovie or foundOnTMDbTV or foundOnTVDb:
 														if titleinfo['year'] != "" or titleinfo['genre'] != "" or titleinfo['country'] != "":
@@ -1565,17 +1567,17 @@ def createMovieInfo(db):
 															minfo += "\n" + str(filedt) + "\nAdvanced-Event-Library\n"
 															txt.write(minfo)
 															txt.close()
-															AELglobs.write_log('create meta-Info for ' + str(join(root, filename)))
+															aelGlobals.write_log('create meta-Info for ' + str(join(root, filename)))
 														else:
 															db.addimageBlackList(removeExtension(str(filename)))
 													else:
 														db.addimageBlackList(removeExtension(str(filename)))
-														AELglobs.write_log('nothing found for ' + str(join(root, filename)))
+														aelGlobals.write_log('nothing found for ' + str(join(root, filename)))
 								except Exception as ex:
-									AELglobs.write_log('Fehler in createMovieInfo : ' + str(ex))
+									aelGlobals.write_log('Fehler in createMovieInfo : ' + str(ex))
 									continue
 	except Exception as ex:
-		AELglobs.write_log('Fehler in createMovieInfo : ' + str(ex))
+		aelGlobals.write_log('Fehler in createMovieInfo : ' + str(ex))
 
 
 def getAllRecords(db):
@@ -1612,19 +1614,19 @@ def getAllRecords(db):
 											fname = convertDateInFileName(convertSearchName(convertTitle(((filename.split('/')[-1]).rsplit('.', 3)[0]).replace('_', ' '))))
 										searchName = filename + '.jpg'
 										if (fileExists(join(root, searchName)) and not fileExists(PDIR + convert2base64(fname) + '.jpg')):
-											AELglobs.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
+											aelGlobals.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
 											copy2(join(root, searchName), PDIR + convert2base64(fname) + ".jpg")
 										searchName = removeExtension(filename) + '.jpg'
 										if (fileExists(join(root, searchName)) and not fileExists(PDIR + convert2base64(fname) + '.jpg')):
-											AELglobs.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
+											aelGlobals.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
 											copy2(join(root, searchName), PDIR + convert2base64(fname) + ".jpg")
 										searchName = filename + '.bdp.jpg'
 										if (fileExists(join(root, searchName)) and not fileExists(CDIR + convert2base64(fname) + '.jpg')):
-											AELglobs.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
+											aelGlobals.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
 											copy2(join(root, searchName), CDIR + convert2base64(fname) + ".jpg")
 										searchName = removeExtension(filename) + '.bdp.jpg'
 										if (fileExists(join(root, searchName)) and not fileExists(CDIR + convert2base64(fname) + '.jpg')):
-											AELglobs.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
+											aelGlobals.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
 											copy2(join(root, searchName), CDIR + convert2base64(fname) + ".jpg")
 									if filename.endswith('.meta'):
 										fileCount += 1
@@ -1661,14 +1663,14 @@ def getAllRecords(db):
 										if not db.checkTitle(convert2base64(name)) and not foundInBl and name != '' and name != ' ':
 											names.add(name)
 								except Exception as ex:
-									AELglobs.write_log("Fehler in getAllRecords : " + ' - ' + str(name) + ' - ' + str(ex))
+									aelGlobals.write_log("Fehler in getAllRecords : " + ' - ' + str(name) + ' - ' + str(ex))
 									continue
-							AELglobs.write_log('check ' + str(fileCount) + ' meta Files in ' + str(root))
+							aelGlobals.write_log('check ' + str(fileCount) + ' meta Files in ' + str(root))
 					else:
-						AELglobs.write_log('recordPath ' + str(root) + ' is not exists')
+						aelGlobals.write_log('recordPath ' + str(root) + ' is not exists')
 			else:
-				AELglobs.write_log('recordPath ' + str(recordPath) + ' is not exists')
-		AELglobs.write_log('found ' + str(len(names)) + ' new Records in meta Files')
+				aelGlobals.write_log('recordPath ' + str(recordPath) + ' is not exists')
+		aelGlobals.write_log('found ' + str(len(names)) + ' new Records in meta Files')
 #		check vtidb
 		#doIt = False
 		#if "VTiDB" in sPDict:
@@ -1684,7 +1686,7 @@ def getAllRecords(db):
 		#	cur.execute(query)
 		#	rows = cur.fetchall()
 		#	if rows:
-		#		AELglobs.write_log('check ' + str(len(rows)) + ' titles in vtidb')
+		#		aelGlobals.write_log('check ' + str(len(rows)) + ' titles in vtidb')
 		#		for row in rows:
 		#			try:
 		#				if row[0] and row[0] != '' and row[0] != ' ':
@@ -1697,12 +1699,12 @@ def getAllRecords(db):
 		#					if not db.checkTitle(convert2base64(name)) and not foundInBl:
 		#						names.add(name)
 		#			except Exception as ex:
-		#				AELglobs.write_log("Fehler in getAllRecords vtidb: " + str(row[0]) + ' - ' + str(ex))
+		#				aelGlobals.write_log("Fehler in getAllRecords vtidb: " + str(row[0]) + ' - ' + str(ex))
 		#				continue
-		#AELglobs.write_log('found ' + str(len(names)) + ' new Records')
+		#aelGlobals.write_log('found ' + str(len(names)) + ' new Records')
 		return names
 	except Exception as ex:
-		AELglobs.write_log("Fehler in getAllRecords : " + str(ex))
+		aelGlobals.write_log("Fehler in getAllRecords : " + str(ex))
 		return names
 
 
@@ -1743,11 +1745,11 @@ def getRecordings():
 										except Exception:
 											pass
 								except Exception as ex:
-									AELglobs.write_log("getRecordings : " + ' - ' + str(name) + ' - ' + str(ex))
+									aelGlobals.write_log("getRecordings : " + ' - ' + str(name) + ' - ' + str(ex))
 									continue
 		return names
 	except Exception as ex:
-		AELglobs.write_log("Fehler in getRecordings : " + str(ex))
+		aelGlobals.write_log("Fehler in getRecordings : " + str(ex))
 		return names
 
 
@@ -1767,9 +1769,9 @@ def cleanPreviewImages(db):
 				remove(img)
 				it += 1
 		else:
-			AELglobs.write_log("can't remove " + str(image) + ", because it's a record")
-	AELglobs.write_log('have removed ' + str(ic) + ' preview images')
-	AELglobs.write_log('have removed ' + str(it) + ' preview thumbnails')
+			aelGlobals.write_log("can't remove " + str(image) + ", because it's a record")
+	aelGlobals.write_log('have removed ' + str(ic) + ' preview images')
+	aelGlobals.write_log('have removed ' + str(it) + ' preview thumbnails')
 	del recImages
 	del prevImages
 
@@ -1781,10 +1783,10 @@ def getallEventsfromEPG():
 	createDirs(dir)
 	STATUS = 'entferne Logfile...'
 	removeLogs()
-	AELglobs.write_log("Update start...")
-	AELglobs.write_log("default image path is " + str(dir)[:-1])
-#	AELglobs.write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
-	AELglobs.write_log("searchOptions " + str(sPDict))
+	aelGlobals.write_log("Update start...")
+	aelGlobals.write_log("default image path is " + str(dir)[:-1])
+#	aelGlobals.write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
+	aelGlobals.write_log("searchOptions " + str(sPDict))
 	db = getDB()
 	db.parameter(PARAMETER_SET, 'laststart', str(time()))
 	cVersion = db.parameter(PARAMETER_GET, 'currentVersion', None, 111)
@@ -1818,7 +1820,7 @@ def getallEventsfromEPG():
 				playable = not (eServiceReference(serviceref).flags & mask)
 				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
 					if serviceref not in tvsref:
-						AELglobs.write_log(servicename + ' mit der Referenz ' + serviceref + ' konnte nicht in der TVS Referenzliste gefunden werden!')
+						aelGlobals.write_log(servicename + ' mit der Referenz ' + serviceref + ' konnte nicht in der TVS Referenzliste gefunden werden!')
 					line = [serviceref, servicename]
 					if line not in lines:
 						lines.append(line)
@@ -1829,7 +1831,7 @@ def getallEventsfromEPG():
 	print("debug test:", test)
 	epgcache = eEPGCache.getInstance()
 	allevents = epgcache.lookupEvent(test) or []
-	AELglobs.write_log('found ' + str(len(allevents)) + ' Events in EPG')
+	aelGlobals.write_log('found ' + str(len(allevents)) + ' Events in EPG')
 	evt = 0
 	liveTVRecords = []
 	for serviceref, eid, name, begin in allevents:
@@ -1856,9 +1858,9 @@ def getallEventsfromEPG():
 		if not db.checkTitle(convert2base64(name)) and not foundInBl:
 			names.add(name)
 		#except Exception as ex:
-		#	AELglobs.write_log('Fehler in get_allEventsfromEPG : ' + str(ex))
+		#	aelGlobals.write_log('Fehler in get_allEventsfromEPG : ' + str(ex))
 		#	continue
-	AELglobs.write_log('check ' + str(len(names)) + ' new events')
+	aelGlobals.write_log('check ' + str(len(names)) + ' new events')
 	limgs = True
 	if config.plugins.AdvancedEventLibrary.SearchFor.value == "nur Extradaten":
 		limgs = False
@@ -1868,7 +1870,7 @@ def getallEventsfromEPG():
 	del allevents
 	del liveTVRecords
 	#except Exception as ex:
-	#	AELglobs.write_log("Fehler in get_allEventsfromEPG : " + str(ex))
+	#	aelGlobals.write_log("Fehler in get_allEventsfromEPG : " + str(ex))
 
 
 def getTVSpielfilm(db, tvsref):
@@ -1998,7 +2000,7 @@ def getTVSpielfilm(db, tvsref):
 											db.updateliveTVS(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sRef, airtime, title)
 											founded = tcount - db.getUpdateCount()
 											if founded == success:
-												AELglobs.write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', ADDLOG)
+												aelGlobals.write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', ADDLOG)
 											if founded > success and imdb != "":
 												trailers += 1
 											if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
@@ -2008,22 +2010,22 @@ def getTVSpielfilm(db, tvsref):
 														imgcount += 1
 														lastImage = image
 										except Exception as ex:
-											AELglobs.write_log('Fehler in TV-Spielfilm : ' + str(ex) + ' - url ' + str(url), ADDLOG)
+											aelGlobals.write_log('Fehler in TV-Spielfilm : ' + str(ex) + ' - url ' + str(url), ADDLOG)
 											continue
 								curDate = curDate + 86400
 							except Exception as ex:
-								AELglobs.write_log('Fehler in getTVSpielfilm: ' + str(ex) + ' - ' + str(url), ADDLOG)
+								aelGlobals.write_log('Fehler in getTVSpielfilm: ' + str(ex) + ' - ' + str(url), ADDLOG)
 								curDate = curDate + 86400
 								continue
 				except Exception as ex:
-					AELglobs.write_log('Fehler in getTVSpielfilm: ' + str(ex))
+					aelGlobals.write_log('Fehler in getTVSpielfilm: ' + str(ex))
 					continue
-		AELglobs.write_log('have updated ' + str(founded) + ' events from TV-Spielfilm')
-		AELglobs.write_log('have downloaded ' + str(imgcount) + ' images from TV-Spielfilm')
-		AELglobs.write_log('have found ' + str(trailers) + ' trailers on TV-Spielfilm')
+		aelGlobals.write_log('have updated ' + str(founded) + ' events from TV-Spielfilm')
+		aelGlobals.write_log('have downloaded ' + str(imgcount) + ' images from TV-Spielfilm')
+		aelGlobals.write_log('have found ' + str(trailers) + ' trailers on TV-Spielfilm')
 		db.parameter(PARAMETER_SET, 'lastpreviewImageCount', str(imgcount))
 	except Exception as ex:
-		AELglobs.write_log('Fehler in getTVSpielfilm: ' + str(ex))
+		aelGlobals.write_log('Fehler in getTVSpielfilm: ' + str(ex))
 
 
 def getTVMovie(db, secondRun=False):
@@ -2038,12 +2040,12 @@ def getTVMovie(db, secondRun=False):
 		tcount = db.getUpdateCount()
 		if not secondRun:
 			tvnames = db.getTitlesforUpdate()
-			AELglobs.write_log('check ' + str(len(tvnames)) + ' titles on TV-Movie')
+			aelGlobals.write_log('check ' + str(len(tvnames)) + ' titles on TV-Movie')
 		else:
 			tvnames = db.getTitlesforUpdate2()
 			for name in failedNames:
 				tvnames.append(name)
-			AELglobs.write_log('recheck ' + str(len(tvnames)) + ' titles on TV-Movie')
+			aelGlobals.write_log('recheck ' + str(len(tvnames)) + ' titles on TV-Movie')
 		url = 0
 		for title in tvnames:
 			try:
@@ -2171,16 +2173,16 @@ def getTVMovie(db, secondRun=False):
 												imgcount += 1
 												lastImage = image
 						except Exception as ex:
-							AELglobs.write_log('Fehler in TV-Movie : ' + str(ex) + ' - ' + str(title[0]) + ' url ' + str(url))
+							aelGlobals.write_log('Fehler in TV-Movie : ' + str(ex) + ' - ' + str(title[0]) + ' url ' + str(url))
 							failedNames.append(title)
 							continue
 					if nothingfound:
-						AELglobs.write_log('nothing found on TV-Movie for ' + str(title[0]) + ' url ' + str(url), ADDLOG)
+						aelGlobals.write_log('nothing found on TV-Movie for ' + str(title[0]) + ' url ' + str(url), ADDLOG)
 			except Exception as ex:
-				AELglobs.write_log('Fehler in TV-Movie : ' + str(ex) + ' - ' + str(title[0]) + ' url ' + str(url))
+				aelGlobals.write_log('Fehler in TV-Movie : ' + str(ex) + ' - ' + str(title[0]) + ' url ' + str(url))
 				continue
-		AELglobs.write_log('have updated ' + str(founded) + ' events from TV-Movie')
-		AELglobs.write_log('have downloaded ' + str(imgcount) + ' images from TV-Movie')
+		aelGlobals.write_log('have updated ' + str(founded) + ' events from TV-Movie')
+		aelGlobals.write_log('have downloaded ' + str(imgcount) + ' images from TV-Movie')
 		if not secondRun:
 			tvsImages = db.parameter(PARAMETER_GET, 'lastpreviewImageCount', None, 0)
 			imgcount += int(tvsImages)
@@ -2189,7 +2191,7 @@ def getTVMovie(db, secondRun=False):
 		del tvnames
 		del failedNames
 	except Exception as ex:
-		AELglobs.write_log('Fehler in getTVMovie : ' + str(ex))
+		aelGlobals.write_log('Fehler in getTVMovie : ' + str(ex))
 
 
 def correctTitleName(tvname):
@@ -2364,11 +2366,11 @@ def downloadImage(url, filename, timeout=5):
 					f.close()
 				r = None
 			else:
-				AELglobs.write_log("Fehlerhafter Statuscode beim Download für : " + str(filename) + ' auf ' + str(url))
+				aelGlobals.write_log("Fehlerhafter Statuscode beim Download für : " + str(filename) + ' auf ' + str(url))
 		else:
-			AELglobs.write_log("Picture : " + str(b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', ADDLOG)
+			aelGlobals.write_log("Picture : " + str(b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', ADDLOG)
 	except Exception as ex:
-		AELglobs.write_log("Fehler in download image: " + str(ex))
+		aelGlobals.write_log("Fehler in download image: " + str(ex))
 
 
 def downloadImage2(url, filename, timeout=5):
@@ -2405,24 +2407,24 @@ def checkAllImages():
 					STATUS = str(c) + '/' + str(l) + ' überprüfe ' + str(f)
 					img = Image.open(f)
 					if img.format != 'JPEG':
-						AELglobs.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
+						aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
 						removeList.append(f)
 					img = None
 				except Exception as ex:
-					AELglobs.write_log('invalid image : ' + str(f) + ' ' + str(ex))
+					aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(ex))
 					removeList.append(f)
 					continue
 			del filelist
 		if removeList:
 			for f in removeList:
-				AELglobs.write_log('remove image : ' + str(f))
+				aelGlobals.write_log('remove image : ' + str(f))
 				remove(f)
 			del removeList
 		STATUS = None
 		clearMem("checkAllImages")
 	except Exception as ex:
 		STATUS = None
-		AELglobs.write_log("Fehler in checkAllImages: " + str(ex))
+		aelGlobals.write_log("Fehler in checkAllImages: " + str(ex))
 
 
 def reduceImageSize(path, db):
@@ -2472,18 +2474,18 @@ def reduceImageSize(path, db):
 								if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 									break
 						img1.save(f, format='jpeg', quality=q)
-						AELglobs.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(f), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+						aelGlobals.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(f), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 						if getsize(f) / 1024.0 > maxSize:
-							AELglobs.write_log('Image size cannot be further reduced with the current settings!')
+							aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
 							db.addimageBlackList(str(f))
 						img_bytes = None
 						img = None
 			except Exception as ex:
-				AELglobs.write_log("Fehler in reduceImageSize: " + str(ex))
+				aelGlobals.write_log("Fehler in reduceImageSize: " + str(ex))
 				continue
 		del filelist
 	except Exception as ex:
-		AELglobs.write_log("Fehler in reduceImageSize: " + str(ex))
+		aelGlobals.write_log("Fehler in reduceImageSize: " + str(ex))
 
 
 def reduceSigleImageSize(src, dest):
@@ -2504,7 +2506,7 @@ def reduceSigleImageSize(src, dest):
 					img = Image.open(src)
 					w = int(img.size[0])
 					h = int(img.size[1])
-					AELglobs.write_log('convert image ' + str(fn) + '.jpg with ' + str(bytes2human(getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+					aelGlobals.write_log('convert image ' + str(fn) + '.jpg with ' + str(bytes2human(getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 					img_bytes = StringIO()
 					img1 = img.convert('RGB', colors=256)
 					img1.save(str(img_bytes), format='jpeg')
@@ -2527,17 +2529,17 @@ def reduceSigleImageSize(src, dest):
 							if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 								break
 					img1.save(dest, format='jpeg', quality=q)
-					AELglobs.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+					aelGlobals.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 					if getsize(dest) / 1024.0 > maxSize:
-						AELglobs.write_log('Image size cannot be further reduced with the current settings!')
+						aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
 					img_bytes = None
 					img = None
 				except Exception as ex:
-					AELglobs.write_log("Fehler in reduceSingleImageSize: " + str(ex))
+					aelGlobals.write_log("Fehler in reduceSingleImageSize: " + str(ex))
 		except Exception as ex:
-			AELglobs.write_log("Fehler in reduceSingleImageSize: " + str(ex))
+			aelGlobals.write_log("Fehler in reduceSingleImageSize: " + str(ex))
 	except Exception as ex:
-		AELglobs.write_log("Fehler in reduceSingleImageSize: " + str(ex))
+		aelGlobals.write_log("Fehler in reduceSingleImageSize: " + str(ex))
 
 
 def createThumbnails(path):
@@ -2561,12 +2563,12 @@ def createThumbnails(path):
 							imgnew.save(destfile)
 							img = None
 			except Exception as ex:
-				AELglobs.write_log("Fehler in createThumbnails: " + str(f) + ' - ' + str(ex))
+				aelGlobals.write_log("Fehler in createThumbnails: " + str(f) + ' - ' + str(ex))
 				remove(f)
 				continue
 		del filelist
 	except Exception as ex:
-		AELglobs.write_log("Fehler in createThumbnails: " + str(ex))
+		aelGlobals.write_log("Fehler in createThumbnails: " + str(ex))
 
 
 def createSingleThumbnail(src, dest):
@@ -2574,17 +2576,17 @@ def createSingleThumbnail(src, dest):
 		wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
 		wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
 		destfile = dest.replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails')
-		AELglobs.write_log('create single thumbnail from source ' + str(src) + ' to ' + str(destfile) + ' with ' + str(wc) + 'x' + str(hc) + 'px')
+		aelGlobals.write_log('create single thumbnail from source ' + str(src) + ' to ' + str(destfile) + ' with ' + str(wc) + 'x' + str(hc) + 'px')
 		img = Image.open(src)
 		imgnew = img.convert('RGBA', colors=256)
 		imgnew = img.resize((wc, hc), Image.LANCZOS) if 'cover' in str(dest) or 'preview' in str(dest) else img.resize((wp, hp), Image.LANCZOS)
 		imgnew.save(destfile)
 		if fileExists(destfile):
-			AELglobs.write_log('thumbnail created')
+			aelGlobals.write_log('thumbnail created')
 		img = None
 	except Exception as ex:
 		remove(src)
-		AELglobs.write_log("Fehler in createSingleThumbnail: " + str(src) + ' - ' + str(ex))
+		aelGlobals.write_log("Fehler in createSingleThumbnail: " + str(src) + ' - ' + str(ex))
 
 
 def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[], tvsref=None):
@@ -2592,7 +2594,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	if isconnected() == 0 and isInstalled:
 		tvdbV4 = get_TVDb()
 		if not tvdbV4:
-			AELglobs.write_log('TVDb API-V4 is not in use!')
+			aelGlobals.write_log('TVDb API-V4 is not in use!')
 		posterDir = getPictureDir() + 'poster/'
 		coverDir = getPictureDir() + 'cover/'
 		previewDir = getPictureDir() + 'preview/'
@@ -2626,10 +2628,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					omdb_image = None
 					foundAsMovie = False
 					foundAsSeries = False
-		#			AELglobs.write_log('################################################### themoviedb movie ##############################################')
+		#			aelGlobals.write_log('################################################### themoviedb movie ##############################################')
 					try:
 						STATUS = str(position) + '/' + str(len(titles)) + ' : themoviedb movie -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-						AELglobs.write_log('looking for ' + str(title) + ' on themoviedb movie', AELglobs.addlog)
+						aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb movie', aelGlobals.addlog)
 						search = tmdb.Search()
 						res = search.movie(query=title, language='de', year=jahr) if jahr != '' else search.movie(query=title, language='de')
 						if res and res['results']:
@@ -2643,7 +2645,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							for item in res['results']:
 								if item['title'].lower() == bestmatch[0]:
 									foundAsMovie = True
-									AELglobs.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb movie', AELglobs.addlog)
+									aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb movie', aelGlobals.addlog)
 									if item['original_title']:
 										org_name = item['original_title']
 									if item['poster_path'] and loadImages:
@@ -2687,13 +2689,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 												pass
 									break
 					except Exception as ex:
-						AELglobs.write_log('Fehler in get_titleInfo themoviedb movie : ' + str(ex))
+						aelGlobals.write_log('Fehler in get_titleInfo themoviedb movie : ' + str(ex))
 
-		#			AELglobs.write_log('################################################### themoviedb tv ##############################################')
+		#			aelGlobals.write_log('################################################### themoviedb tv ##############################################')
 					try:
 						if not foundAsMovie:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : themoviedb tv -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							AELglobs.write_log('looking for ' + str(title) + ' on themoviedb tv', AELglobs.addlog)
+							aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb tv', aelGlobals.addlog)
 							search = tmdb.Search()
 							searchName = findEpisode(title)
 							if searchName:
@@ -2717,7 +2719,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									for item in res['results']:
 										if item['name'].lower() == bestmatch[0]:
 											foundAsSeries = True
-											AELglobs.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', AELglobs.addlog)
+											aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', aelGlobals.addlog)
 											if searchName:
 												try:
 													details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
@@ -2785,13 +2787,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 															pass
 											break
 					except Exception as ex:
-						AELglobs.write_log('Fehler in get_titleInfo themoviedb tv : ' + str(ex))
+						aelGlobals.write_log('Fehler in get_titleInfo themoviedb tv : ' + str(ex))
 
-		#			AELglobs.write_log('################################################### thetvdb ##############################################')
+		#			aelGlobals.write_log('################################################### thetvdb ##############################################')
 					if not foundAsMovie and not foundAsSeries:
 						if True:   # TODO: das geht besser
 							STATUS = str(position) + '/' + str(len(titles)) + ' : thetvdb -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							AELglobs.write_log('looking for ' + str(title) + ' on thetvdb', AELglobs.addlog)
+							aelGlobals.write_log('looking for ' + str(title) + ' on thetvdb', aelGlobals.addlog)
 							seriesid = None
 							search = tvdb.Search()
 							searchTitle = convertTitle2(title)
@@ -2808,7 +2810,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											bestmatch = [searchTitle.lower()]
 										for result in response:
 											if result['seriesName'].lower() == bestmatch[0]:
-												AELglobs.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', AELglobs.addlog)
+												aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', aelGlobals.addlog)
 												seriesid = result['id']
 												break
 								except Exception as ex:
@@ -2824,7 +2826,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 												bestmatch = [searchTitle.lower()]
 											for result in response:
 												if result['seriesName'].lower() == bestmatch[0]:
-													AELglobs.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', AELglobs.addlog)
+													aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', aelGlobals.addlog)
 													seriesid = result['id']
 													break
 									except Exception as ex:
@@ -2885,7 +2887,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 																	titleinfo['poster_url'] = 'https://www.thetvdb.com/banners/' + response['poster']
 														break
 												except Exception:
-													AELglobs.write_log('Fehler in get_titleInfo thetvdb Episoden : ' + str(ex) + ' ' + str(episode))
+													aelGlobals.write_log('Fehler in get_titleInfo thetvdb Episoden : ' + str(ex) + ' ' + str(episode))
 													continue
 
 									if response and not foundEpisode:
@@ -2940,13 +2942,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											except Exception as ex:
 												pass
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get_titleInfo thetvdb : ' + str(ex) + ' ' + str(title))
+								aelGlobals.write_log('Fehler in get_titleInfo thetvdb : ' + str(ex) + ' ' + str(title))
 
-		#			AELglobs.write_log('################################################### maze.tv ##############################################')
+		#			aelGlobals.write_log('################################################### maze.tv ##############################################')
 					if not foundAsMovie:
 						if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
 							STATUS = str(position) + '/' + str(len(titles)) + ' : maze.tv -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							AELglobs.write_log('looking for ' + str(title) + ' on maze.tv', AELglobs.addlog)
+							aelGlobals.write_log('looking for ' + str(title) + ' on maze.tv', aelGlobals.addlog)
 							try:
 								url = "http://api.tvmaze.com/search/shows?q=%s" % (org_name) if org_name else "http://api.tvmaze.com/search/shows?q=%s" % (title)
 								r = get(url, timeout=5)
@@ -2979,13 +2981,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 													imdb_id = item['show']['externals']['imdb']
 												break
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get_titleInfo maze.tv : ' + str(ex))
+								aelGlobals.write_log('Fehler in get_titleInfo maze.tv : ' + str(ex))
 
-		#			AELglobs.write_log('################################################### omdb ##############################################')
+		#			aelGlobals.write_log('################################################### omdb ##############################################')
 					if not foundAsMovie and not foundAsSeries:
 						try:
 							STATUS = str(position) + '/' + str(len(titles)) + ' : omdb -' + str(title) + '  (' + str(posters) + '|' + str(covers) + '|' + str(entrys) + '|' + str(blentrys) + ')'
-							AELglobs.write_log('looking for ' + str(title) + ' on omdb', AELglobs.addlog)
+							aelGlobals.write_log('looking for ' + str(title) + ' on omdb', aelGlobals.addlog)
 							if imdb_id:
 								url = "http://www.omdbapi.com/?apikey=%s&i=%s" % (get_keys('omdb'), imdb_id)
 							else:
@@ -3052,14 +3054,14 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 										elif "G" in str(res['Rated']):
 											titleinfo['fsk'] = "16"
 						except Exception as ex:
-							AELglobs.write_log('Fehler in get_titleInfo omdb : ' + str(ex))
+							aelGlobals.write_log('Fehler in get_titleInfo omdb : ' + str(ex))
 
 					filename = convert2base64(title)
 					if filename and filename != '' and filename != ' ':
 						if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
 							blentrys += 1
 							db.addblackList(filename)
-							AELglobs.write_log('nothing found for : ' + str(titleinfo['title']), AELglobs.addlog)
+							aelGlobals.write_log('nothing found for : ' + str(titleinfo['title']), aelGlobals.addlog)
 
 						if titleinfo['genre'] != "" or titleinfo['year'] != "" or titleinfo['rating'] != "" or titleinfo['fsk'] != "" or titleinfo['country'] != "":
 							entrys += 1
@@ -3070,7 +3072,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
 							else:
 								db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
-							AELglobs.write_log('found data for : ' + str(titleinfo['title']), AELglobs.addlog)
+							aelGlobals.write_log('found data for : ' + str(titleinfo['title']), aelGlobals.addlog)
 
 						if not titleinfo['poster_url'] and loadImages:
 							titleinfo['poster_url'] = get_Picture(title + ' (' + titleinfo['year'] + ')', what='Poster', lang='de') if titleinfo['year'] != "" else get_Picture(title, what='Poster', lang='de')
@@ -3096,12 +3098,12 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									downloadImage(titleinfo['backdrop_url'], join(coverDir, research + '.jpg'))
 								else:
 									downloadImage(titleinfo['backdrop_url'], join(coverDir, filename + '.jpg'))
-					AELglobs.write_log(titleinfo, AELglobs.addlog)
+					aelGlobals.write_log(titleinfo, aelGlobals.addlog)
 			except Exception as ex:
-				AELglobs.write_log("Fehler in get_titleInfo for : " + str(title) + ' infos = ' + str(titleinfo) + ' : ' + str(ex))
+				aelGlobals.write_log("Fehler in get_titleInfo for : " + str(title) + ' infos = ' + str(titleinfo) + ' : ' + str(ex))
 				continue
-		AELglobs.write_log("set " + str(entrys) + " on eventInfo")
-		AELglobs.write_log("set " + str(blentrys) + " on Blacklist")
+		aelGlobals.write_log("set " + str(entrys) + " on eventInfo")
+		aelGlobals.write_log("set " + str(blentrys) + " on Blacklist")
 
 		db.parameter(PARAMETER_SET, 'lasteventInfoCount', str(int(entrys + blentrys)))
 		db.parameter(PARAMETER_SET, 'lasteventInfoCountSuccsess', str(entrys))
@@ -3111,31 +3113,31 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 			cleanPreviewImages(db)
 		db.cleanliveTV(int(time() - 28800))
 		if len(liveTVRecords) > 0:
-			AELglobs.write_log('try to insert ' + str(len(liveTVRecords)) + ' events into database')
+			aelGlobals.write_log('try to insert ' + str(len(liveTVRecords)) + ' events into database')
 			db.addliveTV(liveTVRecords)
 			db.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(db.getUpdateCount()))
 			getTVSpielfilm(db, tvsref)
 			getTVMovie(db)
 			db.updateliveTVProgress()
 		if loadImages:
-			AELglobs.write_log("looking for missing pictures")
+			aelGlobals.write_log("looking for missing pictures")
 			get_MissingPictures(db, posters, covers)
-		AELglobs.write_log("create thumbnails for cover")
+		aelGlobals.write_log("create thumbnails for cover")
 		createThumbnails(coverDir)
-		AELglobs.write_log("create thumbnails for preview images")
+		aelGlobals.write_log("create thumbnails for preview images")
 		createThumbnails(previewDir)
-		AELglobs.write_log("create thumbnails for poster")
+		aelGlobals.write_log("create thumbnails for poster")
 		createThumbnails(posterDir)
-		AELglobs.write_log("reduce large image-size")
+		aelGlobals.write_log("reduce large image-size")
 		reduceImageSize(coverDir, db)
 		reduceImageSize(previewDir, db)
 		reduceImageSize(posterDir, db)
 		if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
-			AELglobs.write_log("looking for missing meta-Info")
+			aelGlobals.write_log("looking for missing meta-Info")
 			createMovieInfo(db)
 		createStatistics(db)
 		if config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value:
-			AELglobs.write_log("create MovieWall data")
+			aelGlobals.write_log("create MovieWall data")
 			try:
 				itype = None
 				if fileExists('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
@@ -3145,13 +3147,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 				if itype:
 					from Plugins.Extensions.AdvancedEventLibrary.AdvancedEventLibrarySimpleMovieWall import saveList
 					saveList(itype)
-					AELglobs.write_log("MovieWall data saved with " + str(itype))
+					aelGlobals.write_log("MovieWall data saved with " + str(itype))
 			except Exception as ex:
-				AELglobs.write_log('save moviewall data : ' + str(ex))
-		if AELglobs.addlog:
+				aelGlobals.write_log('save moviewall data : ' + str(ex))
+		if aelGlobals.addlog:
 			writeTVStatistic(db)
 		db.parameter(PARAMETER_SET, 'laststop', str(time()))
-		AELglobs.write_log("Update done")
+		aelGlobals.write_log("Update done")
 		STATUS = None
 		clearMem("search")
 		if research:
@@ -3176,7 +3178,7 @@ def get_Picture(title, what='Cover', lang='de'):
 			title = convertSearchName(titleNyear[0])
 			jahr = str(titleNyear[1])
 
-#			AELglobs.write_log('################################################### themoviedb tv ##############################################')
+#			aelGlobals.write_log('################################################### themoviedb tv ##############################################')
 			try:
 				search = tmdb.Search()
 				searchName = findEpisode(title)
@@ -3212,7 +3214,7 @@ def get_Picture(title, what='Cover', lang='de'):
 														if 'stills' in imgs:
 															picture = 'http://image.tmdb.org/t/p/' + cq + imgs['stills'][0]['file_path']
 										except Exception as ex:
-											AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+											aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 									try:
 										if what == 'Cover' and not searchName:
 											imgs = idx.images(language=str(lang))['backdrops']
@@ -3223,7 +3225,7 @@ def get_Picture(title, what='Cover', lang='de'):
 												if imgs:
 													picture = 'http://image.tmdb.org/t/p/' + cq + imgs[0]['file_path']
 									except Exception as ex:
-										AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+										aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 									try:
 										if what == 'Poster':
 											imgs = idx.images(language=str(lang))['posters']
@@ -3234,11 +3236,11 @@ def get_Picture(title, what='Cover', lang='de'):
 												if imgs:
 													picture = 'http://image.tmdb.org/t/p/' + str(posterquality) + imgs[0]['file_path']
 									except Exception as ex:
-										AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+										aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 			except Exception as ex:
-				AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+				aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 
-#			AELglobs.write_log('################################################### themoviedb movie ##############################################')
+#			aelGlobals.write_log('################################################### themoviedb movie ##############################################')
 			if picture is None:
 				try:
 					search = tmdb.Search()
@@ -3265,7 +3267,7 @@ def get_Picture(title, what='Cover', lang='de'):
 													if imgs:
 														picture = 'http://image.tmdb.org/t/p/' + cq + imgs[0]['file_path']
 										except Exception as ex:
-											AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+											aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 										try:
 											if what == 'Poster':
 												imgs = idx.images(language=str(lang))['posters']
@@ -3276,11 +3278,11 @@ def get_Picture(title, what='Cover', lang='de'):
 													if imgs:
 														picture = 'http://image.tmdb.org/t/p/' + str(posterquality) + imgs[0]['file_path']
 										except Exception as ex:
-											AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+											aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 				except Exception as ex:
-					AELglobs.write_log('get ' + str(what) + ' : ' + str(ex))
+					aelGlobals.write_log('get ' + str(what) + ' : ' + str(ex))
 
-#			AELglobs.write_log('################################################### thetvdb ##############################################')
+#			aelGlobals.write_log('################################################### thetvdb ##############################################')
 			if picture is None:
 				tvdb.KEYS.API_KEY = get_keys('tvdb')
 				seriesid = None
@@ -3348,7 +3350,7 @@ def get_Picture(title, what='Cover', lang='de'):
 									if response and str(response) != 'None':
 										picture = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get Cover : ' + str(ex))
+								aelGlobals.write_log('Fehler in get Cover : ' + str(ex))
 							try:
 								if what == 'Poster':
 									try:
@@ -3358,15 +3360,15 @@ def get_Picture(title, what='Cover', lang='de'):
 									if response and str(response) != 'None':
 										picture = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get Poster : ' + str(ex))
+								aelGlobals.write_log('Fehler in get Poster : ' + str(ex))
 				except Exception as ex:
-					AELglobs.write_log('Fehler in get tvdb images : ' + str(ex))
+					aelGlobals.write_log('Fehler in get tvdb images : ' + str(ex))
 
 			if picture:
-				AELglobs.write_log('researching picture result ' + str(picture) + ' for ' + str(title))
+				aelGlobals.write_log('researching picture result ' + str(picture) + ' for ' + str(title))
 			return picture
 		except Exception as ex:
-			AELglobs.write_log('get_Picture : ' + str(ex))
+			aelGlobals.write_log('get_Picture : ' + str(ex))
 
 
 def get_MissingPictures(db, poster, cover):
@@ -3387,7 +3389,7 @@ def get_MissingPictures(db, poster, cover):
 				if db.getblackListPoster(convert2base64(picture)):
 					pList[1].remove(picture)
 		if pList[0]:
-			AELglobs.write_log('found ' + str(len(pList[0])) + ' missing covers')
+			aelGlobals.write_log('found ' + str(len(pList[0])) + ' missing covers')
 			for picture in pList[0]:
 				i += 1
 				STATUS = 'suche fehlendes Cover für ' + str(picture) + ' (' + str(i) + '/' + str(len(pList[0])) + ' | ' + str(covers) + ') '
@@ -3397,9 +3399,9 @@ def get_MissingPictures(db, poster, cover):
 					downloadImage(url, join(coverDir, convert2base64(picture) + '.jpg'))
 				else:
 					db.addblackListCover(convert2base64(picture))
-			AELglobs.write_log('have downloaded ' + str(covers) + ' missing covers')
+			aelGlobals.write_log('have downloaded ' + str(covers) + ' missing covers')
 		if pList[1]:
-			AELglobs.write_log('found ' + str(len(pList[1])) + ' missing posters')
+			aelGlobals.write_log('found ' + str(len(pList[1])) + ' missing posters')
 			i = 0
 			for picture in pList[1]:
 				i += 1
@@ -3410,17 +3412,17 @@ def get_MissingPictures(db, poster, cover):
 					downloadImage(url, join(posterDir, convert2base64(picture) + '.jpg'))
 				else:
 					db.addblackListPoster(convert2base64(picture))
-			AELglobs.write_log('have downloaded ' + str(posters) + ' missing posters')
+			aelGlobals.write_log('have downloaded ' + str(posters) + ' missing posters')
 
 		posters += poster
 		covers += cover
-		AELglobs.write_log("found " + str(posters) + " posters")
-		AELglobs.write_log("found " + str(covers) + " covers")
+		aelGlobals.write_log("found " + str(posters) + " posters")
+		aelGlobals.write_log("found " + str(covers) + " covers")
 
 		db.parameter(PARAMETER_SET, 'lastposterCount', str(posters))
 		db.parameter(PARAMETER_SET, 'lastcoverCount', str(covers))
 	except Exception as ex:
-		AELglobs.write_log('get_MissingPictures : ' + str(ex))
+		aelGlobals.write_log('get_MissingPictures : ' + str(ex))
 
 
 def writeTVStatistic(db):
@@ -3440,7 +3442,7 @@ def writeTVStatistic(db):
 		if doIt:
 			for (serviceref, servicename) in ret:
 				count = db.getEventCount(serviceref)
-				AELglobs.write_log('There are ' + str(count) + ' events for ' + str(servicename) + ' in database')
+				aelGlobals.write_log('There are ' + str(count) + ' events for ' + str(servicename) + ' in database')
 
 
 def get_size(path):
@@ -3459,7 +3461,7 @@ def createStatistics(db):
 		try:
 			posterSize = check_output(['du', '-sh', DIR]).split()[0]
 		except CalledProcessError as e:
-			AELglobs.write_log("Fehler in createStatistics getposterSize : " + str(e.returncode))
+			aelGlobals.write_log("Fehler in createStatistics getposterSize : " + str(e.returncode))
 			posterSize = get_size(DIR)
 
 		DIR = getPictureDir() + 'cover/'
@@ -3471,13 +3473,13 @@ def createStatistics(db):
 		try:
 			coverSize = check_output(['du', '-sh', DIR]).split()[0]
 		except CalledProcessError as e:
-			AELglobs.write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
+			aelGlobals.write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
 			coverSize = get_size(DIR)
 		DIR = getPictureDir() + 'preview/'
 		try:
 			previewSize = check_output(['du', '-sh', DIR]).split()[0]
 		except CalledProcessError as e:
-			AELglobs.write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
+			aelGlobals.write_log("Fehler in createStatistics getcoverSize : " + str(e.returncode))
 			previewSize = get_size(DIR)
 
 		try:
@@ -3494,7 +3496,7 @@ def createStatistics(db):
 		db.parameter(PARAMETER_SET, 'previewSize', str(previewSize))
 		db.parameter(PARAMETER_SET, 'usedInodes', str(nodestr))
 	except Exception as ex:
-		AELglobs.write_log('createStatistics : ' + str(ex))
+		aelGlobals.write_log('createStatistics : ' + str(ex))
 
 
 def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bingOption=''):
@@ -3509,7 +3511,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			titleNyear = convertYearInTitle(title)
 			title = convertSearchName(titleNyear[0])
 			jahr = str(titleNyear[1])
-			AELglobs.write_log('searching ' + str(what) + ' for ' + str(title) + ' with language = ' + str(lang))
+			aelGlobals.write_log('searching ' + str(what) + ' for ' + str(title) + ' with language = ' + str(lang))
 			if not b64title:
 				b64title = convert2base64(title)
 
@@ -3585,7 +3587,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 											itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], join(coverDir, b64title + '.jpg'), convert2base64(img['fileName']) + '.jpg']
 											pictureList.append((itm,))
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get Cover : ' + str(ex))
+								aelGlobals.write_log('Fehler in get Cover : ' + str(ex))
 							try:
 								if what == 'Poster':
 									try:
@@ -3597,11 +3599,11 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 											itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], join(posterDir, b64title + '.jpg'), convert2base64(img['fileName']) + '.jpg']
 											pictureList.append((itm,))
 							except Exception as ex:
-								AELglobs.write_log('Fehler in get Poster : ' + str(ex))
+								aelGlobals.write_log('Fehler in get Poster : ' + str(ex))
 				except Exception as ex:
-					AELglobs.write_log('Fehler in get tvdb images : ' + str(ex))
+					aelGlobals.write_log('Fehler in get tvdb images : ' + str(ex))
 
-#			AELglobs.write_log('################################################### themoviedb tv ##############################################')
+#			aelGlobals.write_log('################################################### themoviedb tv ##############################################')
 			try:
 				search = tmdb.Search()
 				searchName = findEpisode(title)
@@ -3623,7 +3625,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 							if not bestmatch:
 								bestmatch = [title.lower()]
 						for item in res['results']:
-							AELglobs.write_log('found on TMDb TV ' + str(item['name']))
+							aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
 							if item['name'].lower() in bestmatch:
 								if 'id' in item:
 									idx = tmdb.TV(item['id'])
@@ -3679,7 +3681,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			except Exception:
 				pass
 
-#			AELglobs.write_log('################################################### themoviedb movie ##############################################')
+#			aelGlobals.write_log('################################################### themoviedb movie ##############################################')
 			try:
 				search = tmdb.Search()
 				res = search.movie(query=title, language=str(lang), year=jahr) if jahr != '' else search.movie(query=title, language=str(lang))
@@ -3692,7 +3694,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 						if not bestmatch:
 							bestmatch = [title.lower()]
 						for item in res['results']:
-							AELglobs.write_log('found on TMDb Movie ' + str(item['title']))
+							aelGlobals.write_log('found on TMDb Movie ' + str(item['title']))
 							if item['title'].lower() in bestmatch:
 								if 'id' in item:
 									idx = tmdb.Movies(item['id'])
@@ -3777,10 +3779,10 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 
 			if pictureList:
 				idx = 0
-				AELglobs.write_log('found ' + str(len(pictureList)) + ' images for ' + str(title), AELglobs.addlog)
+				aelGlobals.write_log('found ' + str(len(pictureList)) + ' images for ' + str(title), aelGlobals.addlog)
 				failed = []
 				while idx <= int(count) and idx < len(pictureList):
-					AELglobs.write_log('Image : ' + str(pictureList[idx]), AELglobs.addlog)
+					aelGlobals.write_log('Image : ' + str(pictureList[idx]), aelGlobals.addlog)
 					if not downloadImage2(pictureList[idx][0][3], join('/tmp/', pictureList[idx][0][5])):
 						failed.insert(0, idx)
 					idx += 1
@@ -3792,7 +3794,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 				pictureList.append((itm,))
 				return pictureList
 		except Exception as ex:
-			AELglobs.write_log('get_PictureList : ' + str(ex))
+			aelGlobals.write_log('get_PictureList : ' + str(ex))
 			return []
 
 
@@ -3804,7 +3806,7 @@ def get_searchResults(title, lang='de'):
 			titleNyear = convertYearInTitle(title)
 			title = convertSearchName(titleNyear[0])
 			jahr = str(titleNyear[1])
-			AELglobs.write_log('searching results for ' + str(title) + ' with language = ' + str(lang))
+			aelGlobals.write_log('searching results for ' + str(title) + ' with language = ' + str(lang))
 			try:
 				searchName = findEpisode(title)
 				search = tmdb.Search()
@@ -4185,9 +4187,9 @@ def get_searchResults(title, lang='de'):
 										itm = [str(res['Title']), str(countries), str(year), str(genres), str(rating), str(fsk), "omdb", desc]
 										resultList.append((itm,))
 			except Exception as ex:
-				AELglobs.write_log('get_searchResults omdb: ' + str(ex))
+				aelGlobals.write_log('get_searchResults omdb: ' + str(ex))
 
-			AELglobs.write_log('search results : ' + str(resultList))
+			aelGlobals.write_log('search results : ' + str(resultList))
 			if resultList:
 				return (sorted(resultList, key=lambda x: x[0]))
 			else:
@@ -4195,7 +4197,7 @@ def get_searchResults(title, lang='de'):
 				resultList.append((itm,))
 				return resultList
 		except Exception as ex:
-			AELglobs.write_log('get_searchResults : ' + str(ex))
+			aelGlobals.write_log('get_searchResults : ' + str(ex))
 			return []
 
 
@@ -4215,7 +4217,7 @@ def downloadTVSImage(tvsImage, imgname):
 		else:
 			return False
 	except Exception as ex:
-		AELglobs.write_log("Fehler beim laden des Previewbildes von TVS: " + str(ex))
+		aelGlobals.write_log("Fehler beim laden des Previewbildes von TVS: " + str(ex))
 		return False
 
 
@@ -4236,7 +4238,7 @@ def downloadTVMovieImage(tvMovieImage, imgname):
 		else:
 			return True
 	except Exception as ex:
-		AELglobs.write_log("Fehler beim laden des Previewbildes : " + str(ex))
+		aelGlobals.write_log("Fehler beim laden des Previewbildes : " + str(ex))
 		return False
 
 
@@ -4301,20 +4303,19 @@ class AELGlobals:
 	def setStatus(self, text=None):
 		self.STATUS = text
 
-	def write_log(self, svalue, logging=True):
-		if logging:
-			t = localtime()
-			logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-			with open(self.LOGFILE, "a") as f:
-				f.write(str(logtime) + " : [AdvancedEventLibrary] - " + str(svalue) + "\n")
+	def write_log(self, svalue, module=DEFAULT_MODULE_NAME):
+		t = localtime()
+		logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
+		with open(self.LOGFILE, "a") as f:
+			f.write(f"{logtime} : [{module}] - {svalue}\n")
 
 
-AELglobs = AELGlobals()
+aelGlobals = AELGlobals()
 
 ########################################### DB Helper Class #######################################################
 
 
-class DB_Functions(AELGlobals, object):
+class DB_Functions(object):
 	@staticmethod
 	def dict_factory(cursor, row):
 		d = {}
@@ -4337,7 +4338,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [eventInfo] ([base64title] TEXT NOT NULL,[title] TEXT NOT NULL,[genre] TEXT NULL,[year] TEXT NULL,[rating] TEXT NULL,[fsk] TEXT NULL,[country] TEXT NULL,[gDate] TEXT NOT NULL,[trailer] TEXT DEFAULT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'eventInfo' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'eventInfo' hinzugefügt")
 
 			# create table blackList
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackList';"
@@ -4346,7 +4347,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [blackList] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'blackList' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'blackList' hinzugefügt")
 
 			# create table blackListCover
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListCover';"
@@ -4355,7 +4356,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [blackListCover] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'blackListCover' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'blackListCover' hinzugefügt")
 
 			# create table blackListPoster
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListPoster';"
@@ -4364,7 +4365,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [blackListPoster] ([base64title] TEXT NOT NULL,PRIMARY KEY ([base64title]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'blackListPoster' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'blackListPoster' hinzugefügt")
 
 			# create table liveOnTV
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='liveOnTV';"
@@ -4373,7 +4374,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [liveOnTV] (eid INTEGER NOT NULL, id TEXT,subtitle TEXT,image TEXT,year TEXT,fsk TEXT,rating TEXT,title TEXT,airtime INTEGER NOT NULL,leadText TEXT,conclusion TEXT,categoryName TEXT,season TEXT,episode TEXT,genre TEXT,country TEXT,imdb TEXT,sref TEXT NOT NULL, PRIMARY KEY ([eid],[airtime],[sref]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'liveOnTV' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'liveOnTV' hinzugefügt")
 
 			# delete table myliveTV
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='myliveTV';"
@@ -4398,7 +4399,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE [imageBlackList] ([name] TEXT NOT NULL,PRIMARY KEY ([name]))"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'imageBlackList' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'imageBlackList' hinzugefügt")
 
 			query = "SELECT name FROM sqlite_master WHERE type='table' AND name='parameters';"
 			cur.execute(query)
@@ -4406,7 +4407,7 @@ class DB_Functions(AELGlobals, object):
 				query = "CREATE TABLE `parameters` ( `name` TEXT NOT NULL UNIQUE, `value` TEXT, PRIMARY KEY(`name`) )"
 				cur.execute(query)
 				self.conn.commit()
-				AELglobs.write_log("Tabelle 'parameters' hinzugefügt")
+				aelGlobals.write_log("Tabelle 'parameters' hinzugefügt")
 
 			#append columns eventInfo
 			query = "PRAGMA table_info('eventInfo');"
@@ -4423,7 +4424,7 @@ class DB_Functions(AELGlobals, object):
 				self.conn.commit()
 
 		except Exception as ex:
-			AELglobs.write_log("Fehler in DB Create: " + str(ex))
+			aelGlobals.write_log("Fehler in DB Create: " + str(ex))
 
 	def releaseDB(self):
 		self.conn.close()
@@ -4472,17 +4473,17 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (base64title, str(title), str(genre), year, rating, fsk, str(country), now, trailer))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addTitleInfo : " + str(ex))
+			aelGlobals.write_log("Fehler in addTitleInfo : " + str(ex))
 
 	def addliveTV(self, records):
 		try:
 			cur = self.conn.cursor()
 			cur.executemany('insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);', records)
-			AELglobs.write_log("have inserted " + str(cur.rowcount) + " events into database")
+			aelGlobals.write_log("have inserted " + str(cur.rowcount) + " events into database")
 			self.conn.commit()
 			# self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addliveTV : " + str(ex))
+			aelGlobals.write_log("Fehler in addliveTV : " + str(ex))
 
 	def updateTitleInfo(self, title, genre, year, rating, fsk, country, base64title):
 		try:
@@ -4492,7 +4493,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(title), str(genre), year, rating, fsk, str(country), base64title))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateTitleInfo : " + str(ex))
+			aelGlobals.write_log("Fehler in updateTitleInfo : " + str(ex))
 
 	def updateSingleEventInfo(self, col, val, base64title):
 		try:
@@ -4501,7 +4502,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(val), base64title))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateSingleEventInfo : " + str(ex))
+			aelGlobals.write_log("Fehler in updateSingleEventInfo : " + str(ex))
 
 	def updateTrailer(self, trailer, base64title):
 		try:
@@ -4510,7 +4511,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(trailer), base64title))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateTrailer : " + str(ex))
+			aelGlobals.write_log("Fehler in updateTrailer : " + str(ex))
 
 	def updateliveTVInfo(self, image, genre, year, rating, fsk, country, eid):
 		try:
@@ -4519,7 +4520,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(image), str(genre), year, rating, fsk, str(country), eid))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateliveTVInfo : " + str(ex))
+			aelGlobals.write_log("Fehler in updateliveTVInfo : " + str(ex))
 
 	def updateliveTV(self, id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, title, airtime):
 		try:
@@ -4530,7 +4531,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (id, str(subtitle), image, year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, imdb, str(title), low, high))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateliveTV : " + str(ex))
+			aelGlobals.write_log("Fehler in updateliveTV : " + str(ex))
 
 #	def updateliveTVS(self, id,subtitle,image,year,fsk,rating,leadText,conclusion,categoryName,season,episode,genre,country, imdb, sref, airtime):
 #		try:
@@ -4541,7 +4542,7 @@ class DB_Functions(AELGlobals, object):
 #			cur.execute(query,(id, str(subtitle).decode('utf8'), str(image).decode('utf8'), year, fsk, rating, str(leadText).decode('utf8'), str(conclusion).decode('utf8'), str(categoryName).decode('utf8'), season, episode, str(genre).decode('utf8'), country, str(imdb).decode('utf8'), str(sref).decode('utf8'), low, high))
 #			self.conn.commit()
 #		except Exception as ex:
-#			AELglobs.write_log("Fehler in updateliveTVS : " + str(ex))
+#			aelGlobals.write_log("Fehler in updateliveTVS : " + str(ex))
 
 	def updateliveTVS(self, id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sref, airtime, title):
 		try:
@@ -4564,18 +4565,18 @@ class DB_Functions(AELGlobals, object):
 					cur.execute(query, (id, str(subtitle), str(image), year, fsk, rating, str(leadText), str(conclusion), str(categoryName), season, episode, str(genre), country, str(imdb), str(row[0]), row[1]))
 					self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateliveTVS : " + str(ex))
+			aelGlobals.write_log("Fehler in updateliveTVS : " + str(ex))
 
 	def updateliveTVProgress(self):
 		try:
 			cur = self.conn.cursor()
 			query = "update liveOnTV set id = '' where id = 'in progress';"
 			cur.execute(query)
-			AELglobs.write_log("nothing found for " + str(cur.rowcount) + " events in liveOnTV")
+			aelGlobals.write_log("nothing found for " + str(cur.rowcount) + " events in liveOnTV")
 			self.conn.commit()
 			self.parameter(PARAMETER_SET, 'lastadditionalDataCountSuccess', str(cur.rowcount))
 		except Exception as ex:
-			AELglobs.write_log("Fehler in updateliveTVProgress : " + str(ex))
+			aelGlobals.write_log("Fehler in updateliveTVProgress : " + str(ex))
 
 	def getTitleInfo(self, base64title):
 		try:
@@ -4585,7 +4586,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return [row[0][0], row[0][1], row[0][2], row[0][3], row[0][4], row[0][5], row[0][6], str(row[0][7])] if row else []
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getTitleInfo : " + str(ex) + ' - ' + str(base64title))
+			aelGlobals.write_log("Fehler in getTitleInfo : " + str(ex) + ' - ' + str(base64title))
 			return []
 
 	def getliveTV(self, eid, name=None, beginTime=None):
@@ -4614,7 +4615,7 @@ class DB_Functions(AELGlobals, object):
 			else:
 				return []
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getliveTV : " + str(ex) + ' - ' + str(eid) + ' : ' + str(name))
+			aelGlobals.write_log("Fehler in getliveTV : " + str(ex) + ' - ' + str(eid) + ' : ' + str(name))
 			return []
 
 	def getSrefsforUpdate(self):
@@ -4630,7 +4631,7 @@ class DB_Functions(AELGlobals, object):
 					refList.append(row[0])
 			return refList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getSrefsforUpdate : " + str(ex))
+			aelGlobals.write_log("Fehler in getSrefsforUpdate : " + str(ex))
 			return []
 
 	def getMissingPictures(self):
@@ -4649,7 +4650,7 @@ class DB_Functions(AELGlobals, object):
 						posterList.append(row[0])
 			return [coverList, posterList]
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getMissingPictures : " + str(ex))
+			aelGlobals.write_log("Fehler in getMissingPictures : " + str(ex))
 			return [None, None]
 
 	def getMinAirtimeforUpdate(self, sref):
@@ -4661,7 +4662,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 4000000000
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getMinAirtimeforUpdate : " + str(ex))
+			aelGlobals.write_log("Fehler in getMinAirtimeforUpdate : " + str(ex))
 			return 4000000000
 
 	def getMaxAirtimeforUpdate(self, sref):
@@ -4673,7 +4674,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 1000000000
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getMaxAirtimeforUpdate : " + str(ex))
+			aelGlobals.write_log("Fehler in getMaxAirtimeforUpdate : " + str(ex))
 			return 1000000000
 
 	def getUpdateCount(self):
@@ -4685,7 +4686,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getUpdateCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getUpdateCount : " + str(ex))
 			return 0
 
 	def getTrailerCount(self):
@@ -4698,7 +4699,7 @@ class DB_Functions(AELGlobals, object):
 			if rows:
 				for row in rows:
 					trailercount.add(row[0])
-			AELglobs.write_log("found " + str(len(trailercount)) + ' on liveTV')
+			aelGlobals.write_log("found " + str(len(trailercount)) + ' on liveTV')
 			i = len(trailercount)
 			query = "SELECT DISTINCT trailer FROM eventInfo WHERE trailer <> ''"
 			cur.execute(query)
@@ -4707,10 +4708,10 @@ class DB_Functions(AELGlobals, object):
 				for row in rows:
 					trailercount.add(row[0])
 			eI = len(trailercount) - i
-			AELglobs.write_log("found " + str(eI) + ' on eventInfo')
+			aelGlobals.write_log("found " + str(eI) + ' on eventInfo')
 			return len(trailercount)
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getUpdateCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getUpdateCount : " + str(ex))
 			return 0
 
 	def getEventCount(self, sref):
@@ -4721,7 +4722,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getEventCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getEventCount : " + str(ex))
 			return 0
 
 	def getTitlesforUpdate(self):
@@ -4738,7 +4739,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(itm)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getTitlesforUpdate : " + str(ex))
+			aelGlobals.write_log("Fehler in getTitlesforUpdate : " + str(ex))
 			return []
 
 	def getTitlesforUpdate2(self):
@@ -4755,7 +4756,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(itm)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getTitlesforUpdate2 : " + str(ex))
+			aelGlobals.write_log("Fehler in getTitlesforUpdate2 : " + str(ex))
 			return []
 
 	def getUnusedTitles(self):
@@ -4772,7 +4773,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(itm)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getUnusedTitles : " + str(ex))
+			aelGlobals.write_log("Fehler in getUnusedTitles : " + str(ex))
 			return []
 
 	def checkTitle(self, base64title):
@@ -4783,7 +4784,7 @@ class DB_Functions(AELGlobals, object):
 			rows = cur.fetchall()
 			return True if rows else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in checkTitle: " + str(ex))
+			aelGlobals.write_log("Fehler in checkTitle: " + str(ex))
 			return False
 
 	def checkliveTV(self, eid, ref):
@@ -4794,7 +4795,7 @@ class DB_Functions(AELGlobals, object):
 			rows = cur.fetchall()
 			return True if rows else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in checkliveTV: " + str(ex))
+			aelGlobals.write_log("Fehler in checkliveTV: " + str(ex))
 			return False
 
 	def cleanDB(self, base64title):
@@ -4807,18 +4808,18 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(base64title),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in cleanDB : " + str(ex))
+			aelGlobals.write_log("Fehler in cleanDB : " + str(ex))
 
 	def cleanliveTV(self, airtime):
 		try:
 			cur = self.conn.cursor()
 			query = "delete from liveOnTV where airtime < ?;"
 			cur.execute(query, (str(airtime),))
-			AELglobs.write_log("have removed " + str(cur.rowcount) + " events from liveOnTV")
+			aelGlobals.write_log("have removed " + str(cur.rowcount) + " events from liveOnTV")
 			self.conn.commit()
 			self.vacuumDB()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in cleanliveTV : " + str(ex))
+			aelGlobals.write_log("Fehler in cleanliveTV : " + str(ex))
 
 	def cleanliveTVEntry(self, eid):
 		try:
@@ -4827,7 +4828,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(eid),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in cleanliveTVEntry : " + str(ex))
+			aelGlobals.write_log("Fehler in cleanliveTVEntry : " + str(ex))
 
 	def getUnusedPreviewImages(self, airtime):
 		try:
@@ -4845,17 +4846,17 @@ class DB_Functions(AELGlobals, object):
 			query = 'SELECT DISTINCT image from liveOnTV where airtime < ? AND image <> "";'
 			cur.execute(query, (str(airtime),))
 			rows = cur.fetchall()
-			AELglobs.write_log("found old preview images " + str(len(rows)))
+			aelGlobals.write_log("found old preview images " + str(len(rows)))
 			if rows:
 				for row in rows:
 					titleList.append(row[0])
 			delList = [x for x in titleList if x not in duplicates]
-			AELglobs.write_log("not used preview images " + str(len(delList)))
+			aelGlobals.write_log("not used preview images " + str(len(delList)))
 			del duplicates
 			del titleList
 			return delList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getUnusedPreviewImages : " + str(ex))
+			aelGlobals.write_log("Fehler in getUnusedPreviewImages : " + str(ex))
 			return []
 
 	def cleanblackList(self):
@@ -4869,7 +4870,7 @@ class DB_Functions(AELGlobals, object):
 			self.conn.commit()
 			self.vacuumDB()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in cleanblackList : " + str(ex))
+			aelGlobals.write_log("Fehler in cleanblackList : " + str(ex))
 
 	def cleanNadd2BlackList(self, base64title):
 		try:
@@ -4881,7 +4882,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(base64title),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in cleanNadd2BlackList : " + str(ex))
+			aelGlobals.write_log("Fehler in cleanNadd2BlackList : " + str(ex))
 
 	def addblackList(self, base64title):
 		try:
@@ -4890,7 +4891,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(base64title),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addblackList : " + str(ex))
+			aelGlobals.write_log("Fehler in addblackList : " + str(ex))
 
 	def addblackListCover(self, base64title):
 		try:
@@ -4899,7 +4900,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(base64title),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addblackListCover : " + str(ex))
+			aelGlobals.write_log("Fehler in addblackListCover : " + str(ex))
 
 	def addblackListPoster(self, base64title):
 		try:
@@ -4908,7 +4909,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (str(base64title),))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addblackListPoster : " + str(ex))
+			aelGlobals.write_log("Fehler in addblackListPoster : " + str(ex))
 
 	def addimageBlackList(self, name):
 		try:
@@ -4917,7 +4918,7 @@ class DB_Functions(AELGlobals, object):
 			cur.execute(query, (name,))
 			self.conn.commit()
 		except Exception as ex:
-			AELglobs.write_log("Fehler in addimageBlackList : " + str(ex))
+			aelGlobals.write_log("Fehler in addimageBlackList : " + str(ex))
 
 	def getimageBlackList(self, name):
 		try:
@@ -4927,7 +4928,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return True if row else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getimageBlackList : " + str(ex))
+			aelGlobals.write_log("Fehler in getimageBlackList : " + str(ex))
 			return False
 
 	def getblackList(self, base64title):
@@ -4938,7 +4939,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return True if row else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getblackList : " + str(ex))
+			aelGlobals.write_log("Fehler in getblackList : " + str(ex))
 			return False
 
 	def getblackListCover(self, base64title):
@@ -4949,7 +4950,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return True if row else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getblackListCover : " + str(ex))
+			aelGlobals.write_log("Fehler in getblackListCover : " + str(ex))
 			return False
 
 	def getblackListPoster(self, base64title):
@@ -4960,7 +4961,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return True if row else False
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getblackListPoster : " + str(ex))
+			aelGlobals.write_log("Fehler in getblackListPoster : " + str(ex))
 			return False
 
 	def getblackListCount(self):
@@ -4971,7 +4972,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getblackListCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getblackListCount : " + str(ex))
 			return 0
 
 	def getTitleInfoCount(self):
@@ -4982,7 +4983,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getTitleInfoCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getTitleInfoCount : " + str(ex))
 			return 0
 
 	def getliveTVCount(self):
@@ -4993,7 +4994,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getliveTVCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getliveTVCount : " + str(ex))
 			return 0
 
 	def getliveTVidCount(self):
@@ -5004,7 +5005,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 0
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getliveTVidCount : " + str(ex))
+			aelGlobals.write_log("Fehler in getliveTVidCount : " + str(ex))
 			return 0
 
 	def getMaxAirtime(self, title):
@@ -5015,7 +5016,7 @@ class DB_Functions(AELGlobals, object):
 			row = cur.fetchall()
 			return row[0][0] if row else 4000000000
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getMaxAirtime : " + str(ex))
+			aelGlobals.write_log("Fehler in getMaxAirtime : " + str(ex))
 			return 4000000000
 
 	def getSeriesStarts(self):
@@ -5035,7 +5036,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(itm)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getSeriesStarts : " + str(ex))
+			aelGlobals.write_log("Fehler in getSeriesStarts : " + str(ex))
 			return []
 
 	def getSeriesStartsCategories(self):
@@ -5055,7 +5056,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(itm)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getSeriesStartsCategories : " + str(ex))
+			aelGlobals.write_log("Fehler in getSeriesStartsCategories : " + str(ex))
 			return []
 
 	def getFavourites(self, what="genre LIKE 'Krimi'", duration=86400):
@@ -5072,7 +5073,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(row)
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getFavourites : " + str(ex))
+			aelGlobals.write_log("Fehler in getFavourites : " + str(ex))
 			return []
 
 	def getGenres(self):
@@ -5087,7 +5088,7 @@ class DB_Functions(AELGlobals, object):
 					titleList.append(row[0])
 			return titleList
 		except Exception as ex:
-			AELglobs.write_log("Fehler in getGenres : " + str(ex))
+			aelGlobals.write_log("Fehler in getGenres : " + str(ex))
 			return []
 
 	def vacuumDB(self):
@@ -5127,10 +5128,10 @@ class BingImageSearch:
 		resultList = []
 		while self.download_count < self.limit:
 			request_url = 'https://www.bing.com/images/async?q=' + quote(self.query) + '&first=' + str(self.page_counter) + '&count=' + str(self.limit) + '&adlt=off' + '&qft=' + self.filters
-			AELglobs.write_log('Bing-requests ' + str(request_url))
+			aelGlobals.write_log('Bing-requests ' + str(request_url))
 			html = get(request_url, timeout=5, headers=self.headers).content
 			links = findall(r'murl&quot;:&quot;(.*?)&quot;', html.decode())
-			AELglobs.write_log('Bing-result ' + str(links))
+			aelGlobals.write_log('Bing-result ' + str(links))
 			if len(links) <= self.limit:
 				self.limit = len(links) - 1
 			for link in links:
