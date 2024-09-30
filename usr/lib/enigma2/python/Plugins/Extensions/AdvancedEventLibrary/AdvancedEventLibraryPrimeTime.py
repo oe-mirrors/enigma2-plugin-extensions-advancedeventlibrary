@@ -1,5 +1,14 @@
-# coding=utf-8
-from __future__ import absolute_import
+from os.path import join, isfile
+from time import localtime, mktime
+from html.parser import HTMLParser
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from skin import loadSkin, variables, parseColor
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.config import ConfigSelection, config
+from Components.Label import Label
+from Components.Pixmap import Pixmap
+from Components.Sources.Event import Event
+from Components.Sources.StaticText import StaticText
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
 from Screens.MessageBox import MessageBox
@@ -8,41 +17,22 @@ from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
 from Screens.Setup import Setup
-from Components.Label import Label
-from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.StaticText import StaticText
-from Components.Pixmap import Pixmap
-from time import localtime, mktime
-import os
-import skin
-import NavigationInstance
-from html.parser import HTMLParser
-from skin import loadSkin
-from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter
 from ServiceReference import ServiceReference
-from enigma import eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
-from Components.config import ConfigSelection, config
+from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
 from Tools.Directories import fileExists
-from Components.Sources.Event import Event
-
-
-from .AdvancedEventLibrarySystem import Editor, PicLoader
+from Tools.LoadPixmap import LoadPixmap
+import NavigationInstance
+from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
-from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
-if desktopSize.width() == 1920:
-	skinpath = pluginpath + 'skin/1080/'
-else:
-	skinpath = pluginpath + 'skin/720/'
+skinpath = pluginpath + 'skin/1080/' if desktopSize.width() == 1920 else pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
-
 Movies = ["Abenteuer", "Abenteuerfilm", "Abenteuerkom�die", "Action", "Action Abenteuer", "Action-Abenteuer", "Action-Fantasyfilm", "Actionabenteuer", "Actiondrama", "Actionfilm", "Actionkom�die", "Actionkrimi", "Actionthriller", "Agentenfilm", "Agentenkom�die", "Agententhriller", "Beziehungsdrama", "Beziehungskom�die", "Bibelverfilmung", "Bollywoodfilm", "Comicverfilmung", "Crime", "Deutsche Kom�die", "Drama", "Dramedy", "Ehedrama", "Ehekom�die", "Episodenfilm", "Erotikdrama", "Erotikfilm", "Erotikkom�die", "Familie", "Familiendrama", "Familienfilm", "Familienkom�die", "Familiensaga", "Fantasy", "Fantasy-Abenteuer", "Fantasy-Abenteuerfilm", "Fantasy-Action", "Fantasyabenteuer", "Fantasyaction", "Fantasydrama", "Fantasyfilm", "Fantasykom�die", "Fernsehfilm", "Gangsterdrama", "Gangsterkom�die", "Gangsterthriller", "Gaunerkom�die", "Gef�ngnisdrama", "Geschichtliches Drama", "Gesellschaftsdrama", "Gesellschaftskom�die", "Gesellschaftssatire", "Gruselfilm", "Gruselkom�die", "Heimatdrama", "Heimatfilm", "Heimatkom�die", "Historienabenteuer", "Historiendrama", "Historienfilm", "Historisches Drama", "Horror", "Horror-Actionfilm", "Horrorfilm", "Horrorkom�die", "Horrorthriller", "Italo-Western", "Jugenddrama", "Jugendfilm", "Jugendkom�die", "Justizdrama", "Justizthriller", "Katastrophendrama", "Katastrophenfilm", "Kriegsdrama", "Kom�die", "Kriegsfilm", "Krimi", "Krimidrama", "Krimikom�die", "Krimik�m�die", "Kriminalfilm", "Krimiparodie", "Liebesdrama", "Liebesdram�die", "Liebesfilm", "Liebesgeschichte", "Liebeskom�die", "Liebesmelodram", "Literaturverfilmung", "Mediensatire", "Melodram", "Monumentalfilm", "Mystery", "Mysterydrama", "Mysteryfilm", "Mysterythriller", "Psychodrama", "Psychokrimi", "Psychothriller", "Revuefilm", "Politdrama", "Politkom�die", "Politsatire", "Politthriller", "Road Movie", "Romance", "Romantic Comedy", "Romantikkom�die", "Romantische Kom�die", "Romanverfilmung", "Romanze", "Satire", "Schwarze Kom�die", "Sci-Fi-Fantasy", "Science-Fiction", "Science-Fiction-Abenteuer", "Science-Fiction-Action", "Science-Fiction-Film", "Science-Fiction-Horror", "Science-Fiction-Kom�die", "Science-Fiction-Thriller", "Spielfilm", "Spionagethriller", "Sportfilm", "Sportlerkom�die", "Tanzfilm", "Teenagerfilm", "Teenagerkom�die", "Teeniekom�die", "Thriller", "Thrillerkom�die", "Tierfilm", "Tragikom�die", "TV-Movie", "Vampirfilm", "Vampirkom�die", "Western", "Westerndrama", "Westernkom�die"]
 Series = ["Abenteuer-Serie", "Actionserie", "Arztreihe", "Crime-Serie", "Episode", "Familien-Serie", "Staffel", "Folge", "Familienserie", "Fernsehserie", "Fernsehspiel", "Heimatserie", "Horror-Serie", "Comedy-Serie", "Dramaserie", "Krankenhaus-Serie", "Krankenhaus-Soap", "Krimireihe", "Krimi-Serie", "Krimiserie", "Polizeiserie", "Reality", "Scripted Reality", "Scripted-Reality", "Science-Fiction-Serie", "Sci-Fi-Serie", "Serie", "Serien", "Sitcom", "Soap", "Telenovela"]
 Dokus = ["Doku-Experiment", "Doku-Reihe", "Doku-Serie", "Documentary", "Documentary-Serie", "Dokumentarfilm", "Dokumentarreihe", "Dokumentarserie", "Dokumentation", "Dokumentation-Serie", "Dokumentationsreihe", "Dokureihe", "Dokuserie", "Dokutainment", "Dokutainment-Reihe", "History", "Naturdokumentarreihe", "Naturdokumentation", "Naturdokumentationsreihe", "Real Life Doku", "Reality-Doku", "Reality-TV", "Reisedoku", "Reportage", "Reportagemagazin", "Reportagereihe", "Biografie", "Biographie", "Familienchronik", "Ermittler-Doku", "Koch-Doku", "Portr�t", "War", "War & Politics", "Wissenschaftsmagazin", "Wissensmagazin"]
@@ -97,22 +87,17 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 		self.title = "Prime-Time-Planer"
 		self.viewType = viewType
-		if self.viewType == 'Listenansicht':
-			self.skinName = "AdvancedEventLibraryListPlaners"
-		else:
-			self.skinName = "AdvancedEventLibraryWallPlaners"
+		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 'Listenansicht' else "AdvancedEventLibraryWallPlaners"
 		self.db = getDB()
 		self.isinit = False
 		self.lastidx = 0
 		self.listlen = 0
 		self.pageCount = 0
-
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Timer hinzufügen")
 		self["key_yellow"] = StaticText("")
 		self["key_blue"] = StaticText("Umschalten")
 		self["trailer"] = Pixmap()
-
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
 		self.tvbouquets = serviceHandler.list(root).getContent("SN", True)
@@ -131,11 +116,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self["ServiceRef"] = StaticText("")
 			self["ServiceName"] = StaticText("")
 			self['PageInfo'] = Label('')
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			if fileExists(imgpath + "shaper.png"):
-				self.shaper = LoadPixmap(imgpath + "shaper.png")
-			else:
-				self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			self.shaper = LoadPixmap(imgpath + "shaper.png") if fileExists(imgpath + "shaper.png") else LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 		self["Event"] = Event()
 		self["genreList"] = AdvancedEventLibraryLists.MenuList()
 		self["genreList"].connectsel_changed(self.menu_sel_changed)
@@ -161,10 +143,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_info": self.key_info_handler,
 		}, -1)
 
-#		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
-#			{
-#				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
-#			}, -1)
+		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
+			{
+				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
+			}, -1)
 
 		self.buildGenreList()
 		self.onShow.append(self.refreshAll)
@@ -189,14 +171,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			fontOrientation |= RT_VALIGN_CENTER
 		return fontOrientation
 
-#	def infoKeyPressed(self):
-#		try:
-#			if self.viewType == 'Listenansicht':
-#				self.close('Wallansicht')
-#			else:
-#				self.close('Listenansicht')
-#		except Exception as ex:
-#			write_log('infoKeyPressed : ' + str(ex))
+	def infoKeyPressed(self):
+		try:
+			if self.viewType == 'Listenansicht':
+				self.close('Wallansicht')
+			else:
+				self.close('Listenansicht')
+		except Exception as ex:
+			write_log('infoKeyPressed : ' + str(ex))
 
 	def key_menu_handler(self):
 		self.session.openWithCallback(self.return_from_setup, MySetup)
@@ -211,7 +193,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		else:
 			selection = self["eventWall"].getcurrentselection()
 			eventName = (selection.name, selection.eit)
-		self.session.openWithCallback(self.CELcallBack, Editor, eventname=eventName)
+		self.session.openWithCallback(self.CELcallBack, AdvancedEventLibrarySystem.Editor, eventname=eventName)
 
 	def CELcallBack(self):
 		selected_element = self["genreList"].l.getCurrentSelection()[0]
@@ -240,8 +222,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self.substituteImage = str(self.parameter[5])
 				self.FontOrientation = self.getFontOrientation(self.parameter[25])
 				self.Coverings = eval(str(self.parameter[23]))
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			ptr = LoadPixmap(join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
 			self.getAllEvents(currentBouquet=self.currentBouquet)
@@ -296,10 +278,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].right()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (old_idx + 1) >= self.listlen:
-						dest = 0
-					else:
-						dest = old_idx + 1
+					dest = 0 if (old_idx + 1) >= self.listlen else old_idx + 1
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -317,10 +296,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].left()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - 1) < 0:
-						dest = self.listlen - 1
-					else:
-						dest = old_idx - 1
+					dest = self.listlen - 1 if (new_idx - 1) < 0 else old_idx - 1
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -341,15 +317,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					print("debug new_idx", new_idx)
 					print("debug old_idx", old_idx)
 					print("debug self.listlen", self.listlen)
-					if (new_idx + int(self.parameter[13])) >= self.listlen:
-						dest = 0
-					else:
-						dest = new_idx + int(self.parameter[13])
+					dest = 0 if (new_idx + int(self.parameter[13])) >= self.listlen else new_idx + int(self.parameter[13])
 					self['eventWall'].movetoIndex(dest)
 					print("debug dest", dest)
 					print("debug dest", type(dest))
 			self['eventWall'].refresh()
-			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
+			self['PageInfo'].setText(f"Seite {self['eventWall'].getCurrentPage()} von {self.pageCount}")
 			self.sel_changed()
 
 	def key_up_handler(self):
@@ -364,10 +337,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self['eventWall'].up()
 				new_idx = int(self['eventWall'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - self.parameter[14]) < 0:
-						dest = self.listlen - 1
-					else:
-						dest = new_idx - self.parameter[14]
+					dest = self.listlen - 1 if (new_idx - self.parameter[14]) < 0 else new_idx - self.parameter[14]
 					self['eventWall'].movetoIndex(dest)
 			self['eventWall'].refresh()
 			self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -637,7 +607,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.allevents = epgcache.lookupEvent(test) or []
 
 			timers = []
-			recordHandler = NavigationInstance.instance.RecordTimer
+			recordHandler = NavigationInstance.instance.RecordTimerRecordTimer
 			for timer in recordHandler.timer_list:
 				if timer and timer.service_ref:
 					_timer = str(timer.name)
@@ -656,10 +626,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						hasTimer = True
 
 					desc = name + ' ' + shortdesc + ' ' + extdesc
-					if extdesc and extdesc != '':
-						edesc = extdesc
-					else:
-						edesc = shortdesc
+					edesc = extdesc if extdesc and extdesc != '' else shortdesc
 					eventGenre = self.getEventGenre(eit, serviceref, name, desc, begin)
 					if eventGenre:
 						hasTrailer = None
@@ -854,10 +821,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			maxLength = self.parameter[2]
 			if len(entrys.sname) > maxLength:
 				entrys.sname = str(entrys.sname)[:maxLength] + '...'
-			if len(entrys.name) > maxLength:
-				name = str(entrys.name)[:maxLength] + '...'
-			else:
-				name = str(entrys.name)
+			name = str(entrys.name)[:maxLength] + '...' if len(entrys.name) > maxLength else str(entrys.name)
 			self.picloader = PicLoader(int(self.parameter[0]), int(self.parameter[1]))
 			if entrys.image:
 				image = self.picloader.load(entrys.image)
@@ -879,22 +843,22 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if picon:
 				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[21][0], self.parameter[21][1], self.parameter[21][0], self.parameter[21][1], self.parameter[21][2], self.parameter[21][3], self.parameter[21][2], self.parameter[21][3], picon, None, None, BT_SCALE))
 			if entrys.hasTimer and fileExists(self.parameter[15]):
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][0] + self.parameter[19][4], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][0] + self.parameter[20][4], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[18][0], self.parameter[18][1], self.parameter[18][0], self.parameter[18][1], self.parameter[18][2], self.parameter[18][3], self.parameter[18][2], self.parameter[18][3], LoadPixmap(self.parameter[15]), None, None, BT_SCALE))
 			else:
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
-				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
+				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 			return ret
 
 			write_log("error in entrys : " + str(entrys))
 			return [entrys,
-								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
 		except Exception as ex:
 			write_log('Fehler in seteventEntry : ' + str(ex))
 			return [entrys,
-								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
+								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
 
 	def findPicon(self, service=None, serviceName=None):
@@ -908,12 +872,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, service + ".png")
+			if isfile(pngname):
 				return pngname
 		if serviceName is not None:
-			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, serviceName + ".png")
+			if isfile(pngname):
 				return pngname
 		return None
 
@@ -955,3 +919,19 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
+
+#################################################################################################################################################
+
+
+class PicLoader:
+	def __init__(self, width, height):
+		self.picload = ePicLoad()
+		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
+
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload

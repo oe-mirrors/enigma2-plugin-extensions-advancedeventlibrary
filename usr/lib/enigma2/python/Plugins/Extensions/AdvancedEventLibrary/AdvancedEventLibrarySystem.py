@@ -49,8 +49,8 @@ class AELMenu(Screen):
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = f"Advanced-Event-Library Menüauswahl: (R{AEL.aelGlobals.CURRENTVERSION})"
 		imgpath = join(AEL.aelGlobals.SHAREPATH, "AELImages/")
-		self.menulist = [(_('Settingsn'), _('Making basic settings for AEL'), LoadPixmap(imgpath + 'settings.png'), 'setup'),
-				   		(_('Editor'), _('Edit event information'), LoadPixmap(imgpath + 'keyboard.png'), 'editor'),
+		self.menulist = [('Settings', _('Making basic settings for AEL'), LoadPixmap(imgpath + 'settings.png'), 'setup'),
+				   		('Editor', _('Edit event information'), LoadPixmap(imgpath + 'keyboard.png'), 'editor'),
 						('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'),
 						('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'),
 						('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'),
@@ -339,63 +339,17 @@ class AdvancedEventLibrarySetup(Setup):
 	def __init__(self, session):
 		self.session = session
 		Setup.__init__(self, session, "Advanced-Event-Library-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
-#		self.title = "Advanced-Event-Library-Setup"
-#		bestmount = defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/'
-#		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-#		self.mypath = config.plugins.AdvancedEventLibrary.Location = ConfigText(default=bestmount)
-#		self.backuppath = config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
-#		self.maxSize = config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
-#		self.previewCount = config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
-#		self.showinEPG = config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
-#		self.useAELEPGLists = config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)
-#		# self.useAELIS = config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)
-#		self.useAELMW = config.plugins.AdvancedEventLibrary.UseAELMovieWall = ConfigYesNo(default=False)
-#		self.addlog = config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-#NEW		# self.usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
-#		self.coverquality = config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
-#		self.posterquality = config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
-#		self.dbfolder = config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
-#		self.maxImageSize = config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
-#		self.maxCompression = config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
-#		self.searchPlaces = config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
-#		self.tmdbKey = config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default='intern')
-#		self.tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default='unbenutzt')
-#		self.tvdbKey = config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default='intern')
-#		self.omdbKey = config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
-#		self.searchfor = config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
-#		self.delPreviewImages = config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
-#		self.closeMenu = config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-#		self.refreshMW = config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
-#		self.refreshMWAtStop = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
-#		self.refreshMWAtStart = config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
-#		self.ignoreSortSeriesdetection = config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default=False)
-#		self.searchLinks = config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
-#		self.maxUsedInodes = config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
-#		self.createMetaData = config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
-#		self.updateAELMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 		self.searchOptions = {}
 		if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 			self.searchOptions = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
-#		if self.searchOptions:
-#			self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
-#			self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True))
-#		else:
-#			self.vtidb = ConfigYesNo(default=True)
-#			self.usePictures = ConfigYesNo(default=True)
-
-		#inhibitDirs = ["/bin", "/boot", "/dev", "/home", "/lib", "/config", "/proc", "/sbin", "/share", "/sys", "/tmp", "/usr", "/var", "/media/VMC", "/media/VMC5", "/.cache", "/.local", "/autofs", "/mnt", "/run"]
-		#for root, directories, files in walk("/etc"):
-		#	if str(root) != "/etc" and str(root) != "/etc/enigma2":
-		#		inhibitDirs.append(str(root))
-		#self["myFileList"] = FileList("/media/hdd/", showDirectories=True, showFiles=False, inhibitDirs=inhibitDirs)
-		#self["myFileList"].hide()
-		self.myFileListActive = False
-#		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
+#		self.myFileListActive = False
+		self["key_yellow"] = StaticText(_("TVS-Setup"))
 		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
 														{
 														"green": (self.do_close, _("Save")),
 														"yellow": (self.key_yellow_handler, _("TVS-Setup"))
 														}, prio=0, description=_("Advanced-Event-Library-Setup"))
+		self["config"].onSelectionChanged.append(self.selectionChanged)
 
 	def key_ok_handler(self):
 		return

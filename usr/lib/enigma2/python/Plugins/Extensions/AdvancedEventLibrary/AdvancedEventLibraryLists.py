@@ -12,7 +12,7 @@ from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
 from Tools.AdvancedEventLibrary import aelGlobals
 
-from .AdvancedEventLibrarySystem import PicLoader
+# from .AdvancedEventLibrarySystem import PicLoader
 
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
