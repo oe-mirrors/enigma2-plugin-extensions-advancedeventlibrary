@@ -1,6 +1,6 @@
 ﻿from datetime import datetime
 from glob import glob
-from html.parser import HTMLParser
+from html import unescape
 from os import remove
 from os.path import getsize, getmtime, isfile, join
 from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePicLoad, ePoint, RT_HALIGN_LEFT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
@@ -184,7 +184,7 @@ class ImageList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except Exception:
+				except Exception:  # TODO: FIXME!!!
 					print('FIXME in ElementList.selectionChanged')
 
 	def getCurrentSelection(self):
@@ -266,7 +266,6 @@ class SearchResultsList(GUIComponent, object):
 			self.onsel_changed.append(sel_changedCB)
 		self.l.setSelectableFunc(self.isSelectable)
 		self.list = []
-		self.htmlParser = HTMLParser()
 
 	def applySkin(self, desktop, parent):
 		attribs = []
@@ -308,18 +307,18 @@ class SearchResultsList(GUIComponent, object):
 				return res
 			else:
 				if data[1]:
-					countries = str(data[1]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " "
+					countries = str(data[1]) + " " + str(unescape('&#xB7;')) + " "
 				if data[2]:
-					year = str(data[2]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " "
+					year = str(data[2]) + " " + str(unescape('&#xB7;')) + " "
 				if data[3]:
-					genres = str(data[3]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " "
+					genres = str(data[3]) + " " + str(unescape('&#xB7;')) + " "
 				if data[4]:
-					rating = "Bewertung : " + str(data[4]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " "
+					rating = "Bewertung : " + str(data[4]) + " " + str(unescape('&#xB7;')) + " "
 				if data[5]:
-					fsk = "FSK : " + str(data[5]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " "
+					fsk = "FSK : " + str(data[5]) + " " + str(unescape('&#xB7;')) + " "
 				details = genres + countries + year + rating + fsk
 				details = details[:-2]
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(data[0]) + " " + str(self.htmlParser.unescape('&#xB7;')) + " (" + str(data[6]) + ")"))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, str(data[0]) + " " + str(unescape('&#xB7;')) + " (" + str(data[6]) + ")"))
 				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_CENTER, details))
 				return res
 		except Exception as ex:
@@ -341,7 +340,7 @@ class SearchResultsList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except Exception:
+				except Exception:  # TODO: FIXME!!!
 					print('FIXME in ElementList.selectionChanged')
 
 	def getCurrentSelection(self):
@@ -623,7 +622,7 @@ class MovieList(GUIComponent, object):
 			if x is not None:
 				try:
 					x()
-				except Exception:  # FIXME!!!
+				except Exception:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
 
 	def getCurrentSelection(self):
@@ -826,18 +825,14 @@ class AELBaseWall(GUIComponent, object):
 				#	else:
 				#		self.l.setItemScale_V(int(value))
 				#		self.l.setItemScale_H(int(value))
-				elif attrib == "viewMode":
-					self.instance.setOrientation(
-						{"wall": eListbox.orGrid,
-						 "list_horizontal": eListbox.orHorizontal,
-							"list_vertical": eListbox.orVertical,
-						 }[value])
+				elif attrib == "viewMode" and self.instance:
+					self.instance.setOrientation({"wall": eListbox.orGrid, "list_horizontal": eListbox.orHorizontal, "list_vertical": eListbox.orVertical, }[value])
 				elif attrib == "itemSize":
 					self.l.setItemWidth(int(value.split(',')[0]))
 					self.l.setItemHeight(int(value.split(',')[1]))
-				elif attrib == "itemScale":
+				elif attrib == "itemScale" and self.instance:
 					self.instance.setSelectionZoom(float(value))
-				elif attrib == "itemSpace":
+				elif attrib == "itemSpace" and self.instance:
 					if str(value).find(",") != -1:
 						h = int(value.split(',')[0])
 						v = int(value.split(',')[0])
@@ -869,17 +864,17 @@ class AELBaseWall(GUIComponent, object):
 				elif attrib == "backgroundColorGlobal":
 					pass
 				#	self.l.setGlobalBackgroundColor(parseColor(str(value)))
-				elif attrib == "borderColor":
+				elif attrib == "borderColor" and self.instance:
 					self.instance.setBorderColor(parseColor(str(value)))
-				elif attrib == "borderWidth":
+				elif attrib == "borderWidth" and self.instance:
 					self.borderwidth = int(value)
 					self.instance.setBorderWidth(self.borderwidth)
-				elif attrib == "animated":
+				elif attrib == "animated" and self.instance:
 					self.instance.setAnimation(int(value))
-				elif attrib == "backgroundColor":
+				elif attrib == "backgroundColor" and self.instance:
 					self.instance.setBackgroundColor(parseColor(str(value)))
 					self.backgroundColor = str(value)
-				elif attrib == "backgroundColorSelected":
+				elif attrib == "backgroundColorSelected" and self.instance:
 					self.instance.setBackgroundColorSelected(parseColor(str(value)))
 				else:
 					attribs.append((attrib, value))
@@ -957,11 +952,8 @@ class AELBaseWall(GUIComponent, object):
 	#	return self.instance.getItemsPerPage()
 
 	def getcurrentselection(self):
-		try:
-			cur = self.l.getCurrentSelection()
-			return cur[0] if cur else None
-		except Exception as ex:
-			aelGlobals.write_log('AEL BaseWall getcurrentselectiond : ' + str(cur) + '  ' + str(ex), DEFAULT_MODULE_NAME)
+		cur = self.l.getCurrentSelection()
+		return cur[0] if cur else None
 
 	def postWidgetCreate(self, instance):
 		self.instance = instance
@@ -972,9 +964,10 @@ class AELBaseWall(GUIComponent, object):
 		self.instance.setWrapAround(True)
 
 	def preWidgetRemove(self, instance):
-		self.instance.selectionChanged.get().remove(self.itemupdated)
-		self.instance.selectionChanged.get().remove(self.selectionchanged)
-		self.instance.setContent(None)
+		if self.instance:
+			self.instance.selectionChanged.get().remove(self.itemupdated)
+			self.instance.selectionChanged.get().remove(self.selectionchanged)
+			self.instance.setContent(None)
 
 	def setlist(self, l):
 		try:
@@ -989,7 +982,8 @@ class AELBaseWall(GUIComponent, object):
 		return self.list
 
 	def getCurrentIndex(self):
-		return self.instance.getCurrentIndex()
+		if self.instance:
+			return self.instance.getCurrentIndex()
 
 	def up(self):
 		if self.instance is not None:
@@ -1024,11 +1018,11 @@ class AELBaseWall(GUIComponent, object):
 
 	def setentry(self, data):
 		res = [None]
-		print(data)
 		return res
 
 	def setSelectionEnable(self, how):
-		self.instance.setSelectionEnable(how)
+		if self.instance:
+			self.instance.setSelectionEnable(how)
 
 ####################################################################################################################################
 
@@ -1143,7 +1137,6 @@ class EPGList(GUIComponent, object):
 					x()
 				except Exception:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
-					pass
 
 	def getCurrentSelection(self):
 		cur = self.l.getCurrentSelection()
@@ -1258,7 +1251,6 @@ class MenuList(GUIComponent, object):
 					x()
 				except Exception:  # TODO: FIXME!!!
 					print("FIXME in EPGList.selectionChanged")
-					pass
 
 	def getCurrentSelection(self):
 		cur = self.l.getCurrentSelection()
@@ -1384,24 +1376,20 @@ class MultiColorNTextLabel(AELLabel):
 		return GUIComponent.applySkin(self, desktop, screen)
 
 	def setForegroundColorNum(self, x):
-		if self.instance:
-			if len(self.foreColors) > x:
-				self.instance.setForegroundColor(self.foreColors[x])
+		if self.instance and len(self.foreColors) > x:
+			self.instance.setForegroundColor(self.foreColors[x])
 
 	def setBackgroundColorNum(self, x):
-		if self.instance:
-			if len(self.backColors) > x:
-				self.instance.setBackgroundColor(self.backColors[x])
+		if self.instance and len(self.backColors) > x:
+			self.instance.setBackgroundColor(self.backColors[x])
 
 	def setTXT(self, x):
-		if self.instance:
-			if len(self.texts) > x:
-				self.instance.setText(self.texts[x])
+		if self.instance and len(self.texts) > x:
+			self.instance.setText(self.texts[x])
 
 	def setPosition(self, x):
-		if self.instance:
-			if len(self.positions) > x:
-				self.instance.move(ePoint(self.positions[x][0], self.positions[x][1]))
+		if self.instance and len(self.positions) > x:
+			self.instance.move(ePoint(self.positions[x][0], self.positions[x][1]))
 
 
 class PicLoader:

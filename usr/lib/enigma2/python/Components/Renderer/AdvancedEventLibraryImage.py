@@ -1,14 +1,12 @@
-from os.path import isfile, exists
-from time import localtime
+from os.path import isfile, exists, join
 from threading import Thread
 from enigma import ePixmap, ePicLoad, ePoint, eSize, eWidget, loadPNG, iPlayableServicePtr, eServiceCenter
 from skin import parseColor, parseColor
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Tools import AdvancedEventLibrary
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, convertDateInFileName, convertSearchName, clearMem, getImageFile
 
-log = "/var/tmp/AdvancedEventLibrary.log"
 screensWithEvent = ["ChannelSelection", "ChannelSelectionHorizontal", "InfoBarZapHistory", "NumberZapWithName", "ChannelSelection_summary", "AdvancedEventLibraryMediaHub", "AdvancedEventLibraryChannelSelection"]
 
 
@@ -37,11 +35,12 @@ class AdvancedEventLibraryImage(Renderer):
 		self.frameImage = None
 		self.lastName = (None, None)
 		self.screenName = ""
-		if isfile('/usr/share/enigma2/Chamaeleon/png/pigframe.png'):
-			self.frameImage = '/usr/share/enigma2/Chamaeleon/png/pigframe.png'
-		self.coverPath = AdvancedEventLibrary.getPictureDir() + 'cover/'
-		self.posterPath = AdvancedEventLibrary.getPictureDir() + 'poster/'
-		self.db = AdvancedEventLibrary.getDB()
+		filename = join(aelGlobals.SHAREPATH, "Chamaeleon/png/pigframe.png")
+		if isfile(filename):
+			self.frameImage = filename
+		self.coverPath = getPictureDir() + 'cover/'
+		self.posterPath = getPictureDir() + 'poster/'
+		self.db = getDB()
 		self.ptr = None
 		self.ptr2 = None
 
@@ -71,9 +70,9 @@ class AdvancedEventLibraryImage(Renderer):
 					params = str(value).split(",")
 					self.imageType = params[0]
 					if self.imageType == self.IMAGE_THUMBNAIL:
-						self.coverPath = AdvancedEventLibrary.getPictureDir() + 'cover/thumbnails/'
+						self.coverPath = getPictureDir() + 'cover/thumbnails/'
 					if self.imageType == self.POSTER_THUMBNAIL:
-						self.posterPath = AdvancedEventLibrary.getPictureDir() + 'poster/thumbnails/'
+						self.posterPath = getPictureDir() + 'poster/thumbnails/'
 					if len(params) > 1:
 						self.frameImage = params[1]
 						self.imageframe.setPixmap(loadPNG(self.frameImage)) if self.imageframe and isfile(self.frameImage) else None
@@ -169,9 +168,9 @@ class AdvancedEventLibraryImage(Renderer):
 #						name += self.evt[0][2] + ' - '
 #					self.ptr = str(name[:-3])
 			if self.ptr:
-				self.ptr = AdvancedEventLibrary.convertDateInFileName(AdvancedEventLibrary.convertSearchName(self.ptr))
+				self.ptr = convertDateInFileName(convertSearchName(self.ptr))
 			if self.ptr2:
-				self.ptr2 = AdvancedEventLibrary.convertDateInFileName(AdvancedEventLibrary.convertSearchName(self.ptr2))
+				self.ptr2 = convertDateInFileName(convertSearchName(self.ptr2))
 			eventName = (self.ptr, self.ptr2)
 			if self.lastName != eventName:
 				thread = Thread(target=self.setthePixmap, args=(eventName,))
@@ -189,7 +188,7 @@ class AdvancedEventLibraryImage(Renderer):
 		self.imageframe = None
 		self.image = None
 		self.instance = None
-		AdvancedEventLibrary.clearMem(self.screenName)
+		clearMem(self.screenName)
 
 	def showimage(self):
 		if self.instance:
@@ -229,7 +228,7 @@ class AdvancedEventLibraryImage(Renderer):
 				self.foundImage = True
 		elif (self.imageType == self.PREFER_IMAGE or self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL or self.imageType == self.PREFER_POSTER):
 			if not self.foundImage:
-				self.ifilename = AdvancedEventLibrary.getImageFile(self.coverPath, eventName)
+				self.ifilename = getImageFile(self.coverPath, eventName)
 				if self.ifilename:
 					self.foundImage = True
 		if str(self.POSTER) in inCache or str(self.POSTER_THUMBNAIL) in inCache or str(self.PREFER_POSTER) in inCache or str(self.PREFER_IMAGE) in inCache:
@@ -237,7 +236,7 @@ class AdvancedEventLibraryImage(Renderer):
 				self.pfilename = inCache
 				self.foundPoster = True
 		elif (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL or self.imageType == self.PREFER_IMAGE):
-			self.pfilename = AdvancedEventLibrary.getImageFile(self.posterPath, eventName)
+			self.pfilename = getImageFile(self.posterPath, eventName)
 			if self.pfilename:
 				self.foundPoster = True
 		isLastRun = self.checkIsLastRun(run, str(eventNames[0]), str(eventNames[1]))

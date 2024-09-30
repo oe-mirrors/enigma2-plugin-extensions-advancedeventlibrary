@@ -1,8 +1,7 @@
-from time import localtime
 from Components.Converter.Converter import Converter
 from Components.Converter.Poll import Poll
 from Components.Element import cached
-from Tools import AdvancedEventLibrary as AEL
+from Tools.AdvancedEventLibrary import aelGlobals
 
 
 class AdvancedEventLibraryUpdateInfo(Poll, Converter, object):
@@ -17,11 +16,11 @@ class AdvancedEventLibraryUpdateInfo(Poll, Converter, object):
 	@cached
 	def getText(self):
 		for x in self.downstream_elements:
-			if AEL.STATUS == None:
+			if aelGlobals.STATUS == None:
 				x.visible = True if self.invert else False
 			else:
 				x.visible = False if self.invert else True
-				return AEL.STATUS
+				return aelGlobals.STATUS
 
 	text = property(getText)
 

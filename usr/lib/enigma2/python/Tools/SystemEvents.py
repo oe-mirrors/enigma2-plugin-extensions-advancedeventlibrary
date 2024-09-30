@@ -1,7 +1,7 @@
 from os import makedirs, chmod
-from os.path import exists
+from os.path import exists, join
 from enigma import eConsoleAppContainer
-
+from Tools.AdvancedEventLibrary import aelGlobals
 
 class SystemEvents:
 	STANDBY_ENTER = "STANDBY_ENTER"
@@ -51,7 +51,7 @@ class SystemEvents:
 					}
 		self.event_list = {}
 		self.ignore_script_exec = []
-		self.cmd_path = '/etc/enigma2/events/'
+		self.cmd_path = join(aelGlobals.CONFIGPATH, "events/")
 		self.cmd_filetype = '.sh'
 		dummy_txt = "#!/bin/sh\n\n"
 		dummy_txt += "# this script will be executed when script is modified and given event hook will be called\n"
