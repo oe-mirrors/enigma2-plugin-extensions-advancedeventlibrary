@@ -1,10 +1,11 @@
 from datetime import datetime
 from math import trunc
+from os.path import join
 from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_TOP, ePicLoad
-from skin import variables, parameters
+from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):
@@ -12,13 +13,13 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		Renderer.__init__(self)
 		self.nameCache = {}
 		self.imageType = str(variables.get('EventLibraryEPGListsImageType', ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		self.imagePath = getPictureDir() + self.imageType + '/thumbnails/'
+		self.imagePath = f"{getPictureDir()}{self.imageType}/thumbnails/"
 		self.x = 1
 		self.y = 140
 		self.onSelChanged = []
 		self.epgcache = eEPGCache.getInstance()
 		self.l = eListboxPythonMultiContent()
-		self.defaultImage = str(variables.get('EventLibraryEPGListsDefaultImage', ('/usr/share/enigma2/AELImages/movies.png',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
+		self.defaultImage = str(variables.get('EventLibraryEPGListsDefaultImage', (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
 		ffont, fsize = parameters.get('EventLibraryEPGSingleListFirstFont', ('Regular', 26))
 		sfont, ssize = parameters.get('EventLibraryEPGSingleListSecondFont', ('Regular', 30))
 		self.l.setItemHeight(int(parameters.get('EventLibraryEPGSingleListItemHeight', (70,))[0]))
@@ -81,13 +82,13 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		res = [None]
 		timeobj = datetime.fromtimestamp(beginTime)
 		_time = timeobj.strftime('%a   %d.%m.%Y   %H:%M')
@@ -98,8 +99,8 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		self.picloader = PicLoader(wp, hp)
 		picon = self.picloader.load(self.getImageFiles(EventName, eventId))
 		self.picloader.destroy()
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, EventName, skin.parseColor(slc).argb(), skin.parseColor(slcs).argb()))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, EventName, parseColor(slc).argb(), parseColor(slcs).argb()))
 		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xp, yp, wp, hp, picon))
 		return res
 

@@ -1,17 +1,16 @@
 from json import loads
 from html import unescape
 from linecache import getline
-from os import path
+from os.path import join, isfile
 from re import findall, sub, search, compile, match, MULTILINE, DOTALL
 from time import localtime
 from enigma import iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
 from Components.Converter.Converter import Converter
 from Components.Element import cached
 from Components.Sources.CurrentService import CurrentService
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
 from ServiceReference import ServiceReference
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
 
-log = "/var/tmp/AdvancedEventLibrary.log"
 countrys = {
 	'USA': ['United States', 'US', 'USA'],
 	'DE': ['Deutschland', 'DE', 'BRD', 'Germany', 'DDR'],
@@ -78,10 +77,11 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 	HDInfo = "HDInfo"
 	DolbyA = "DolbyA"
 	DolbyB = "DolbyB"
-	seriesNumParserList = [('(\d+)[.]\sStaffel[,]\sFolge\s(\d+)'),
-							_('(\d+)[.]\sStaffel[,]\sEpisode\s(\d+)'),
-							_('(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
-							_('[(](\d+)[.](\d+)[)]')]  # Parser fuer Serien- und Episodennummer
+	seriesNumParserList = [(r'(\d+)[.]\sStaffel[,]\sFolge\s(\d+)'),
+							(r'(\d+)[.]\sStaffel[,]\sEpisode\s(\d+)'),
+							(r'(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
+							(r'[(](\d+)[.](\d+)[)]')
+							]  # Parser fuer Serien- und Episodennummer
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE = 0
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE = 1
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR = 2
@@ -91,9 +91,9 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		Converter.__init__(self, type)
 		self.inputString = type
 		self.types = str(type).split(",")
-		self.coverPath = getPictureDir() + 'cover/'
-		self.posterPath = getPictureDir() + 'poster/'
-		self.eventName = ''
+		self.coverPath = f"{getPictureDir()}cover/"
+		self.posterPath = f"{getPictureDir()}poster/"
+		self.eventName = ""
 		self.db = getDB()
 		self.sceenName = ""
 
@@ -112,17 +112,11 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		for type in self.types:
 			type.strip()
 			if self.WideInfo in type:
-				if "16:9" in data or "11" in data or "Breitwand" in data:
-					return True
-				return False
+				return True if "16:9" in data or "11" in data or "Breitwand" in data else False
 			elif self.DolbyInfo in type:
-				if "Dolby" in data:
-					return True
-				return False
+				return True if "Dolby" in data else False
 			elif self.HDInfo in type:
-				if "11" in data or "HDTV" in data:
-					return True
-				return False
+				return True if "11" in data or "HDTV" in data else False
 			elif self.DolbyA in type:
 				if "Dolby Digital 2.0" in data:
 					return False
@@ -130,9 +124,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					return True
 				return False
 			elif self.DolbyB in type:
-				if "Dolby Digital 2.0" in data:
-					return True
-				return False
+				return True if "Dolby Digital 2.0" in data else False
 
 	boolean = property(getBoolean)
 
@@ -145,24 +137,24 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		else:
 			event = self.source.event
 			if hasattr(self.source, 'service'):
-				path = None
+				spath = None
 				service = self.source.service
 				if service:
 					if isinstance(service, eServiceReference):
-						path = service.getPath()
+						spath = service.getPath()
 					elif isinstance(service, str):
-						path = service.rsplit(':', 1)[1].strip() if ':' in service else ServiceReference(service).ref.getPath()
-					if path:
-						if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
-							isMovieFile = path
+						spath = service.rsplit(':', 1)[1].strip() if ':' in service else ServiceReference(service).ref.getPath()
+					if spath:
+						if spath.endswith(".ts") or spath.endswith(".mkv") or spath.endswith(".mpg") or spath.endswith(".avi") or spath.endswith(".mp4") or spath.endswith(".iso") or spath.endswith(".mpeg2") or spath.endswith(".wmv"):
+							isMovieFile = spath
 		if hasattr(self.source, 'service'):
 			service = self.source.service
 			if not isinstance(self.source, CurrentService):
 				serviceHandler = eServiceCenter.getInstance()
 				info = serviceHandler.info(service)
-				path = service.getPath()
-				if path.endswith(".ts") or path.endswith(".mkv") or path.endswith(".mpg") or path.endswith(".avi") or path.endswith(".mp4") or path.endswith(".iso") or path.endswith(".mpeg2") or path.endswith(".wmv"):
-					isMovieFile = path
+				spath = service.getPath()
+				if spath.endswith(".ts") or spath.endswith(".mkv") or spath.endswith(".mpg") or spath.endswith(".avi") or spath.endswith(".mp4") or spath.endswith(".iso") or spath.endswith(".mpeg2") or spath.endswith(".wmv"):
+					isMovieFile = spath
 #				else:
 #					isMovieFile = info.getName(service)
 			elif not '<Components.Sources.ServiceEvent.ServiceEvent' in str(self.source):
@@ -192,8 +184,8 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			if not isMovieFile:
 				self.eventName = self.removeExtension(event.getEventName())
 			else:
-				if path.isfile(str(isMovieFile) + '.meta'):
-					self.eventName = self.removeExtension(getline(str(isMovieFile) + '.meta', 2).replace("\n", "").strip())
+				if isfile(f"{isMovieFile}.meta"):
+					self.eventName = self.removeExtension(getline(f"{isMovieFile}.meta", 2).replace("\n", "").strip())
 				else:
 					self.eventName = self.removeExtension(((str(isMovieFile).split('/')[-1]).rsplit('.', 1)[0]).replace('_', ' '))
 			self.eventName = convertDateInFileName(convertSearchName(self.eventName))
@@ -452,7 +444,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		if (values != None and len(values) > 0 and country == None) and 'country' in values and len(str(values['country']).strip()) > 0:
 			country = str(values['country']).strip()
 
-		if (country == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+		if (country == None and isMovie != None) and isfile(isMovie + '.meta'):
 			desc = getline(isMovie + '.meta', 3)
 			parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY)
 			country = parsedDesc if (parsedDesc != None) else self.findCountry(desc)[0]
@@ -479,10 +471,10 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 	def getExtendedDescription(self, type, values, event, clean, dbData, isMovie):
 		desc = None
 		if isMovie:
-			if path.isfile(isMovie + '.txt'):
+			if isfile(isMovie + '.txt'):
 				with open(isMovie + '.txt', "r") as f:
 					desc = f.read()
-			elif path.isfile(self.removeExtension(isMovie) + '.txt'):
+			elif isfile(self.removeExtension(isMovie) + '.txt'):
 				with open(self.removeExtension(isMovie) + '.txt', "r") as f:
 					desc = f.read()
 		if event != None:
@@ -531,7 +523,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			desc = event.getShortDescription()
 
 		if (desc == None and isMovie):
-			if path.isfile(isMovie + '.meta'):
+			if isfile(isMovie + '.meta'):
 				desc = getline(isMovie + '.meta', 3)
 
 		if (desc != "" and desc != None):
@@ -564,7 +556,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			if (year == None):  # Year aus FullDescription parsen -> Foromat ' xx Min.\n Land Jahr'
 				year = self.getParsedCountryOrYear(self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR, event.getExtendedDescription(), event)
 		if (year == None and isMovie != None):
-			if path.isfile(isMovie + '.meta'):
+			if isfile(isMovie + '.meta'):
 				desc = getline(isMovie + '.meta', 3)
 				parsedDesc = self.getSpecialFormatDescription(desc, self.SPECIAL_FORMAT_PARSED_DESCRIPTION_YEAR)
 				year = parsedDesc if (parsedDesc != None) else self.findYear(desc)
@@ -589,7 +581,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			genre = str(values['genre']).strip()
 		if dbData and genre == None and len(dbData[2]) > 0:
 			genre = str(dbData[2])
-		if (genre == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+		if (genre == None and isMovie != None) and isfile(isMovie + '.meta'):
 			name = getline(isMovie + '.meta', 2).replace('\n', '')
 			desc = getline(isMovie + '.meta', 3).replace(name, '').replace('Altersfreigabe', ' Altersfreigabe').replace('\n', '')
 			genre = self.getCompareGenreWithGenreList(desc, None)
@@ -719,7 +711,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			if (parser):
 				parentialRating = parser.group(1)
 
-		if (parentialRating == None and isMovie != None) and path.isfile(isMovie + '.meta'):
+		if (parentialRating == None and isMovie != None) and isfile(isMovie + '.meta'):
 			desc = getline(isMovie + '.meta', 3)
 			parser = search(r'Ab\s(\d+)\s[Jahren|Jahre]', desc)
 			if not parser:
@@ -841,9 +833,9 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					se = self.findEpisode(subtitle)
 					if se:
 						subtitle = subtitle.replace(str(se[0]), '').replace(str(se[1]), '')
-					extractEpisode = search('\sFolge\s(\d+)', subtitle)
+					extractEpisode = search(r'\sFolge\s(\d+)', subtitle)
 					if not extractEpisode:
-						extractEpisode = search('Folge\s(\d+)', subtitle)
+						extractEpisode = search(r'Folge\s(\d+)', subtitle)
 					if (extractEpisode):
 						subtitle = subtitle.replace(str(extractEpisode.group(0).strip()), '').replace(str(extractEpisode.group(1).strip()), '')
 					subtitle = subtitle.replace("Ab 0 Jahren", "").replace("Ab 6 Jahren", "").replace("Ab 12 Jahren", "").replace("Ab 16 Jahren", "").replace("Ab 18 Jahren", "")
@@ -866,11 +858,10 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					if year:
 						subtitle = subtitle.replace(str(year), '')
 					if (values != None and len(values) > 0):
-						if 'genre' in values:
-							if len(str(values['genre']).strip()) > 0:
-								subtitle = subtitle.replace(' ' + str(values['genre']) + ' ', '')
-					fileName = "/usr/lib/enigma2/python/Components/Converter/AdvancedEventLibrary_Genre.json"
-					if (path.isfile(fileName)):
+						if 'genre' in values and len(str(values['genre']).strip()) > 0:
+							subtitle = subtitle.replace(' ' + str(values['genre']) + ' ', '')
+					fileName = join(aelGlobals.PYTHONPATH, "Components/Converter/AdvancedEventLibrary_Genre.json")
+					if (isfile(fileName)):
 						with open(fileName) as file:
 							jsonString = str(file.read())
 							genreData = loads(jsonString)
@@ -1025,7 +1016,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					eNum = extractSeriesNums.group(2)
 					break
 			if (sNum == None and eNum == None):
-				extractEpisode = search('\sFolge\s(\d+)', str(desc))
+				extractEpisode = search(r'\sFolge\s(\d+)', str(desc))
 				if (extractEpisode):
 					sNum = '99'
 					eNum = extractEpisode.group(1).strip()
@@ -1091,10 +1082,10 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		else:
 			descWordList = desc.split(splitChar)  # WortList zum Vergleichen erzeugen
 		setWordList = set(descWordList)
-		fileName = "/usr/lib/enigma2/python/Components/Converter/AdvancedEventLibrary_Genre.json"
+		fileName = join(aelGlobals.PYTHONPATH, "Components/Converter/AdvancedEventLibrary_Genre.json")
 		if 'Folge' in setWordList or 'Staffel' in setWordList or 'Episode' in setWordList:
 			return 'Serie'
-		if (path.isfile(fileName)):
+		if (isfile(fileName)):
 			with open(fileName) as file:
 				jsonString = str(file.read())
 #				jsonString = jsonString.decode("iso-8859-1")  # in Uncode umwandeln, da sonst json parsing nicht möglich

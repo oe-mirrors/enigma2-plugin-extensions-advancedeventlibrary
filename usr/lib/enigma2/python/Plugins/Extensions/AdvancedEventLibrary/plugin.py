@@ -1,9 +1,6 @@
 #################################################################################
-#																				#
-#								AdvancedEventLibrary							#
-#																				#
+#							  AdvancedEventLibrary								#
 #							Copyright: tsiegel 2019								#
-#																				#
 #################################################################################
 from os.path import join, realpath, basename, exists, isfile
 from re import compile, IGNORECASE
@@ -34,18 +31,15 @@ import Tools.AutoTimerHook as AutoTimerHook
 
 global leavePlayerfromTrailer
 leavePlayerfromTrailer = False
-pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
-pdesc = 'AdvancedEventLibrary'
 baseEPGSelection__init__ = None
 baseEventViewBase__init__ = None
 baseEventViewMovieEvent__init__ = None
 baseInfoBarSimpleEventView__init__ = None
 gSession = None
 ServiceTrack = None
-
-addFont('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/fonts/Normal.ttf', 'Normal', 100, False)
-addFont('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/fonts/Small.ttf', 'Small', 100, False)
-
+VIEWTYPE = config.plugins.AdvancedEventLibrary.ViewType
+addFont(join(aelGlobals.PLUGINPATH, "fonts/Normal.ttf"), 'Normal', 100, False)
+addFont(join(aelGlobals.PLUGINPATH, "fonts/Small.ttf"), 'Small', 100, False)
 
 def sessionstart(reason, **kwargs):
 	if 'session' in kwargs and reason == 0:
@@ -78,7 +72,7 @@ def sessionstart(reason, **kwargs):
 			# MovieSelection.showEventInformation = showEventInformationNew
 			# getExtendedMovieDescription = getExtendedMovieDescriptionNew
 #			for evt in systemevents.getSystemEvents():
-			#	write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
+			#	aelGlobals.write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
 #				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
 #					refreshMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value
 #					if refreshMovieData and refreshMovieWall:
@@ -89,13 +83,13 @@ def sessionstart(reason, **kwargs):
 
 #def _serviceStart(evt, *args):
 #		global ServiceTrack
-#		# write_log("new service detected : " + str(args[1]))
+#		# aelGlobals.write_log("new service detected : " + str(args[1]))
 #		if len(args) > 0 and ServiceTrack and not Screens.Standby.inStandby:
 #			ServiceTrack.newServiceStarted(args)
 
 
 #def openMoviePlayerEventViewMI(self):
-#	write_log('call MediaInfo openMoviePlayerEventView')
+#	aelGlobals.write_log('call MediaInfo openMoviePlayerEventView')
 #	already_open = False
 #	if True and not already_open:
 #		already_open = True
@@ -124,7 +118,7 @@ def sessionstart(reason, **kwargs):
 #	self.epglist = epglist
 #	service = self.session.nav.getCurrentService()
 #	ref = self.session.nav.getCurrentlyPlayingServiceReference()
-#	write_log('openEventViewNew ' + str(ref.toString()))
+#	aelGlobals.write_log('openEventViewNew ' + str(ref.toString()))
 #	info = service.info()
 #	ptr = info.getEvent(0)
 #	if ptr:
@@ -133,7 +127,7 @@ def sessionstart(reason, **kwargs):
 #	if ptr:
 #		epglist.append(ptr)
 #	if epglist:
-#		write_log('open EventViewSimple from Player ' + str(ref.toString()))
+#		aelGlobals.write_log('open EventViewSimple from Player ' + str(ref.toString()))
 #		self.session.open(EventViewSimple, epglist[0], ServiceReference(ref), self.eventViewCallback)
 #	elif ref.toString().startswith("4097") or ref.toString().startswith("1:0:0:0:0:0:0:0:0:0:"):
 #		path = ref.getPath()
@@ -153,7 +147,7 @@ def sessionstart(reason, **kwargs):
 #					else:
 #						length = "%02d:%02d:%02d" % (length / 3600, length % 3600 / 60, length % 60)
 #			name, ext_desc = getExtendedMovieDescriptionNew(ref)
-#		write_log('open EventViewMovieEvent from Player ' + str(ref.toString()))
+#		aelGlobals.write_log('open EventViewMovieEvent from Player ' + str(ref.toString()))
 #		self.session.open(EventViewMovieEvent, name, ext_desc, length, ref)
 
 
@@ -215,7 +209,7 @@ def sessionstart(reason, **kwargs):
 
 #def _refreshMovieWall(evt, *args):
 #		if len(args) > 0:
-#			write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
+#			aelGlobals.write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
 #		if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
 #			refreshData = Timer(30, refreshMovieWallData)
 #			refreshData.start()
@@ -228,7 +222,7 @@ def sessionstart(reason, **kwargs):
 #def saveMovieWallData():
 #	try:
 #		if not AdvancedEventLibrarySimpleMovieWall.saving:
-#			write_log("create MovieWall data after new record detected")
+#			aelGlobals.write_log("create MovieWall data after new record detected")
 #			try:
 #				itype = None
 #				if isfile('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
@@ -238,11 +232,11 @@ def sessionstart(reason, **kwargs):
 #				if itype:
 #					from .AdvancedEventLibrarySimpleMovieWall import saveList
 #					saveList(itype)
-#					write_log("MovieWall data saved with " + str(itype))
+#					aelGlobals.write_log("MovieWall data saved with " + str(itype))
 #			except Exception as ex:
-#				write_log('save moviewall data : ' + str(ex))
+#				aelGlobals.write_log('save moviewall data : ' + str(ex))
 #	except:
-#		write_log('saveMovieWallData ' + str(ex))
+#		aelGlobals.write_log('saveMovieWallData ' + str(ex))
 
 
 #def showMoviesNew(self):
@@ -624,7 +618,7 @@ def EventViewBase_setEvent(self, event):
 
 #def EPGSelectionInit(reason=None):
 #	if reason is not None:
-#		write_log('EPGSelectionInit : ' + str(reason))
+#		aelGlobals.write_log('EPGSelectionInit : ' + str(reason))
 #	global baseEPGSelection__init__
 #	if baseEPGSelection__init__ is None:
 #		baseEPGSelection__init__ = EPGSelection.__init__
@@ -644,7 +638,7 @@ def EventViewBase_setEvent(self, event):
 #	self.eventName = ''
 #
 #	def key_play_handler():
-#		write_log('key play pressed')
+#		aelGlobals.write_log('key play pressed')
 #		if self.trailer:
 #			global leavePlayerfromTrailer
 #			leavePlayerfromTrailer = True
@@ -681,7 +675,7 @@ def EventViewBase_setEvent(self, event):
 #	if isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
 		#config.plugins.tmdb = ConfigSubsection()
 #		if self.type != EPG_TYPE_MULTI and config.plugins.tmdb.keyyellow.value:
-#			write_log('Overwrite TMDb Key Yellow')
+#			aelGlobals.write_log('Overwrite TMDb Key Yellow')
 #			from Plugins.Extensions.tmdb import tmdb
 #
 #			def yellowClicked():
@@ -985,21 +979,21 @@ def main(session, **kwargs):
 #	while AdvancedEventLibrarySimpleMovieWall.saving:
 #		pass
 #		if gSession:
-#			gSession.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
+#			gSession.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, VIEWTYPE.value)
 #		else:
-#			session.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, viewType.value)
+#			session.openWithCallback(restartMW, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, VIEWTYPE.value)
 
 
 def open_primetime(session, **kwargs):
-	session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, viewType.value)
+	session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
 
 
 def open_serienstarts(session, **kwargs):
-	session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, viewType.value)
+	session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
 
 
 def open_favourites(session, **kwargs):
-	session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, viewType.value)
+	session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
 
 
 def open_channelselection(session, **kwargs):
@@ -1026,9 +1020,9 @@ def aelMenu_in_mainmenu(menuid, **kwargs):
 #def restartMW(ret=None):
 #	global gSession
 #	if ret:
-#		write_log('return ' + str(ret))
-#		if viewType.value != ret:
-#			viewType.value = ret
+#		aelGlobals.write_log('return ' + str(ret))
+#		if VIEWTYPE.value != ret:
+#			VIEWTYPE.value = ret
 #			viewType.save()
 #			open_moviewall(gSession)
 
@@ -1036,30 +1030,30 @@ def aelMenu_in_mainmenu(menuid, **kwargs):
 def restartPTP(ret=None):
 	global gSession
 	if ret:
-		write_log('return ' + str(ret))
-		if viewType.value != ret:
-			viewType.value = ret
-			viewType.save()
+		aelGlobals.write_log('return ' + str(ret))
+		if VIEWTYPE.value != ret:
+			VIEWTYPE.value = ret
+			VIEWTYPE.save()
 			open_primetime(gSession)
 
 
 def restartSSP(ret=None):
 	global gSession
 	if ret:
-		write_log('return ' + str(ret))
-		if viewType.value != ret:
-			viewType.value = ret
-			viewType.save()
+		aelGlobals.write_log('return ' + str(ret))
+		if VIEWTYPE.value != ret:
+			VIEWTYPE.value = ret
+			VIEWTYPE.save()
 			open_serienstarts(gSession)
 
 
 def restartFav(ret=None):
 	global gSession
 	if ret:
-		write_log('return ' + str(ret))
-		if viewType.value != ret:
-			viewType.value = ret
-			viewType.save()
+		aelGlobals.write_log('return ' + str(ret))
+		if VIEWTYPE.value != ret:
+			VIEWTYPE.value = ret
+			VIEWTYPE.save()
 			open_favourites(gSession)
 
 
@@ -1068,7 +1062,7 @@ def EPGSearch__init__(self, session, *args):
 	from Components.Sources.ServiceEvent import ServiceEvent
 	from Components.Sources.Event import Event
 	from Plugins.Extensions.EPGSearch import EPGSearch
-	write_log('AEL initialize EPGSearch-Screen')
+	aelGlobals.write_log('AEL initialize EPGSearch-Screen')
 	Screen.__init__(self, session)
 	HelpableScreen.__init__(self)
 	self.skinName = ["EPGSearch", "EPGSelection"]
@@ -1168,9 +1162,9 @@ def autostart(reason, **kwargs):
 				from Plugins.Extensions.EPGSearch import EPGSearch
 				epgS.autostart = EPGSelectionInit
 				EPGSearch.EPGSearch.__init__ = EPGSearch__init__
-				write_log('Overwrite EPGSearch EPGSelectionInit')
+				aelGlobals.write_log('Overwrite EPGSearch EPGSelectionInit')
 		except Exception as ex:
-			write_log('Fehler in EPGSearch EPGSelectionInit : ' + str(ex))
+			aelGlobals.write_log('Fehler in EPGSearch EPGSelectionInit : ' + str(ex))
 		try:
 		#	check TMDb
 			if isfile('/usr/lib/enigma2/python/Plugins/Extensions/tmdb/plugin.pyc'):
@@ -1178,9 +1172,9 @@ def autostart(reason, **kwargs):
 				#if config.plugins.tmdb.keyyellow.value:
 				from Plugins.Extensions.tmdb import plugin as tmdbP
 				tmdbP.autostart = EPGSelectionInit
-				write_log('Overwrite TMDb EPGSelectionInit')
+				aelGlobals.write_log('Overwrite TMDb EPGSelectionInit')
 		except Exception as ex:
-			write_log('Fehler in TMDb EPGSelectionInit : ' + str(ex))
+			aelGlobals.write_log('Fehler in TMDb EPGSelectionInit : ' + str(ex))
 
 
 def Plugins(**kwargs):
@@ -1195,9 +1189,9 @@ def Plugins(**kwargs):
 	desc_pluginmenuhb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_mediaHub)
 	#desc_eventinfocs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_channelselection)
 	#desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_mediaHub)
-	#desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description=pdesc, where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
+	#desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
 	desc_sessionstart = PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=sessionstart)
-	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description=pdesc, where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
+	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
 	list = []
 	list.append(epgSearch)
 	list.append(desc_pluginmenu)
@@ -1226,8 +1220,8 @@ class Recommendations(object):
 		self.currentEventName = None
 		self.epgcache = eEPGCache.getInstance()
 		self.db = getDB()
-		if fileExists(join(pluginpath, 'favourites.data')):
-			self.favourites = self.load_pickle(join(pluginpath, 'favourites.data'))
+		if fileExists(join(aelGlobals.PLUGINPATH, 'favourites.data')):
+			self.favourites = self.load_pickle(join(aelGlobals.PLUGINPATH, 'favourites.data'))
 		else:
 			self.favourites = {'genres': {}, 'titles': {}}
 
@@ -1247,31 +1241,29 @@ class Recommendations(object):
 
 	def newFavourite(self):
 		event = self.getEvent()
-		if event:
-			if self.currentEventName == self.convertTitle(event.getEventName()):
-				evt = self.db.getliveTV(event.getEventId(), event.getEventName(), event.getBeginTime())
-				if evt:
-					genre = (evt[0][14]).strip()
-					if len(genre) > 0:
-						if genre not in self.favourites['genres']:
-							self.favourites['genres'][genre] = [1, time()]
-						else:
-							self.favourites['genres'][genre][0] += 1
-							self.favourites['genres'][genre][1] = time()
-				if self.currentEventName not in self.favourites['titles']:
-					self.favourites['titles'][self.currentEventName] = [1, time()]
-				else:
-					self.favourites['titles'][self.currentEventName][0] += 1
-					self.favourites['titles'][self.currentEventName][1] = time()
-				self.cleanFavorites()
-				self.save_pickle(self.favourites, join(pluginpath, 'favourites.data'))
+		if event and self.currentEventName == self.convertTitle(event.getEventName()):
+			evt = self.db.getliveTV(event.getEventId(), event.getEventName(), event.getBeginTime())
+			if evt:
+				genre = (evt[0][14]).strip()
+				if len(genre) > 0:
+					if genre not in self.favourites['genres']:
+						self.favourites['genres'][genre] = [1, time()]
+					else:
+						self.favourites['genres'][genre][0] += 1
+						self.favourites['genres'][genre][1] = time()
+			if self.currentEventName not in self.favourites['titles']:
+				self.favourites['titles'][self.currentEventName] = [1, time()]
+			else:
+				self.favourites['titles'][self.currentEventName][0] += 1
+				self.favourites['titles'][self.currentEventName][1] = time()
+			self.cleanFavorites()
+			self.save_pickle(self.favourites, join(aelGlobals.PLUGINPATH, 'favourites.data'))
 
 	def getEvent(self):
 		if not self.epgcache.startTimeQuery(eServiceReference(self.currentService), int(time())):
 			event = self.epgcache.getNextTimeEntry()
 			if event:
 				return event
-		return None
 
 	def save_pickle(self, data, filename):
 		with open(filename, 'wb') as f:
@@ -1291,7 +1283,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				write_log('remove genre from favourites : ' + str(k))
+				aelGlobals.write_log('remove genre from favourites : ' + str(k))
 				del self.favourites['genres'][key]
 		keys = []
 		for k, v in self.favourites['titles'].items():
@@ -1299,7 +1291,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				write_log('remove title from favourites : ' + str(k))
+				aelGlobals.write_log('remove title from favourites : ' + str(k))
 				del self.favourites['titles'][key]
 
 	def convertTitle(self, name):

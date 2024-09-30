@@ -1,13 +1,12 @@
 ﻿from datetime import datetime
-from os.path import isfile
+from os.path import isfile, join
 from time import localtime
 from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_TOP, ePicLoad
-from skin import variables, parameters
+from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import getPictureDir, getDB, getImageFile, clearMem
-from Tools.Directories import resolveFilename, SCOPE_CURRENT_SKIN
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 
@@ -43,7 +42,7 @@ class AEL_EPGList(GUIComponent):
 		self.nameCache = {}
 		self.days = (_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun"))
 		self.imageType = str(variables.get("EventLibraryEPGListsImageType", ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		self.imagePath = getPictureDir() + self.imageType + '/thumbnails/'
+		self.imagePath = f"{getPictureDir()}{self.imageType}/thumbnails/"
 		self.timer = timer
 		self.db = getDB()
 		self.onSelChanged = []
@@ -52,7 +51,7 @@ class AEL_EPGList(GUIComponent):
 		GUIComponent.__init__(self)
 		self.type = type
 		self.l = eListboxPythonMultiContent()
-		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", ('/usr/share/enigma2/AELImages/movies.png',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
+		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
 		if type == EPG_TYPE_SINGLE or type == EPG_TYPE_INFOBAR:
 			ffont, fsize = parameters.get("EventLibraryEPGSingleListFirstFont", ('Regular', 26))
 			sfont, ssize = parameters.get("EventLibraryEPGSingleListSecondFont", ('Regular', 30))
@@ -73,11 +72,11 @@ class AEL_EPGList(GUIComponent):
 			self.l.setFont(1, gFont("Regular", 22))
 			self.l.setBuildFunc(self.buildSimilarEntry)
 		self.epgcache = eEPGCache.getInstance()
-		self.clock_pixmap = LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/epgclock.png'))
-		self.clock_add_pixmap = LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/epgclock_add.png'))
-		self.clock_pre_pixmap = LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/epgclock_pre.png'))
-		self.clock_post_pixmap = LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/epgclock_post.png'))
-		self.clock_prepost_pixmap = LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/epgclock_prepost.png'))
+		self.clock_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock.png"))
+		self.clock_add_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_add.png"))
+		self.clock_pre_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_pre.png"))
+		self.clock_post_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_post.png"))
+		self.clock_prepost_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_prepost.png"))
 
 	def getEventFromId(self, service, eventid):
 		event = None
@@ -202,13 +201,13 @@ class AEL_EPGList(GUIComponent):
 		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		res = [None]
 		if beginTime is not None and duration is not None and eventId is not None:
 			timeobj = datetime.fromtimestamp(beginTime)
@@ -228,10 +227,10 @@ class AEL_EPGList(GUIComponent):
 			picon = None
 		if rec:
 			res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic))
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
 		else:
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, EventName, skin.parseColor(slc).argb(), skin.parseColor(slcs).argb()))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT | RT_VALIGN_TOP, EventName, parseColor(slc).argb(), parseColor(slcs).argb()))
 		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xp, yp, wp, hp, picon))
 		return res
 
@@ -266,13 +265,13 @@ class AEL_EPGList(GUIComponent):
 		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(skin.parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		if beginTime is not None and duration is not None and eventId is not None:
 			(clock_pic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
 			timeobj = datetime.fromtimestamp(beginTime)
@@ -295,21 +294,21 @@ class AEL_EPGList(GUIComponent):
 		if rec:
 			res.extend((
 				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic),
-				(eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb())
+				(eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb())
 			))
 		else:
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), skin.parseColor(flc).argb(), skin.parseColor(flcs).argb()))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
 		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xp, yp, wp, hp, picon))
 		if beginTime is not None:
 			if nowTime < beginTime:
 				begin = localtime(beginTime)
 				end = localtime(beginTime + duration)
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, skin.parseColor(slc).argb(), skin.parseColor(slcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, parseColor(slc).argb(), parseColor(slcs).argb()))
 			else:
 				percent = (nowTime - beginTime) * 100 / duration
 				res.extend((
 					(eListboxPythonMultiContent.TYPE_PROGRESS, xpr, ypr, wpr, hpr, percent),
-					(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, skin.parseColor(slc).argb(), skin.parseColor(slcs).argb())
+					(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, parseColor(slc).argb(), parseColor(slcs).argb())
 				))
 		return res
 

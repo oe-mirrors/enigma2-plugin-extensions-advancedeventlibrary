@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from html.parser import HTMLParser
+from html import unescape
 from time import localtime, strftime, mktime, time
 from enigma import eEPGCache, eServiceReference, iServiceInformation, iPlayableService
 from Components.Converter.Converter import Converter
@@ -9,7 +9,6 @@ from Components.Sources.CurrentService import CurrentService
 
 
 class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
-	htmlParser = HTMLParser()
 
 	def __init__(self, type):
 		Converter.__init__(self, type)
@@ -72,10 +71,10 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 			if (desc != "" and desc != None and desc != title):
 				desc = desc.replace(title + '\n', '')
 				if '\n' in desc:
-					desc = desc.replace('\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
+					desc = desc.replace('\n', ' ' + str(unescape('&#xB7;')) + ' ')
 				else:
 					tdesc = desc.split("\n")
-					desc = tdesc[0].replace('\\n', ' ' + str(self.htmlParser.unescape('&#xB7;')) + ' ')
+					desc = tdesc[0].replace('\\n', ' ' + str(unescape('&#xB7;')) + ' ')
 				if desc.find(' Altersfreigabe: Ohne Altersbe') > 0:
 					desc = desc[:desc.find(' Altersfreigabe: Ohne Altersbe')] + ' FSK: 0'
 				return '\n' + self.getMaxWords(desc.replace('Altersfreigabe: ab', 'FSK:'), 18)

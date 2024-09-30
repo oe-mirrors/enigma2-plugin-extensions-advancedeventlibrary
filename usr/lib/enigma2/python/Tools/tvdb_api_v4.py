@@ -27,7 +27,6 @@ class Auth:
 class Request:
 	def __init__(self, auth_token):
 		self.auth_token = auth_token
-#		print self.auth_token
 
 	def make_request(self, url):
 		req = Request(url)
@@ -38,7 +37,6 @@ class Request:
 			data = res.get("data", None)
 			if data and res.get('status', 'failure') != 'failure':
 				return data
-
 
 class Url:
 	def __init__(self):
@@ -188,10 +186,8 @@ class Url:
 		url = "{}/sources/types".format(self.base_url)
 		return url
 
-	def updates_url(self, since=0, typ="series"):
-				#https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
+	def updates_url(self, since=0, typ="series"):  # https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
 		url = "{}/updates?since={}".format(self.base_url, since)
-		print(url)
 		return url
 
 	def tag_options_url(self, page=0):
@@ -214,10 +210,8 @@ class Url:
 
 	def search_url(self, query, filters):
 		filters["query"] = query
-		qs = urlencode(filters)
-		url = "{}/search?{}".format(self.base_url, qs)
+		url = "{}/search?{}".format(self.base_url, urlencode(filters))
 		return url
-
 
 class TVDB:
 	def __init__(self, pin=""):
@@ -228,9 +222,7 @@ class TVDB:
 		self.request = Request(self.auth_token)
 
 	def get_login_state(self):
-		if self.auth_token:
-			return True
-		return False
+		return True if self.auth_token else False
 
 	def get_artwork_statuses(self):  # -> list:
 		"""Returns a list of artwork statuses"""

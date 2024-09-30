@@ -1,4 +1,4 @@
-from os import path
+from os.path import realpath, basename, exists
 from enigma import eServiceCenter
 
 
@@ -11,34 +11,31 @@ def getExtendedMovieDescription(ref):
 			name = evt.getEventName()
 			extended_desc = evt.getExtendedDescription()
 			return (name, extended_desc)
-	f = None
-	extended_desc = ''
-	name = ''
+	name = ""
+	filename = ""
+	extended_desc = ""
 	extensions = ('.txt', '.info')
-	info_file = path.realpath(ref.getPath())
-	name = path.basename(info_file)
+	info_file = realpath(ref.getPath())
+	name = basename(info_file)
 	ext_pos = name.rfind('.')
-	if ext_pos > 0:
-		name = name[:ext_pos].replace('_', ' ')
-	else:
-		name = name.replace('_', ' ')
+	name = name[:ext_pos].replace('_', ' ') if ext_pos > 0 else name.replace('_', ' ')
 	for ext in extensions:
-		if path.exists(info_file + ext):
-			f = info_file + ext
+		if exists(info_file + ext):
+			filename = info_file + ext
 			break
-	if not f:
+	if not filename:
 		ext_pos = info_file.rfind('.')
 		name_len = len(info_file)
 		ext_len = name_len - ext_pos
 		if ext_len <= 5:
 			info_file = info_file[:ext_pos]
 			for ext in extensions:
-				if path.exists(info_file + ext):
-					f = info_file + ext
+				if exists(info_file + ext):
+					filename = f"{info_file}{ext}"
 					break
-	if f:
+	if filename:
 		try:
-			with open(f, 'r') as txtfile:
+			with open(filename, 'r') as txtfile:
 				extended_desc = txtfile.read()
 		except IOError:
 			pass
