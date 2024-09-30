@@ -1,6 +1,5 @@
 # coding=utf-8
 from __future__ import absolute_import
-from operator import itemgetter
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
 from Screens.MessageBox import MessageBox
@@ -12,30 +11,23 @@ from Screens.Setup import Setup
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
 from Components.Pixmap import Pixmap
-from time import time, localtime, mktime
-import datetime
+from time import localtime, mktime
 import os
-import re
-import json
 import skin
 import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
+from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer, Thread
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+from enigma import eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from Components.config import ConfigSelection, config
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
-from . import AdvancedEventLibrarySystem
+
+from .AdvancedEventLibrarySystem import Editor, PicLoader
 from . import AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
@@ -169,10 +161,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_info": self.key_info_handler,
 		}, -1)
 
-		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
-			{
-				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
-			}, -1)
+#		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
+#			{
+#				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
+#			}, -1)
 
 		self.buildGenreList()
 		self.onShow.append(self.refreshAll)
@@ -197,14 +189,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			fontOrientation |= RT_VALIGN_CENTER
 		return fontOrientation
 
-	def infoKeyPressed(self):
-		try:
-			if self.viewType == 'Listenansicht':
-				self.close('Wallansicht')
-			else:
-				self.close('Listenansicht')
-		except Exception as ex:
-			write_log('infoKeyPressed : ' + str(ex))
+#	def infoKeyPressed(self):
+#		try:
+#			if self.viewType == 'Listenansicht':
+#				self.close('Wallansicht')
+#			else:
+#				self.close('Listenansicht')
+#		except Exception as ex:
+#			write_log('infoKeyPressed : ' + str(ex))
 
 	def key_menu_handler(self):
 		self.session.openWithCallback(self.return_from_setup, MySetup)
@@ -219,7 +211,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		else:
 			selection = self["eventWall"].getcurrentselection()
 			eventName = (selection.name, selection.eit)
-		self.session.openWithCallback(self.CELcallBack, AdvancedEventLibrarySystem.Editor, eventname=eventName)
+		self.session.openWithCallback(self.CELcallBack, Editor, eventname=eventName)
 
 	def CELcallBack(self):
 		selected_element = self["genreList"].l.getCurrentSelection()[0]
@@ -963,19 +955,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

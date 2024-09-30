@@ -39,6 +39,7 @@ from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
 from . import _  # for localized messages
+from .AdvancedEventLibrarySystem import Editor, PicLoader
 from . import AdvancedEventLibrarySystem
 from . AdvancedEventLibraryLists import AELBaseWall
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
@@ -572,7 +573,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			else:
 				selection = self["channelList"].getcurrentselection()
 			eventName = (selection.title, selection.eit)
-			self.session.openWithCallback(self.channel_changed, AdvancedEventLibrarySystem.Editor, eventname=eventName)
+			self.session.openWithCallback(self.channel_changed, Editor, eventname=eventName)
 
 	def key_right_handler(self):
 		self.controlChannelList(self.channelListControl["right"])
@@ -946,17 +947,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

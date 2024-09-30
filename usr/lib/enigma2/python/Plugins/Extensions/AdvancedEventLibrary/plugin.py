@@ -20,12 +20,11 @@ from Screens.HelpMenu import HelpableScreen
 from Screens.Screen import Screen
 from Tools.Directories import fileExists
 
-from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryRecommendations, _  # for localized messages
+from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
 from Tools.AdvancedEventLibrary import getDB, convert2base64, getallEventsfromEPG, createBackup, aelGlobals
 
 gSession = None
 ServiceTrack = None
-VIEWTYPE = config.plugins.AdvancedEventLibrary.ViewType
 addFont(join(aelGlobals.PLUGINPATH, "fonts/Normal.ttf"), 'Normal', 100, False)
 addFont(join(aelGlobals.PLUGINPATH, "fonts/Small.ttf"), 'Small', 100, False)
 
@@ -147,15 +146,23 @@ def main(session, **kwargs):
 
 
 def open_primetime(session, **kwargs):
-	session.openWithCallback(restartPTP, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
+	session.open(AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 
 def open_serienstarts(session, **kwargs):
-	session.openWithCallback(restartSSP, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
+	session.open(AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 
 def open_favourites(session, **kwargs):
-	session.openWithCallback(restartFav, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, VIEWTYPE.value)
+	session.open(AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+
+
+def open_channelselection(session, **kwargs):
+	session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
+
+
+def open_mediaHub(session, **kwargs):
+	session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 
 
 def open_aelMenu(session, **kwargs):  # Einstieg mit 'AEL-Übersicht'
@@ -171,143 +178,24 @@ def aelMenu_in_mainmenu(menuid, **kwargs):
 	return []
 
 
-def restartPTP(ret=None):
-	global gSession
-	if ret:
-		aelGlobals.write_log('return ' + str(ret))
-		if VIEWTYPE.value != ret:
-			VIEWTYPE.value = ret
-			VIEWTYPE.save()
-			open_primetime(gSession)
-
-
-def restartSSP(ret=None):
-	global gSession
-	if ret:
-		aelGlobals.write_log('return ' + str(ret))
-		if VIEWTYPE.value != ret:
-			VIEWTYPE.value = ret
-			VIEWTYPE.save()
-			open_serienstarts(gSession)
-
-
-def restartFav(ret=None):
-	global gSession
-	if ret:
-		aelGlobals.write_log('return ' + str(ret))
-		if VIEWTYPE.value != ret:
-			VIEWTYPE.value = ret
-			VIEWTYPE.save()
-			open_favourites(gSession)
-
-
-def EPGSearch__init__(self, session, *args):
-	from Components.Sources.ExtEvent import ExtEvent
-	from Components.Sources.ServiceEvent import ServiceEvent
-	from Components.Sources.Event import Event
-	from Plugins.Extensions.EPGSearch import EPGSearch
-	aelGlobals.write_log('AEL initialize EPGSearch-Screen')
-	Screen.__init__(self, session)
-	HelpableScreen.__init__(self)
-	self.skinName = ["EPGSearch", "EPGSelection"]
-	self["trailer"] = Pixmap()
-	self["trailer"].hide()
-	self.trailer = None
-	self.db = getDB()
-	self["popup"] = Label()
-	self["popup"].hide()
-	self.hidePopup = eTimer()
-
-	self["SelectedEvent"] = StaticText()
-	self["ExtEvent"] = ExtEvent()
-
-	self.searchargs = args
-	self.currSearch = ""
-	self.searchType = eEPGCache.PARTIAL_TITLE_SEARCH  # default search type
-	self.search_string = ""
-
-	self.bouquetservices = []
-	self.limit_to_bouquet = config.plugins.epgsearch.limit_to_bouquet.value
-	self.show_short_description = config.plugins.epgsearch.show_short_description.value
-	self.match_type = config.plugins.epgsearch.match_type.value
-
-	# XXX: we lose sort begin/end here
-	self["key_yellow"] = Button(_("New Search"))
-	self["key_blue"] = Button(_("History"))
-
-	# begin stripped copy of EPGSelection.__init__
-	self.switchBouquet = None
-	self.bouquetChangeCB = None
-	self.serviceChangeCB = None
-	self.ask_time = -1  # now
-	self["key_red"] = Button(_("Edit Search"))
-	self.closeRecursive = False
-	self.saved_title = None
-	self["Service"] = ServiceEvent()
-	self["Event"] = Event()
-	self.type = EPG_TYPE_SINGLE
-	self.currentService = None
-	self.zapFunc = None
-	self.sort_type = 0
-	self["key_green"] = Button(_("Add timer"))
-	self.key_green_choice = self.ADD_TIMER
-	self.key_red_choice = self.EMPTY
-	self["list"] = EPGSearch.EPGSearchList(type=self.type, selChangedCB=self.onSelectionChanged, timer=session.nav.RecordTimer)
-	self["actions"] = HelpableActionMap(self, "EPGSelectActions",
-		{
-			"timerAdd": self.timerAdd,
-			"timerEnableDisable": self.timerEnableDisable,
-			"instantToggleTimerState": self.instantToggleTimerState,
-			"instantTimer": self.addInstantTimer,
-			"yellow": self.yellowButtonPressed,
-			"blue": self.blueButtonPressed,
-			"info": self.infoKeyPressed,
-			"red": self.redButtonPressed,
-			"nextBouquet": self.nextBouquet,  # just used in multi epg yet
-			"prevBouquet": self.prevBouquet,  # just used in multi epg yet
-			"nextService": self.nextService,  # just used in single epg yet
-			"prevService": self.prevService,  # just used in single epg yet
-		}, -1)
-	self["MenuActions"] = HelpableActionMap(self, "MenuActions",
-		{
-			"menu": (self.menu, _("Settings")),
-		}, -1)
-	self["OkCancelActions"] = HelpableActionMap(self, "OkCancelActions",
-		{
-			"cancel": (self.closeScreen, _("Exit")),
-			"ok": (self.eventSelected, _("Select")),
-		}, -1)
-	self["NumberActions"] = HelpableActionMap(self, "NumberActions",
-		{
-			"0": (self.Number0, _("Reset search result list")),
-			"1": (self.Number1, _("Remove Channel from result list")),
-			"3": (self.Number3, _("Keep only this Channel in result list")),
-			"4": (self.Number4, _("Remove Event from result list")),
-			"5": (self.Number5, _("Toggle: show event short description in result list")),
-			"6": (self.Number6, _("Keep only this Event in result list")),
-			"7": (self.Number7, _("Match of search string: exact, from begin or any substring")),
-			"9": (self.Number9, _("Toggle: search all Channels or only Channels in Bouquet")),
-		}, -1)
-
-	self.initTimer = eTimer()
-	self.initTimer.callback.append(self.createFinished)
-
-	self["actions"].csel = self
-	self.onLayoutFinish.append(self.onCreate)
-
-
 def autostart(reason, **kwargs):
 	if reason == 0:
 		return
 
 
 def Plugins(**kwargs):
+
 	epgSearch = PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, fnc=autostart, needsRestart=False, weight=100)
 	desc_pluginmenu = PluginDescriptor(name='AEL-Übersicht', description="AEL Menü & Statistik", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_aelMenu)
 	desc_pluginmenued = PluginDescriptor(name='AEL-Editor', description="Eventinformationen bearbeiten", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=main)
+	#desc_pluginmenumw = PluginDescriptor(name='AEL-Movie-Lists', description="Advanced-Event-Library-MovieLists", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_moviewall)
 	desc_pluginmenupt = PluginDescriptor(name='AEL-Prime-Time-Planer', description="Advanced-Event-Library-Prime-Time-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_primetime)
 	desc_pluginmenuss = PluginDescriptor(name='AEL-Serien-Starts-Planer', description="Advanced-Event-Library-Serien-Starts-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_serienstarts)
 	desc_pluginmenufav = PluginDescriptor(name='AEL-Favoriten-Planer', description="Advanced-Event-Library-Favourites-Planer", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_favourites)
+	desc_pluginmenucs = PluginDescriptor(name='AEL-Channel-Selection', description="Advanced-Event-Library-Channel-Selection", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_channelselection)
+	desc_pluginmenuhb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_mediaHub)
+	#desc_eventinfohb = PluginDescriptor(name='AEL-Media-Hub', description="Advanced-Event-Library-Media-Hub", where=PluginDescriptor.WHERE_EVENTINFO, icon="plugin.png", fnc=open_mediaHub)
+	#desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
 	desc_sessionstart = PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=sessionstart)
 	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
 	list = []
@@ -317,6 +205,8 @@ def Plugins(**kwargs):
 	list.append(desc_pluginmenupt)
 	list.append(desc_pluginmenuss)
 	list.append(desc_pluginmenufav)
+	list.append(desc_pluginmenuhb)
+	list.append(desc_pluginmenucs)
 	list.append(desc_sessionstart)
 	list.append(desc_aelmenumainmenu)
 	return list

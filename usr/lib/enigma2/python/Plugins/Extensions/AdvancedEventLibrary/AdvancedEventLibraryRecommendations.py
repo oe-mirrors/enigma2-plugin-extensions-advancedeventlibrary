@@ -22,7 +22,8 @@ from ServiceReference import ServiceReference
 from Tools.Directories import fileExists
 import NavigationInstance
 
-from . import AdvancedEventLibrarySystem
+from .AdvancedEventLibrarySystem import Editor, PicLoader
+
 from . import AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
@@ -154,10 +155,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			"key_info": self.key_info_handler,
 		}, -1)
 
-		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
-			{
-				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
-			}, -1)
+#		self["TeletextActions"] = HelpableActionMap(self, "InfobarTeletextActions",
+#			{
+#				"startTeletext": (self.infoKeyPressed, _("Switch between views")),
+#			}, -1)
 
 		self.buildGenreList()
 		self.onShow.append(self.refreshAll)
@@ -216,7 +217,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		else:
 			selection = self["eventWall"].getcurrentselection()
 			eventName = (selection.name, selection.eit)
-		self.session.openWithCallback(self.CELcallBack, AdvancedEventLibrarySystem.Editor, eventname=eventName)
+		self.session.openWithCallback(self.CELcallBack, Editor, eventname=eventName)
 
 	def CELcallBack(self):
 		selected_element = self["genreList"].l.getCurrentSelection()[0]
@@ -255,14 +256,14 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.isinit = True
 			self.menu_sel_changed()
 
-	def infoKeyPressed(self):
-		try:
-			if self.viewType == 'Listenansicht':
-				self.close('Wallansicht')
-			else:
-				self.close('Listenansicht')
-		except Exception as ex:
-			write_log('infoKeyPressed : ' + str(ex))
+#	def infoKeyPressed(self):
+#		try:
+#			if self.viewType == 'Listenansicht':
+#				self.close('Wallansicht')
+#			else:
+#				self.close('Listenansicht')
+#		except Exception as ex:
+#			write_log('infoKeyPressed : ' + str(ex))
 
 	def key_red_handler(self):
 		clearMem("Favoriten-Planer")
@@ -744,19 +745,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

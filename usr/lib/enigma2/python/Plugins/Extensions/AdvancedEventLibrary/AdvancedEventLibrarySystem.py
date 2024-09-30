@@ -26,7 +26,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 
-from . import AdvancedEventLibraryPrimeTime, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryLists, AdvancedEventLibraryRecommendations, _  # for localized messages
+from . import AdvancedEventLibraryPrimeTime, AdvancedEventLibrarySerienStarts, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryLists, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
 from Tools import AdvancedEventLibrary as AEL
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -54,9 +54,9 @@ class AELMenu(Screen):
 						('Prime-Time-Planer', 'zeigt nach Genres gegliederte Sendungen zur Prime-Time an', LoadPixmap(imgpath + 'primetime.png'), 'ptp'),
 						('Serien-Starts-Planer', 'zeigt aktuelle Serien- und Staffelstarts an', LoadPixmap(imgpath + 'serien.png'), 'ssp'),
 						('Favoriten-Planer', 'Deine Empfehlungen im TV', LoadPixmap(imgpath + 'favoriten.png'), 'fav'),
-						#('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'),
-						#('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'),
-						#('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')
+						('Simple-Movie-Wall', 'zeigt Aufnahmen im Wall-Format an', LoadPixmap(imgpath + 'movies.png'), 'smw'),
+						('AEL-Channel-Selection', 'zeigt AEL Kanalübersicht an', LoadPixmap(imgpath + 'sender.png'), 'scs'),
+						('AEL-Media-Hub', 'Aktuelles aus TV/Aufnahmen', LoadPixmap(imgpath + 'mediahub.png'), 'hub')
 						]
 		self["menulist"] = List(self.menulist, enableWrapAround=True)
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
@@ -199,12 +199,12 @@ class AELMenu(Screen):
 				self.open_primetime()
 			elif current[3] == 'ssp':
 				self.open_serienstarts()
-			#elif current[3] == 'smw':
-			#	self.open_moviewall()
-			#elif current[3] == 'scs':
-			#	self.open_channelSelection()
-			#elif current[3] == 'hub':
-			#	self.open_mediaHub()
+			elif current[3] == 'smw':
+				self.open_moviewall()
+			elif current[3] == 'scs':
+				self.open_channelSelection()
+			elif current[3] == 'hub':
+				self.open_mediaHub()
 			elif current[3] == 'fav':
 				self.open_favourites()
 
@@ -244,26 +244,32 @@ class AELMenu(Screen):
 		self.close()
 
 	def open_serienstarts(self):
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
+		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 0
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, self.viewType)
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 	def open_primetime(self):
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
+		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 1
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, self.viewType)
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
-#	def open_moviewall(self):
-#		while AEL.aelGlobals.saving:
-#			pass
-#		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
-#		self.screenType = 2
-#		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, self.viewType)
+	def open_moviewall(self):
+		while AEL.aelGlobals.saving:
+			pass
+		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
+		self.screenType = 2
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, "Listenansicht")
 
 	def open_favourites(self):  # reload_module(AdvancedEventLibraryRecommendations)
-		self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
+		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 3
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, self.viewType)
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+
+	def open_channelSelection(self):
+		self.session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
+
+	def open_mediaHub(self):
+		self.session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
 
 	def main(self):
 		self.session.open(AdvancedEventLibrarySetup)
@@ -272,23 +278,23 @@ class AELMenu(Screen):
 		self.session.open(Editor)
 
 	def goRestart(self, ret=None):
-		if ret:
-			AEL.aelGlobals.write_log('return ' + str(ret), DEFAULT_MODULE_NAME)
-			config.plugins.AdvancedEventLibrary.ViewType.value = ret
-			config.plugins.AdvancedEventLibrary.ViewType.save()
-		if self.viewType != config.plugins.AdvancedEventLibrary.ViewType.value:
-			self.reload.start(50, True)
-		else:
-			if config.plugins.AdvancedEventLibrary.CloseMenu.value:
-				self.do_close()
+#		if ret:
+#			AEL.aelGlobals.write_log('return ' + str(ret), DEFAULT_MODULE_NAME)
+#			config.plugins.AdvancedEventLibrary.ViewType.value = ret
+#			config.plugins.AdvancedEventLibrary.ViewType.save()
+#		if self.viewType != config.plugins.AdvancedEventLibrary.ViewType.value:
+#			self.reload.start(50, True)
+#		else:
+		if config.plugins.AdvancedEventLibrary.CloseMenu.value:
+			self.do_close()
 
 	def goReload(self):
 		if self.screenType == 0:
 			self.open_serienstarts()
 		elif self.screenType == 1:
 			self.open_primetime()
-#		elif self.screenType == 2:
-#			self.open_moviewall()
+		elif self.screenType == 2:
+			self.open_moviewall()
 		elif self.screenType == 3:
 			self.open_favourites()
 
@@ -716,9 +722,7 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 							ref[k] = x[1].value
 							break
 			self.save_json(ref, '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/tvsreflist.data')
-			self.close()
-		else:
-			self.close()
+		self.close()
 
 ####################################################################################
 
@@ -1514,7 +1518,9 @@ class Editor(Screen, ConfigListScreen):
 			self['config'].show()
 			self.activeList = 'editor'
 		else:
-			AdvancedEventLibraryLists.removeFiles()
+			filelist = glob(join("/tmp/", "*.jpg"))
+			for f in filelist:
+				remove(f)
 			AEL.clearMem("AEL-Editor")
 			self.close()
 

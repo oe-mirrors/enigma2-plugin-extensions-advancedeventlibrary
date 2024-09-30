@@ -37,7 +37,8 @@ from Components.config import getConfigListEntry, ConfigEnableDisable, \
 	ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
 	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
 from Tools.Directories import fileExists
-from . import AdvancedEventLibrarySystem
+
+from .AdvancedEventLibrarySystem import Editor, PicLoader
 from . import AdvancedEventLibrarySimpleMovieWall
 from . import AdvancedEventLibraryChannelSelection
 from .AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
@@ -724,10 +725,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 		if self.activeList == "TV":
 			selection = self["channelList"].getcurrentselection()
 			eventName = (selection.title, selection.eit)
-			self.session.openWithCallback(self.channel_changed, AdvancedEventLibrarySystem.Editor, eventname=eventName)
+			self.session.openWithCallback(self.channel_changed, Editor, eventname=eventName)
 		else:
 			selection = self["movieList"].getcurrentselection()
-			self.session.openWithCallback(self.movie_changed, AdvancedEventLibrarySystem.Editor, service=selection.service, eventname=None)
+			self.session.openWithCallback(self.movie_changed, Editor, service=selection.service, eventname=None)
 
 	def key_right_handler(self):
 		if self.switchWithPVR:
@@ -1114,19 +1115,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload
