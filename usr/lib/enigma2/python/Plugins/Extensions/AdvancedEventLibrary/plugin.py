@@ -134,15 +134,15 @@ def main(session, **kwargs):
 
 
 def open_primetime(session, **kwargs):
-	session.open(AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+	session.open(AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, 1)  # = "Listenansicht"
 
 
 def open_serienstarts(session, **kwargs):
-	session.open(AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+	session.open(AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, 1)  # = "Listenansicht"
 
 
 def open_favourites(session, **kwargs):
-	session.open(AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+	session.open(AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, 1)  # = "Listenansicht"
 
 
 def open_channelselection(session, **kwargs):
