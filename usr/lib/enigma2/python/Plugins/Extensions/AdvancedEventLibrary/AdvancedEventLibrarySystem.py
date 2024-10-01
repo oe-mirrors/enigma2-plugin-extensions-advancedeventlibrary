@@ -41,7 +41,7 @@ def loadskin(filename):
 	return skin
 
 
-class AELMenu(Screen):
+class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	ALLOW_SUSPEND = True
 	skin = str(loadskin("AdvancedEventLibraryMenu.xml"))
 
