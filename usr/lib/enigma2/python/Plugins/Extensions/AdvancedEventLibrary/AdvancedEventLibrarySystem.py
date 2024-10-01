@@ -369,12 +369,9 @@ class AdvancedEventLibrarySetup(Setup):
 		Setup.keySelect(self)
 
 	def createDirs(self, path):
-		if not exists(path):
-			makedirs(path)
-		if not exists(path + 'poster/'):
-			makedirs(path + 'poster/')
-		if not exists(path + 'cover/'):
-			makedirs(path + 'cover/')
+		for currpath in [path, f"{path}poster/", f"{path}cover/"]:
+			if not exists(currpath):
+				makedirs(currpath)
 
 
 #	def buildConfigList(self):

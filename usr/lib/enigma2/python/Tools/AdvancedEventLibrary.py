@@ -12,7 +12,7 @@ from PIL import Image
 from random import SystemRandom
 from re import sub, compile, findall, IGNORECASE, MULTILINE, DOTALL
 from requests import get
-from shutil import copy2, copyfileobj, move
+from shutil import copy2, copyfileobj
 from sqlite3 import connect
 from subprocess import check_output, CalledProcessError
 from time import time, localtime, mktime
@@ -32,7 +32,7 @@ import tvdbsimple as tvdb
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-config.plugins.AdvancedEventLibrary.Location = ConfigText(default=defaultRecordingLocation().replace('movie/', '') + 'AdvancedEventLibrary/')
+config.plugins.AdvancedEventLibrary.Location = ConfigText(default=f"{defaultRecordingLocation().replace('movie/', '')}AdvancedEventLibrary/")
 config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
 config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
 config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
@@ -44,30 +44,30 @@ config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
 config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
-config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default="Datenverzeichnis", choices=["Datenverzeichnis", "Flash"])
+config.plugins.AdvancedEventLibrary.dbFolder = ConfigSelection(default=0, choices=[(0, _("Data directory")), (1, _("Flash"))])
 config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default="200", choices=[("100", "100kB"), ("150", "150kB"), ("200", "200kB"), ("300", "300kB"), ("400", "400kB"), ("500", "500kB"), ("750", "750kB"), ("1024", "1024kB"), ("1000000", "unbegrenzt")])
 config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
 config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default='')
-config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default='unbenutzt')
-config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
-config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
+config.plugins.AdvancedEventLibrary.tmdbKey = ConfigText(default=_("internal"))
+config.plugins.AdvancedEventLibrary.tvdbV4Key = ConfigText(default=_("unused"))
+config.plugins.AdvancedEventLibrary.tvdbKey = ConfigText(default=_("internal"))
+config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default=_("internal"))
+config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default=0, choices=[(0, _("Extra data and images")), (1, _("Extra data only"))])
 config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-#config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
+config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default=0, choices=[(0, _("Wallansicht")), (1, _("Listenansicht"))])
 config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
 config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend"])
+config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default=0, choices=[(0, _("Datum absteigend")), (1, _("Datum aufsteigend")), (2, _("Name aufsteigend")), (3, _("Name absteigend")), (4, _("Tag aufsteigend")), (5, _("Tag absteigend"))])
 config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.SearchLinks = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
 config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default="Filme", choices=["Filme", "Serien", "Dokus", "Music", "Kinder", "Shows", "Sport"])
-config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=["Alle Bouquets"])
+config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default=0, choices=[(0, _("Filme")), (1, _("Serien")), (2, _("Dokus")), (3, _("Music")), (4, _("Kinder")), (5, _("Shows")), (6, _("Sport"))])
+config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default=0, choices=[(0, _("Favoriten")), (1, _("Alle Bouquets"))])
 config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
 config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
@@ -1040,7 +1040,7 @@ networks = {
 
 
 def getDB():
-	return DB_Functions(join(aelGlobals.CONFIGPATH, "eventLibrary.db")) if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else DB_Functions(join(getPictureDir(), "eventLibrary.db"))
+	return DB_Functions(join(aelGlobals.CONFIGPATH, "eventLibrary.db")) if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else DB_Functions(join(getPictureDir(), "eventLibrary.db"))
 
 
 def load_json(filename):
@@ -1071,7 +1071,7 @@ def get_keys(forwhat):
 
 def get_TVDb():
 	tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key.value
-	if tvdbV4Key != "unbenutzt1":
+	if tvdbV4Key != "ungenutzt1":
 		tvdbV4 = tvdb_api_v4.TVDB(tvdbV4Key)
 		if tvdbV4.get_login_state():
 			return tvdbV4
@@ -1177,7 +1177,7 @@ def createBackup():
 			makedirs(backuppath + 'poster/')
 		if not exists(backuppath + 'cover/'):
 			makedirs(backuppath + 'cover/')
-		dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else join(getPictureDir(), 'eventLibrary.db')
+		dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(getPictureDir(), 'eventLibrary.db')
 		if fileExists(dbpath):
 #			system('cp ' + str(dbpath) + str(join(backuppath, 'eventLibrary.db')))
 			copy2(dbpath, join(backuppath, 'eventLibrary.db'))
@@ -1240,7 +1240,7 @@ def createBackup():
 def checkUsedSpace(db=None):
 	try:
 		recordings = getRecordings()
-		dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else join(getPictureDir(), "eventLibrary.db")
+		dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(getPictureDir(), "eventLibrary.db")
 		if fileExists(dbpath) and db:
 			maxSize = 1 * 1024.0 * 1024.0 if "/etc" in dir else config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
 			PDIR = dir + 'poster/'
@@ -1861,9 +1861,7 @@ def getallEventsfromEPG():
 		#	aelGlobals.write_log('Fehler in get_allEventsfromEPG : ' + str(ex))
 		#	continue
 	aelGlobals.write_log('check ' + str(len(names)) + ' new events')
-	limgs = True
-	if config.plugins.AdvancedEventLibrary.SearchFor.value == "nur Extradaten":
-		limgs = False
+	limgs = False if config.plugins.AdvancedEventLibrary.SearchFor.value == 1 else True  # "Extra data only"
 	get_titleInfo(names, None, limgs, db, liveTVRecords, tvsref)
 	del names
 	del lines
@@ -1984,7 +1982,7 @@ def getTVSpielfilm(db, tvsref):
 												if country != "" and data[5] == "":
 													db.updateSingleEventInfo('country', country, convert2base64(title))
 											bld = ""
-											if image != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
+											if image != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 												bld = image
 												imgname = title + ' - '
 												if season != "":
@@ -2003,7 +2001,7 @@ def getTVSpielfilm(db, tvsref):
 												aelGlobals.write_log('no matches found for ' + str(title) + ' on ' + tvsref[sRef] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', ADDLOG)
 											if founded > success and imdb != "":
 												trailers += 1
-											if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
+											if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
 												if len(convert2base64(image)) < 255:
 													imgpath = coverDir + convert2base64(image) + '.jpg'
 													if downloadTVSImage(bld, imgpath):
@@ -2151,7 +2149,7 @@ def getTVMovie(db, secondRun=False):
 										if country != "" and data[5] == "":
 											db.updateSingleEventInfo('country', country, convert2base64(title[0]))
 									bld = ""
-									if image != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
+									if image != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 										bld = image
 										imgname = title[0] + ' - '
 										if season != "":
@@ -2166,7 +2164,7 @@ def getTVMovie(db, secondRun=False):
 									success = founded
 									db.updateliveTV(id, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, title[0], airtime)
 									founded = tcount - db.getUpdateCount()
-									if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != "nur Extradaten" and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
+									if founded > success and bld != "" and str(config.plugins.AdvancedEventLibrary.SearchFor.value) != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
 										if len(convert2base64(image)) < 255:
 											imgpath = coverDir + convert2base64(image) + '.jpg'
 											if downloadTVMovieImage(bld, imgpath):

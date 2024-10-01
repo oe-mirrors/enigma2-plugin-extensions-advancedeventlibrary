@@ -6,6 +6,7 @@ from Screens.Standby import TryQuitMainloop
 from Screens.InfoBar import MoviePlayer
 from Screens.LocationBox import MovieLocationBox
 from Screens.TaskList import TaskListScreen
+from Components.ActionMap import ActionMap
 from Components.Pixmap import Pixmap
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
@@ -13,7 +14,7 @@ from Components.Sources.ServiceEvent import ServiceEvent
 from Components.FileTransfer import FileTransferJob
 from Components.Task import job_manager
 from time import localtime
-from enigma import getDesktop, iServiceInformation, eServiceReference, eServiceCenter, ePixmap
+from enigma import getDesktop, iServiceInformation, eServiceReference, eServiceCenter
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from Components.ConfigList import ConfigListScreen
@@ -102,13 +103,13 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 	ALLOW_SUSPEND = True
 	skin = loadSkin(skinpath + "AdvancedEventLibraryMovieLists.xml")
 
-	def __init__(self, session, viewType="Wallansicht"):
+	def __init__(self, session, viewType=0):
 		global active
 		active = True
 		self.session = session
 		Screen.__init__(self, session)
 		self.viewType = viewType
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		self.title = "Simple-Movie-List"
 		self.skinName = "Advanced-Event-Library-MovieList"
 #		else:
@@ -118,27 +119,17 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.lastFolder = []
 		self.listlen = 0
 		self.pageCount = 0
-		sortType = config.plugins.AdvancedEventLibrary.SortType.value
-		if sortType == "Datum absteigend":
-			self.sortType = 0
-		elif sortType == "Datum aufsteigend":
-			self.sortType = 1
-		elif sortType == "Name aufsteigend":
-			self.sortType = 2
-		elif sortType == "Name absteigend":
-			self.sortType = 3
-		self.oldSortOrder = sortType
+		self.sortType = config.plugins.AdvancedEventLibrary.SortType.value
+		choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"),4: _("Tag aufsteigend"),5: _("Tag absteigend")}
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Advanced-Event-Library")
 		if isTMDb:
 			self["key_yellow"] = StaticText("TMDb Infos...")
 		else:
 			self["key_yellow"] = StaticText("")
-		self["key_blue"] = StaticText(str(sortType))
-
+		self["key_blue"] = StaticText(choices.get((self.sortType), "Error"))
 		self['NaviInfo'] = Label('')
-
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht':
 		self["movielist"] = MovieList()
 		self["movielist"].l.setBuildFunc(self.setMovieEntry)
 		self["movielist"].connectsel_changed(self.sel_changed)
@@ -194,7 +185,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 #	def infoKeyPressed(self):
 #		try:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1: # 'Listenansicht'
 #				self.close('Wallansicht')
 #			else:
 #				self.close('Listenansicht')
@@ -274,7 +265,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		return play_progress
 
 	def getList(self, goToFolder=None, createUpdate=False):
-#		if self.viewType == 'Wallansicht':
+#		if self.viewType == 0:  # 'Wallansicht'
 #			self.parameter = self['moviewall'].getParameter()
 #		else:
 		self.parameter = self['movielist'].getParameter()
@@ -378,7 +369,8 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 								foundEpisodes = True
 								break
 						if not foundEpisodes:
-							self["key_blue"].setText(str(self.oldSortOrder))
+							choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"),4: _("Tag aufsteigend"),5: _("Tag absteigend")}
+							self["key_blue"].setText(choices.get(self.oldSortOrder, "Error"))
 					hasElements = True
 					if sorttype == 0:
 						self.movielist.sort(key=lambda x: x[1], reverse=True)
@@ -417,7 +409,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		try:
 			if hasElements:
 				self.listlen = len(currentList)
-#				if self.viewType == 'Wallansicht':
+#				if self.viewType == 0: # 'Wallansicht'
 #					self["moviewall"].setlist(currentList)
 #					self["moviewall"].movetoIndex(0)
 #					self.pageCount = self['moviewall'].getPageCount()
@@ -463,7 +455,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				elif entrys.filename in self.scrambledVideoList:
 					scrambled_or_rec = self.scrambledImage
 
-			if self.viewType == 'Wallansicht':
+			if self.viewType == 0:  # 'Wallansicht'
 				#REWORK
 				#if entrys.isFolder and entrys.image != self.folderImage:
 				#	return [entrys,
@@ -555,7 +547,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 		except Exception as ex:
 			write_log("setMovieEntry : " + str(ex))
-			if self.viewType == 'Wallansicht':
+			if self.viewType == 0:  # 'Wallansicht'
 				pass
 				#return [entrys,
 				#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, str(ex), skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
@@ -567,7 +559,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def key_menu_handler(self):
 		keys = ["1", "2", "3", "4", "5", "6", "7", "8"]
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		cs = self['movielist'].getCurrentSelection()
 #		else:
 #			cs = self['moviewall'].getcurrentselection()
@@ -596,7 +588,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def menuCallBack(self, ret=None):
 		if ret:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -639,7 +631,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getList(self.currentFolder, True)
 				self.getMovieList(self.sortType)
 				self.sel_changed()
-#				if self.viewType == 'Wallansicht':
+#				if self.viewType == 0:  # 'Wallansicht'
 #					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 			elif 'umbenennen : ' in ret[0]:
 				self.session.open(MovieRetitle, cs.service, self)
@@ -648,12 +640,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.getList(self.currentFolder, True)
 		self.getMovieList(self.sortType)
 		self.sel_changed()
-#		if self.viewType == 'Wallansicht':
+#		if self.viewType == 0:  # 'Wallansicht'
 #			self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def moveCallBack(self, ret=None):
 		if ret:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -667,7 +659,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def move(self, answer):
 		if answer is True:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -687,7 +679,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def copyCallBack(self, ret=None):
 		if ret:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -701,7 +693,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def copy(self, answer):
 		if answer is True:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -741,12 +733,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getList(self.currentFolder, True)
 				self.getMovieList(self.sortType)
 				self.sel_changed()
-#				if self.viewType == 'Wallansicht':
+#				if self.viewType == 0:  # 'Wallansicht'
 #					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def remove(self, answer):
 		if answer is True:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -767,12 +759,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getList(self.currentFolder, True)
 			self.getMovieList(self.sortType)
 			self.sel_changed()
-#			if self.viewType == 'Wallansicht':
+#			if self.viewType == 0:  # 'Wallansicht'
 #				self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def recycle(self, answer):
 		if answer is True:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -782,7 +774,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self.getList(self.currentFolder, True)
 			self.getMovieList(self.sortType)
 			self.sel_changed()
-#			if self.viewType == 'Wallansicht':
+#			if self.viewType == 0:  # 'Wallansicht'
 #				self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def return_from_setup(self):
@@ -790,7 +782,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def key_play_handler(self):
 		try:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -807,7 +799,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		if self.currentFolder[0] != 'root':
 			self.session.openWithCallback(self.return_from_bookmarks, MovieLocationBox, "MovieWall", self.currentFolder[0] + '/')
 		else:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -828,13 +820,13 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getList(createUpdate=True)
 			self.getMovieList(self.sortType)
 			self.sel_changed()
-#			if self.viewType == 'Wallansicht':
+#			if self.viewType == 0:  # 'Wallansicht'
 #				self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 			self["NaviInfo"].setText("Verzeichnis : " + self.currentFolder[1])
 
 	def key_ok_handler(self):
 		try:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -849,7 +841,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def return_from_player(self):
 		mlen = 0
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		cs = self['movielist'].getCurrentSelection()
 #		else:
 #			cs = self['moviewall'].getcurrentselection()
@@ -857,12 +849,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		if info:
 			mlen = info.getLength(cs.service)
 		cs.__setitem__('progress', self.getProgress(cs.filename, mlen))
-#		if self.viewType == 'Wallansicht':
+#		if self.viewType == 0:  # 'Wallansicht'
 #			self["moviewall"].refresh()
 		self.sel_changed()
 
 	def return_from_AEL(self):
-#		if self.viewType == 'Wallansicht':
+#		if self.viewType == 0:  # 'Wallansicht'
 #			self["moviewall"].refresh()
 		self.sel_changed()
 
@@ -873,7 +865,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getList(createUpdate=False)
 				self.getMovieList(self.sortType)
 				self.sel_changed()
-#				if self.viewType == 'Wallansicht':
+#				if self.viewType == 0:  # 'Wallansicht'
 #					self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 				imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 				ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
@@ -883,7 +875,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		cs = self['movielist'].getCurrentSelection()
 #		else:
 #			cs = self['moviewall'].getcurrentselection()
@@ -953,7 +945,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.close()
 
 	def key_green_handler(self):
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		cs = self['movielist'].getCurrentSelection()
 #		else:
 #			cs = self['moviewall'].getcurrentselection()
@@ -964,7 +956,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self.session.openWithCallback(self.return_from_AEL, Editor, service=cs.service, eventname=None)
 
 	def key_yellow_handler(self):
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		cs = self['movielist'].getCurrentSelection()
 #		else:
 #			cs = self['moviewall'].getcurrentselection()
@@ -994,25 +986,25 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self["key_blue"].setText(str(ret[0]))
 			self.getMovieList(self.sortType)
 			self.sel_changed()
-#			if self.viewType == 'Wallansicht':
+#			if self.viewType == 0:  # 'Wallansicht'
 #				self['PageInfo'].setText('Seite ' + str(self['moviewall'].getCurrentPage()) + ' von ' + str(self.pageCount))
 
 	def key_right_handler(self):
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		self['movielist'].pageDown()
 #		else:
 #			self['moviewall'].right()
 #			self.sel_changed()
 
 	def key_left_handler(self):
-#		if self.viewType == 'Listenansicht':
+#		if self.viewType == 1:  # 'Listenansicht'
 		self['movielist'].pageUp()
 #		else:
 #			self['moviewall'].left()
 #			self.sel_changed()
 
 	def key_down_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['movielist'].moveDown()
 #		else:
 #			old_idx = int(self['moviewall'].getCurrentIndex())
@@ -1032,7 +1024,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			self.sel_changed()
 
 	def key_up_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['movielist'].moveUp()
 #		else:
 #			old_idx = int(self['moviewall'].getCurrentIndex())
@@ -1053,7 +1045,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			self.sel_changed()
 
 	def key_channel_up_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['movielist'].pageUp()
 #		else:
 #			self['moviewall'].prevPage()
@@ -1061,7 +1053,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #		self.sel_changed()
 
 	def key_channel_down_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['movielist'].pageDown()
 #		else:
 #			self['moviewall'].nextPage()
@@ -1070,7 +1062,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 
 	def sel_changed(self):
 		try:
-#			if self.viewType == 'Listenansicht':
+#			if self.viewType == 1:  # 'Listenansicht'
 			cs = self['movielist'].getCurrentSelection()
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
@@ -1271,10 +1263,11 @@ class MySetup(Screen, ConfigListScreen):
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Speichern")
 
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		self.sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend"])
-		if self.paths:   #TODO: Unklar wie ich das in setup.xml sauber abfahren kann
-			self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigSelection(default=self.paths[0], choices=self.paths)
+# TODO: Unklar wie ich das in setup.xml sauber abfahren kann
+#		config.plugins.AdvancedEventLibrary = ConfigSubsection()
+#		self.sortType = config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default="Datum absteigend", choices=["Datum absteigend", "Datum aufsteigend", "Name aufsteigend", "Name absteigend", "Tag aufsteigend", "Tag absteigend"])
+#		if self.paths:
+#			self.startPath = config.plugins.AdvancedEventLibrary.StartPath = ConfigSelection(default=self.paths[0], choices=self.paths)
 		self.showProgress = config.plugins.AdvancedEventLibrary.Progress = ConfigYesNo(default=True)
 		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 
