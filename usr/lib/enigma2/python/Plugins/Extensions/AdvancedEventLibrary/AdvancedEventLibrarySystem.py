@@ -143,7 +143,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 					result[3] = result[1] * 100 // result[0]  # use%
 				break
 		fd.close()
-		return "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % ('RAM', AEL.getSizeStr(result[0]), AEL.getSizeStr(result[2]), AEL.getSizeStr(result[1]), result[3])
+		return f"RAM :\t{AEL.getSizeStr(result[0])}\tFrei: {AEL.getSizeStr(result[2])}\tBelegt: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
 
 	def getDiskInfo(self, path=None):
 		def getMountPoints():
@@ -170,7 +170,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				resultList.append(result)
 		res = ""
 		for result in resultList:
-			res += "%s :\t%s\tFrei: %s\tBelegt: %s (%s%%)\n" % (result[4], AEL.getSizeStr(result[0]), AEL.getSizeStr(result[2]), AEL.getSizeStr(result[1]), result[3])
+			res += f"{result[4]} :\t{AEL.getSizeStr(result[0])}\tFrei: {AEL.getSizeStr(result[2])}\tBelegt: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
 		return res.replace('/ :', 'Flash :')
 
 	def getlastUpdateInfo(self, db):
@@ -439,7 +439,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(recdir), subpaths))
 #
 #		except Exception as ex:
-#			AEL.aelGlobals.write_log("Fehler in buildConfigList : " + str(ex),DEFAULT_MODULE_NAME)
+#			AEL.aelGlobals.write_log("Error in buildConfigList : " + str(ex),DEFAULT_MODULE_NAME)
 
 
 #	def do_close(self):
@@ -788,7 +788,7 @@ class Editor(Screen, ConfigListScreen):
 						if self.pSource == 1:
 							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
 							AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-							if int(getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+							if int(getsize('/tmp/' + selection[5]) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
 								AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 							else:
 								copy('/tmp/' + selection[5], selection[4])
@@ -799,7 +799,7 @@ class Editor(Screen, ConfigListScreen):
 						if self.cSource == 1:
 							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
 							AEL.createSingleThumbnail('/tmp/' + selection[5], selection[4])
-							if int(getsize('/tmp/' + selection[5]) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+							if int(getsize('/tmp/' + selection[5]) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
 								AEL.reduceSigleImageSize('/tmp/' + selection[5], selection[4])
 							else:
 								copy('/tmp/' + selection[5], selection[4])

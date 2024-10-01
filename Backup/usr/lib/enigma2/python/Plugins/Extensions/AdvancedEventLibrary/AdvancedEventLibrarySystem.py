@@ -539,7 +539,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(recdir), subpaths))
 #
 #		except Exception as ex:
-#			AEL.aelGlobals.write_log("Fehler in buildConfigList : " + str(ex),DEFAULT_MODULE_NAME)
+#			AEL.aelGlobals.write_log("Error in buildConfigList : " + str(ex),DEFAULT_MODULE_NAME)
 
 	def changedEntry(self):
 		return
@@ -1522,3 +1522,18 @@ class Editor(Screen, ConfigListScreen):
 			AdvancedEventLibraryLists.removeFiles()
 			AEL.clearMem("AEL-Editor")
 			self.close()
+
+
+####################################################################################################################################################################
+class PicLoader:
+	def __init__(self, width, height):
+		self.picload = ePicLoad()
+		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
+
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload

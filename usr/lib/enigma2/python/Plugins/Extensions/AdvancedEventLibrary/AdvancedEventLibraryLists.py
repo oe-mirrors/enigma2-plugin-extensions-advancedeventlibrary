@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+﻿﻿from datetime import datetime
 from glob import glob
 from html import unescape
 from os import remove
@@ -1066,13 +1066,13 @@ class EPGList(GUIComponent, object):
 		slc = '#00ffffff'
 		slcs = '#00ffffff'
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = f"#00{parseColor('EventLibraryListsFirstLineColor').argb():03x}"
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = f"#00{parseColor('EventLibraryListsSecondLineColor').argb():03x}"
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = f"#00{parseColor('EventLibraryListsFirstLineColorSelected').argb():03x}"
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = f"#00{parseColor('EventLibraryListsSecondLineColorSelected').argb():03x}"
 		res = [None]
 		if int(data[2]) > 0:
 			timeobj = datetime.fromtimestamp(data[3])

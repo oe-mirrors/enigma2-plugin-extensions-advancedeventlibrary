@@ -60,7 +60,7 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 			return "" if what == 0 else None
 
 	def getPrimeTimeEvent(self, event):
-		time = "%s - %s" % (strftime("%H:%M", localtime(event.getBeginTime())), strftime("%H:%M", localtime(event.getBeginTime() + event.getDuration())))
+		time = f"{strftime('%H:%M', localtime(event.getBeginTime()))} - {strftime('%H:%M', localtime(event.getBeginTime() + event.getDuration()))}"
 		title = event.getEventName()
 		duration = "%d Min." % (event.getDuration() / 60)
 		return str(time) + " " + str(title) + ' (' + str(duration) + ')' + str(self.getOneLineDescription(title, event))

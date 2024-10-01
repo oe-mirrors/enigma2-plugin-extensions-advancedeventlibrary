@@ -248,7 +248,7 @@ class CommonDataBase():
 			self.db_file = db_path + db_file
 		self.boxid = getUniqueID('e' + 't' + 'h' + '0')
 		self.dbstate = DatabaseState(self.db_file, self.boxid)
-		debugPrint("init database: %s" % self.db_file, LOGLEVEL.INFO)
+		debugPrint(f"init database: {self.db_file}", LOGLEVEL.INFO)
 		self.c = None
 		self.table = None
 		self.locked = False
@@ -283,10 +283,10 @@ class CommonDataBase():
 					return False
 			else:
 				self.dbstate.lockDB()
-			debugPrint("connect table %s of database: %s" % (self.table, self.db_file), LOGLEVEL.ALL)
+			debugPrint(f"connect table {self.table} of database: {self.db_file}", LOGLEVEL.ALL)
 			db_dir = dirname(self.db_file)
 			if not exists(db_dir):
-				debugPrint("connect table failed --> %s does not exist" % (db_dir), LOGLEVEL.ERROR)
+				debugPrint(f"connect table failed --> {db_dir} does not exist", LOGLEVEL.ERROR)
 				return False
 			chk_same_thread = not self.ignore_thread_check and True or False
 			self.db = connect(self.db_file, check_same_thread=chk_same_thread)
@@ -366,13 +366,13 @@ class CommonDataBase():
 					ret = self.c.fetchall()
 				has_error = False
 			except ProgrammingError as er:
-				txt = "Programming ERROR at SQL command: %s" % sqlcmd
+				txt = f"Programming ERROR at SQL command: {sqlcmd}"
 				if len(args):
 					txt += '\n'
 					for arg in args:
 						txt += arg + '\n'
 			except DatabaseError as er:
-				txt = "Database ERROR at SQL command: %s" % sqlcmd
+				txt = f"Database ERROR at SQL command: {sqlcmd}"
 				if len(args):
 					txt += '\n'
 					for arg in args:
@@ -389,7 +389,7 @@ class CommonDataBase():
 						pass
 					self.is_initiated = False
 			except Exception as er:
-				txt = "Database ERROR at SQL command: %s" % sqlcmd
+				txt = f"Database ERROR at SQL command: {sqlcmd}"
 			finally:
 				lock.release()
 			if has_error:
@@ -405,7 +405,7 @@ class CommonDataBase():
 
 	def disconnectDataBase(self, readonly=False):
 		if self.c is not None:
-			debugPrint("disconnect table %s of database: %s" % (self.table, self.db_file), LOGLEVEL.ALL)
+			debugPrint(f"disconnect table {self.table} of database: {self.db_file}", LOGLEVEL.ALL)
 			if self.dbthread_id is not None:
 				cur_id = current_thread().ident
 				if cur_id != self.dbthread_id:
@@ -1254,7 +1254,7 @@ class MovieDataBase(CommonDataBase):
 				path = folder
 				if not folder.endswith('/'):
 					path += '/'
-				debugPrint("Add items of folder : %s" % path, LOGLEVEL.ALL)
+				debugPrint(f"Add items of folder : {path}", LOGLEVEL.ALL)
 				self.updateMovieDBPath(path, is_thread=True)
 		self.stopBackgroundAction()
 
@@ -1532,7 +1532,7 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 		if shortdesc and shortdesc != '' and x[1]:
 			sequenceMatcher = SequenceMatcher(" ".__eq__, shortdesc, str(x[1]))
 			ratio = sequenceMatcher.ratio()
-			print("[MovieDB] shortdesc movie ratio %f - %d - %d" % (ratio, len(shortdesc), len(x[1])))
+			print(f"[MovieDB] shortdesc movie ratio {ratio:f} - {len(shortdesc)} - {len(x[1])}")
 			if shortdesc in x[1] or (short_ratio < ratio):
 				movie = x
 				movie_found = True
@@ -1541,7 +1541,7 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 			if extdesc and x[2]:
 				sequenceMatcher = SequenceMatcher(" ".__eq__, extdesc, str(x[2]))
 				ratio = sequenceMatcher.ratio()
-				print("[MovieDB] extdesc movie ratio %f - %d - %d" % (ratio, len(extdesc), len(x[1])))
+				print(f"[MovieDB] extdesc movie ratio {ratio:f} - {len(extdesc)} - {len(x[1])}")
 				if ratio < ext_ratio:
 					movie = None
 					movie_found = False
@@ -1558,7 +1558,7 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 		if extdesc and x[2] and not movie_found:
 			sequenceMatcher = SequenceMatcher(" ".__eq__, extdesc, str(x[2]))
 			ratio = sequenceMatcher.ratio()
-			print("[MovieDB] extdesc movie ratio %f - %d - %d" % (ratio, len(extdesc), len(x[1])))
+			print(f"[MovieDB] extdesc movie ratio {ratio:f} - {len(extdesc)} - {len(x[1])}")
 			if extdesc in x[2] or (ext_ratio < ratio):
 				movie = x
 				movie_found = True

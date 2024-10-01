@@ -214,7 +214,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def refreshAll(self):
 		if not self.isinit:
-			if self.viewType != 1: # 'Listenansicht'
+			if self.viewType != 1:  # 'Listenansicht'
 				self.parameter = self["eventWall"].getParameter()
 				self.imageType = str(self.parameter[3])
 				self.substituteImage = str(self.parameter[5])
@@ -842,7 +842,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
 		except Exception as ex:
-			write_log('Fehler in seteventEntry : ' + str(ex))
+			write_log('Error in seteventEntry : ' + str(ex))
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]

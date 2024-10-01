@@ -363,7 +363,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#print(ret)
 			return ret
 		except Exception as ex:
-			write_log('Fehler in buildChannelList : ' + str(ex))
+			write_log('Error in buildChannelList : ' + str(ex))
 
 	def buildEventList(self, entrys):
 		try:
@@ -389,7 +389,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][5], self.eventParameter[20][5], self.eventListFontOrientation, str(self.correctweekdays(entrys.timespan)), skin.parseColor(self.eventParameter[6]).argb(), skin.parseColor(self.eventParameter[7]).argb()))
 			return ret
 		except Exception as ex:
-			write_log('Fehler in buildEventList : ' + str(ex))
+			write_log('Error in buildEventList : ' + str(ex))
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:

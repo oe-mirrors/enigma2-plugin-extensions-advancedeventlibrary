@@ -852,10 +852,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 				timeText = "beginnt in " + _timeInfo if int(selected_channel.begin) > int(time()) else "begann vor " + _timeInfo
 				self["timeInfo"].setText(timeText.replace('beginnt in 0 Min.', 'beginnt jetzt').replace('begann vor 0 Min.', 'beginnt jetzt'))
 			elif self.channelType == 3:
-				_timeInfo = "beginnt um %s Uhr" % (strftime("%H:%M", localtime(selected_channel.begin)))
+				_timeInfo = f"beginnt um {strftime('%H:%M', localtime(selected_channel.begin))} Uhr"
 				self["timeInfo"].setText(_timeInfo)
 			else:
-				_timeInfo = "beginnt am %s Uhr" % (strftime("%a, %H:%M", localtime(selected_channel.begin)))
+				_timeInfo = f"beginnt am {strftime('%a, %H:%M', localtime(selected_channel.begin))} Uhr"
 				self["timeInfo"].setText(self.correctweekdays(_timeInfo))
 			if selected_channel.hasTrailer:
 				self["trailer"].show()

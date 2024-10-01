@@ -120,7 +120,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		self.listlen = 0
 		self.pageCount = 0
 		self.sortType = config.plugins.AdvancedEventLibrary.SortType.value
-		choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"),4: _("Tag aufsteigend"),5: _("Tag absteigend")}
+		choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"), 4: _("Tag aufsteigend"), 5: _("Tag absteigend")}
 		self["key_red"] = StaticText("Beenden")
 		self["key_green"] = StaticText("Advanced-Event-Library")
 		if isTMDb:
@@ -369,7 +369,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 								foundEpisodes = True
 								break
 						if not foundEpisodes:
-							choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"),4: _("Tag aufsteigend"),5: _("Tag absteigend")}
+							choices = {0: _("Datum absteigend"), 1: _("Datum aufsteigend"), 2: _("Name aufsteigend"), 3: _("Name absteigend"), 4: _("Tag aufsteigend"), 5: _("Tag absteigend")}
 							self["key_blue"].setText(choices.get(self.oldSortOrder, "Error"))
 					hasElements = True
 					if sorttype == 0:
@@ -666,14 +666,14 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			if cs.isFolder:
 				write_log('move folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
 #				shutil.move(cs.filename[1], self.destination)
-				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, False, "%s : %s" % (_("move folder"), cs.filename[1])))
+				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, False, f"{_('move folder')} : {cs.filename[1]}"))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
 					write_log('move file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
 #					shutil.move(file, os.path.join(self.destination, os.path.basename(file)))
-					job_manager.AddJob(FileTransferJob(file, self.destination, False, False, "%s : %s" % (_("move file"), file)))
+					job_manager.AddJob(FileTransferJob(file, self.destination, False, False, f"{_('move file')} : {file}"))
 				self.openTasklist()
 				del files
 
@@ -699,13 +699,13 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
 				write_log('copy folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
-				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, True, "%s : %s" % (_("copy folder"), cs.filename[1])))
+				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, True, f"{_('copy folder')} : {cs.filename[1]}"))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
 					write_log('copy file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
-					job_manager.AddJob(FileTransferJob(file, self.destination, False, True, "%s : %s" % (_("copy file"), file)))
+					job_manager.AddJob(FileTransferJob(file, self.destination, False, True, f"{_('copy file')} : {file}"))
 				self.openTasklist()
 				del files
 
@@ -1293,7 +1293,7 @@ class MySetup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("zeige Fortschritt gesehen", self.showProgress))
 			#self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
 		except Exception as ex:
-			write_log("Fehler in buildConfigList : " + str(ex))
+			write_log("Error in buildConfigList : " + str(ex))
 
 	def changedEntry(self):
 		self.buildConfigList()

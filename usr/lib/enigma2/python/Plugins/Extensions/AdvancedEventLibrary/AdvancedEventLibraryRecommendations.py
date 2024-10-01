@@ -681,7 +681,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 			#					]
 		except Exception as ex:
-			write_log('Fehler in seteventEntry : ' + str(ex))
+			write_log('Error in seteventEntry : ' + str(ex))
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:

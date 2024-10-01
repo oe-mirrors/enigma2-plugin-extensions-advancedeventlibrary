@@ -30,7 +30,7 @@ class Request:
 
 	def make_request(self, url):
 		req = Request(url)
-		req.add_header("Authorization", "Bearer {}".format(self.auth_token))
+		req.add_header("Authorization", f"Bearer {self.auth_token}")
 		response = urlopen(req, timeout=5)
 		if response:
 			res = load(response)
@@ -43,121 +43,121 @@ class Url:
 		self.base_url = "https://api4.thetvdb.com/v4"
 
 	def login_url(self):
-		return "{}/login".format(self.base_url)
+		return f"{self.base_url}/login"
 
 	def artwork_status_url(self):
-		return "{}/artwork/statuses".format(self.base_url)
+		return f"{self.base_url}/artwork/statuses"
 
 	def artwork_types_url(self):
-		return "{}/artwork/types".format(self.base_url)
+		return f"{self.base_url}/artwork/types"
 
 	def artwork_url(self, id, extended=False):
-		url = "{}/artwork/{}".format(self.base_url, id)
+		url = f"{self.base_url}/artwork/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def awards_url(self, page):
 		if page < 0:
 			page = 0
-		url = "{}/awards?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/awards?page={page}"
 		return url
 
 	def award_url(self, id, extended=False):
-		url = "{}/awards/{}".format(self.base_url, id)
+		url = f"{self.base_url}/awards/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def awards_categories_url(self):
-		url = "{}/awards/categories".format(self.base_url)
+		url = f"{self.base_url}/awards/categories"
 		return url
 
 	def award_category_url(self, id, extended=False):
-		url = "{}/awards/categories/{}".format(self.base_url, id)
+		url = f"{self.base_url}/awards/categories/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def content_ratings_url(self):
-		url = "{}/content/ratings".format(self.base_url)
+		url = f"{self.base_url}/content/ratings"
 		return url
 
 	def countries_url(self):
-		url = "{}/countries".format(self.base_url)
+		url = f"{self.base_url}/countries"
 		return url
 
 	def companies_url(self, page=0):
-		url = "{}/companies?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/companies?page={page}"
 		return url
 
 	def company_url(self, id):
-		url = "{}/companies/{}".format(self.base_url, id)
+		url = f"{self.base_url}/companies/{id}"
 		return url
 
 	def all_series_url(self, page=0):
-		url = "{}/series?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/series?page={page}"
 		return url
 
 	def series_url(self, id, extended=False):
-		url = "{}/series/{}".format(self.base_url, id)
+		url = f"{self.base_url}/series/{id}"
 		if extended:
-			url = "{}/extended?meta=translations".format(url)
+			url = f"{url}/extended?meta=translations"
 		return url
 
 	def series_episodes_url(self, id, season_type, page=0, lang=None):
 		lang = '/' + lang if lang else ''
-		url = "{}/series/{}/episodes/{}{}?page={}".format(self.base_url, id, season_type, lang, page)
+		url = f"{self.base_url}/series/{id}/episodes/{season_type}{lang}?page={page}"
 		return url
 
 	def series_translation_url(self, id, lang):
-		url = "{}/series/{}/translations/{}".format(self.base_url, id, lang)
+		url = f"{self.base_url}/series/{id}/translations/{lang}"
 		return url
 
 	def movie_translation_url(self, id, lang):
-		url = "{}/movies/{}/translations/{}".format(self.base_url, id, lang)
+		url = f"{self.base_url}/movies/{id}/translations/{lang}"
 		return url
 
 	def movies_url(self, page=0):
-		url = "{}/movies?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/movies?page={page}"
 		return url
 
 	def movie_url(self, id, extended=False):
-		url = "{}/movies/{}".format(self.base_url, id)
+		url = f"{self.base_url}/movies/{id}"
 		if extended:
-			url = "{}/extended?meta=translations".format(url)
+			url = f"{url}/extended?meta=translations"
 		return url
 
 	def all_seasons_url(self, page=0):
-		url = "{}/seasons?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/seasons?page={page}"
 		return url
 
 	def season_url(self, id, extended=False):
-		url = "{}/seasons/{}".format(self.base_url, id)
+		url = f"{self.base_url}/seasons/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def season_types_url(self):
-		url = "{}/seasons/types".format(self.base_url)
+		url = f"{self.base_url}/seasons/types"
 		return url
 
 	def season_translation_url(self, id, lang):
-		url = "{}/seasons/{}/translations/{}".format(self.base_url, id, lang)
+		url = f"{self.base_url}/seasons/{id}/translations/{lang}"
 		return url
 
 	def episode_url(self, id, extended=False):
-		url = "{}/episodes/{}".format(self.base_url, id)
+		url = f"{self.base_url}/episodes/{id}"
 		if extended:
-			url = "{}/extended?meta=translations".format(url)
+			url = f"{url}/extended?meta=translations"
 		return url
 
 	def genders_url(self):
-		url = "{}/genders".format(self.base_url)
+		url = f"{self.base_url}/genders"
 		return url
 
 	def genres_url(self):
-		url = "{}/genres".format(self.base_url)
+		url = f"{self.base_url}/genres"
 		return url
 
 	def genre_url(self, id):
@@ -165,52 +165,52 @@ class Url:
 		return url
 
 	def languages_url(self):
-		url = "{}/languages".format(self.base_url)
+		url = f"{self.base_url}/languages"
 		return url
 
 	def person_url(self, id, extended=False):
-		url = "{}/people/{}".format(self.base_url, id)
+		url = f"{self.base_url}/people/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def character_url(self, id):
-		url = "{}/characters/{}".format(self.base_url, id)
+		url = f"{self.base_url}/characters/{id}"
 		return url
 
 	def people_types_url(self):
-		url = "{}/people/types".format(self.base_url)
+		url = f"{self.base_url}/people/types"
 		return url
 
 	def source_types_url(self):
-		url = "{}/sources/types".format(self.base_url)
+		url = f"{self.base_url}/sources/types"
 		return url
 
 	def updates_url(self, since=0, typ="series"):  # https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
-		url = "{}/updates?since={}".format(self.base_url, since)
+		url = f"{self.base_url}/updates?since={since}"
 		return url
 
 	def tag_options_url(self, page=0):
-		url = "{}/tags/options?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/tags/options?page={page}"
 		return url
 
 	def tag_option_url(self, id):
-		url = "{}/tags/options/{}".format(self.base_url, id)
+		url = f"{self.base_url}/tags/options/{id}"
 		return url
 
 	def lists_url(self, page=0):
-		url = "{}/lists?page={}".format(self.base_url, page)
+		url = f"{self.base_url}/lists?page={page}"
 		return url
 
 	def list_url(self, id, extended=False):
-		url = "{}/lists/{}".format(self.base_url, id)
+		url = f"{self.base_url}/lists/{id}"
 		if extended:
-			url = "{}/extended".format(url)
+			url = f"{url}/extended"
 		return url
 
 	def search_url(self, query, filters):
 		filters["query"] = query
-		url = "{}/search?{}".format(self.base_url, urlencode(filters))
+		url = f"{self.base_url}/search?{urlencode(filters)}"
 		return url
 
 class TVDB:

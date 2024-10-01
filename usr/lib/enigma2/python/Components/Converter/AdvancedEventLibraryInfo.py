@@ -298,8 +298,8 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					if (oneLineDescription != None):
 						result.append(oneLineDescription)
 				else:
-					result.append("!!! invalid parameter '%s' !!!" % (type))
-			sep = ' %s ' % str(unescape('&#xB7;'))
+					result.append(f"!!! invalid parameter '{type}' !!!")
+			sep = f" {str(unescape('&#xB7;'))} "
 			return sep.join(result)
 		return ""
 
@@ -393,10 +393,10 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					extendedDescription = self.getExtendedDescription(type, values, event, False, dbData, isMovie)
 				input = input.replace(type, extendedDescription) if (extendedDescription != None) else str(input).replace(type, "")
 			middleDot = str(unescape('&#xB7;'))  # '\,' in MiddleDot umwandeln
-			sep = ' %s ' % middleDot
+			sep = f' {middleDot} '
 			input = input.replace('\\,', sep)
-			input = input.replace('%s  %s' % (middleDot, middleDot), middleDot)  # Doppelte MiddleDot in einen umwandeln
-			input = input.replace('%s \\n' % middleDot, "\\n")
+			input = input.replace(f'{middleDot}  {middleDot}', middleDot)  # Doppelte MiddleDot in einen umwandeln
+			input = input.replace(f'{middleDot} \\n', "\\n")
 			if (input.startswith('\\n\\n\\n')):  # falls input mit newline beginnt -> entfernen
 				return input[6:]
 			elif (input.startswith('\\n\\n')):
@@ -408,7 +408,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			else:
 				return input
 		else:
-			return "Wrong format: %s" % (input)
+			return f"Wrong format: {input}"
 
 	def getParsedTyp(self, type, input):
 		parseString = r'(%s[(].*?[)])' % (type)
@@ -428,7 +428,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					text += '\n%d.%d.%d - %02d:%02d  -  %s' % (t[2], t[1], t[0], t[3], t[4], x[0])
 			prefix = self.getPrefixParser(type)
 			if (text != None and prefix != None):
-				text = '%s%s' % (prefix, text)
+				text = f'{prefix}{text}'
 		return text
 
 	def sort_func(self, x, y):
@@ -465,7 +465,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				country = self.getParsedCountryOrYear(self.SPECIAL_FORMAT_PARSED_DESCRIPTION_COUNTRY, event.getExtendedDescription(), event)
 		prefix = self.getPrefixParser(type)
 		if (country != None and prefix != None):
-			country = '%s%s' % (prefix, country)
+			country = f'{prefix}{country}'
 		return country
 
 	def getExtendedDescription(self, type, values, event, clean, dbData, isMovie):
@@ -491,7 +491,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			if (desc != "" and desc != None):
 				prefix = self.getPrefixParser(type)
 				if (desc != None and prefix != None):
-					desc = '%s%s' % (prefix, desc)
+					desc = f'{prefix}{desc}'
 			if (clean):
 				if (desc != None and ". Staffel, Folge" in desc):  # Episoden Nummer entfernen
 					episodeNum = self.getEpisodeNum("EpisodeNum([s]. Staffel, Folge [e]: )", event, values, isMovie)
@@ -506,15 +506,15 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					country = self.getCountry("Country", values, event, dbData, isMovie)
 					year = self.getYear("Year", values, event, dbData, isMovie)
 					if (country != None and year != None):
-						desc = desc.replace("%s %s. " % (country, year), "")
-						desc = desc.replace("%s %s." % (country, year), "")
-						desc = desc.replace("%s %s, " % (country, year), "")
-						desc = desc.replace("%s %s" % (country, year), "")
+						desc = desc.replace(f"{country} {year}. ", "")
+						desc = desc.replace(f"{country} {year}.", "")
+						desc = desc.replace(f"{country} {year}, ", "")
+						desc = desc.replace(f"{country} {year}", "")
 				if (desc != None and 'IMDb rating:' in desc):  # Rating entfernen
 					rating = self.getRating(self.RATING, values, event, False, dbData, isMovie)
 					if (rating != None):
 						rating = rating.replace(",", ".")
-						desc = desc.replace(" IMDb rating: %s/10." % (rating), "")
+						desc = desc.replace(f" IMDb rating: {rating}/10.", "")
 		return desc
 
 	def getOneLineDescription(self, type, event, isMovie=None):
@@ -534,7 +534,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				desc = tdesc[0].replace('\\n', ' ' + str(unescape('&#xB7;')) + ' ')
 			prefix = self.getPrefixParser(type)
 			if (desc != None and prefix != None):
-				desc = '%s%s' % (prefix, desc)
+				desc = f'{prefix}{desc}'
 			if desc.find(' Altersfreigabe: Ohne Altersbe') > 0:
 				desc = desc[:desc.find(' Altersfreigabe: Ohne Altersbe')] + ' FSK: 0'
 			desc = (" ".join(findall(r"[A-Za-z0-9üäöÜÄÖß:.,!?()]*", desc))).replace("  ", " ").replace('Altersfreigabe: ab', 'FSK:')
@@ -572,7 +572,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				year = str(dbData[3])
 		prefix = self.getPrefixParser(type)
 		if (year != None and prefix != None):
-			year = '%s%s' % (prefix, year)
+			year = f'{prefix}{year}'
 		return year
 
 	def getGenre(self, type, values, event, dbData, isMovie):
@@ -605,7 +605,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				genre = maxGenres[0]  # + ' ' + str(unescape('&#xB7;')) + ' ' + maxGenres[1]
 		prefix = self.getPrefixParser(type)
 		if (genre != None and prefix != None):
-			genre = '%s%s' % (prefix, genre)
+			genre = f'{prefix}{genre}'
 		return genre
 
 	def getCategory(self, type, values):
@@ -614,7 +614,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			category = str(values['categoryName']).strip()
 		prefix = self.getPrefixParser(type)
 		if (category != None and prefix != None):
-			category = '%s%s' % (prefix, category)
+			category = f'{prefix}{category}'
 		return category
 
 	def getLeadText(self, type, values):
@@ -623,7 +623,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			leadtext = str(values['leadText']).strip()
 		prefix = self.getPrefixParser(type)
 		if (leadtext != None and prefix != None):
-			leadtext = '%s%s' % (prefix, leadtext)
+			leadtext = f'{prefix}{leadtext}'
 		return leadtext
 
 	def getConclusion(self, type, values):
@@ -632,7 +632,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			conclusion = str(values['conclusion']).strip()
 		prefix = self.getPrefixParser(type)
 		if (conclusion != None and prefix != None):
-			conclusion = '%s%s' % (prefix, conclusion)
+			conclusion = f'{prefix}{conclusion}'
 		return conclusion
 
 	def getRating(self, type, values, event, isStars, dbData, isMovie, starsAsText=False):
@@ -651,7 +651,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				rating = self.getRatingAsNumber(tmp, isStars, starsAsText)
 		prefix = self.getPrefixParser(type)
 		if (rating != None and prefix != None):
-			rating = '%s%s' % (prefix, rating)
+			rating = f'{prefix}{rating}'
 		return rating
 
 	def getRatingAsNumber(self, strRating, isStars, starsAsText=False):
@@ -775,7 +775,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			parentialRating = str(dbData[5])
 		prefix = self.getPrefixParser(type)
 		if (parentialRating != None and prefix != None):
-			parentialRating = '%s%s' % (prefix, parentialRating)
+			parentialRating = f'{prefix}{parentialRating}'
 		return parentialRating
 
 	def getTitle(self, event, values):  # Nur Title ohne Prefix, wird zum vergleichen benötigt
@@ -791,7 +791,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		title = self.getTitle(event, values)
 		prefix = self.getPrefixParser(type)
 		if (title != None and prefix != None):
-			title = '%s%s' % (prefix, title)
+			title = f'{prefix}{title}'
 		return title
 
 	def getSubtitle(self, type, event, values, dbData, clean):
@@ -846,11 +846,11 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					country = self.getCountry("Country", values, event, dbData, None)
 					year = self.getYear("Year", values, event, dbData, None)
 					if (country != None and year != None):
-						subtitle = subtitle.replace("%s %s. " % (country, year), "")
-						subtitle = subtitle.replace("%s %s." % (country, year), "")
-						subtitle = subtitle.replace("%s %s, " % (country, year), "")
-						subtitle = subtitle.replace("%s %s" % (country, year), "")
-						subtitle = subtitle.replace("%s %s" % ("D", year), "")
+						subtitle = subtitle.replace(f"{country} {year}. ", "")
+						subtitle = subtitle.replace(f"{country} {year}.", "")
+						subtitle = subtitle.replace(f"{country} {year}, ", "")
+						subtitle = subtitle.replace(f"{country} {year}", "")
+						subtitle = subtitle.replace(f"D {year}", "")
 					country = self.findCountry(subtitle)
 					if country:
 						subtitle = subtitle.replace(str(country[1]), '')
@@ -993,7 +993,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			maxSubtitleWords = search(maxSubtitleWordsParser, type)
 			if (maxSubtitleWords):
 				return maxSubtitleWords.group(1)
-		return "!!! invalid type '%s' !!!" % (type)
+		return f"!!! invalid type '{type}' !!!"
 
 	def getEpisodeNum(self, type, event, values, isMovie=None):
 		episodeNum = None
@@ -1037,14 +1037,14 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 				if (sFormatParser != None):
 					sFormat = sFormatParser.group(1)
 					sDigits = len(sFormat)
-					episodeNum = episodeFormat.replace('[%s]' % (sFormat), sNum.zfill(sDigits)) if str(sNum) != '99' else episodeFormat.replace('[%s]' % (sFormat), '').replace('Staffel', '').replace('S', '').replace(', ', '')
+					episodeNum = episodeFormat.replace(f'[{sFormat}]', sNum.zfill(sDigits)) if str(sNum) != '99' else episodeFormat.replace(f'[{sFormat}]', '').replace('Staffel', '').replace('S', '').replace(', ', '')
 				eFormatParser = search(r"[[]([e]+|[e])[]]", episodeFormat)  # Episoden Format parsen
 				if (eFormatParser != None):
 					eFormat = eFormatParser.group(1)
 					eDigits = len(eFormat)
-					episodeNum = episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits)) if str(sNum) != '99' else episodeNum.replace('[%s]' % (eFormat), eNum.zfill(eDigits)).replace('Episode', 'Folge ').replace('E', 'Folge ')
+					episodeNum = episodeNum.replace(f'[{eFormat}]', eNum.zfill(eDigits)) if str(sNum) != '99' else episodeNum.replace(f'[{eFormat}]', eNum.zfill(eDigits)).replace('Episode', 'Folge ').replace('E', 'Folge ')
 			else:  # Standard falls kein individuelles Format angeben ist
-				episodeNum = 'Folge %s' % (eNum.zfill(2)) if str(sNum) == '99' else 'S%sE%s' % (sNum.zfill(2), eNum.zfill(2))
+				episodeNum = f'Folge {eNum.zfill(2)}' if str(sNum) == '99' else f'S{sNum.zfill(2)}E{eNum.zfill(2)}'
 				return episodeNum
 
 	def getFullDescription(self, event):
@@ -1056,7 +1056,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		elif ext_desc == "":
 			return short_desc
 		else:
-			return "%s\n\n%s" % (short_desc, ext_desc)
+			return f"{short_desc}\n\n{ext_desc}"
 
 	def getPrefixParser(self, type):  # Prefix aus Parameter von Skin lesen
 		prefixParser = '.*[(](.*)[)]'

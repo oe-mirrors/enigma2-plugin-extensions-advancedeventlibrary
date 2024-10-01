@@ -12,7 +12,7 @@ def getUniqueID(device='eth0'):
 	model = model.strip()
 	s = socket(AF_INET, SOCK_DGRAM)
 	info = ioctl(s.fileno(), 0x8927, pack('256s', bytes(device[:15], 'utf-8')))
-	key = "".join(['%02x' % char for char in info[18:24]])
+	key = "".join([f'{char:02x}' for char in info[18:24]])
 	keyid = ''
 	j = len(key) - 1
 	for i in range(0, len(key)):

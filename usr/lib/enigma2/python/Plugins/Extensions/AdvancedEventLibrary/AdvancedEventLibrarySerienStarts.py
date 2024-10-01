@@ -735,7 +735,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 			return ret
 		except Exception as ex:
-			write_log('Fehler in seteventEntry : ' + str(ex))
+			write_log('Error in seteventEntry : ' + str(ex))
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 								]
