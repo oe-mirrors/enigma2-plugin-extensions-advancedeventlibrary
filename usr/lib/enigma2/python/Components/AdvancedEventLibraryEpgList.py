@@ -107,12 +107,12 @@ class AEL_EPGList(GUIComponent):
 	def moveDown(self):
 		self.instance.moveSelection(self.instance.moveDown)
 
-	def connectSelectionChanged(func):
-		if not self.onSelChanged.count(func):
-			self.onSelChanged.append(func)
+#	def connectSelectionChanged(func):
+#		if not self.onSelChanged.count(func):
+#			self.onSelChanged.append(func)
 
-	def disconnectSelectionChanged(func):
-		self.onSelChanged.remove(func)
+#	def disconnectSelectionChanged(func):
+#		self.onSelChanged.remove(func)
 
 	def selectionChanged(self):
 		for x in self.onSelChanged:
