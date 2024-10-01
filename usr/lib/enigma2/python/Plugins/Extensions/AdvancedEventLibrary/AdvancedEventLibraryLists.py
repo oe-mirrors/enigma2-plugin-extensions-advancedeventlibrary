@@ -10,9 +10,7 @@ from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import aelGlobals
-
-# from .AdvancedEventLibrarySystem import PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, PicLoader
 
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

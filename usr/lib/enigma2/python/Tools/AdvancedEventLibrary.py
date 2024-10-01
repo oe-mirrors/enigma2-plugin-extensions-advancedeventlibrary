@@ -18,7 +18,7 @@ from subprocess import check_output, CalledProcessError
 from time import time, localtime, mktime
 from threading import Thread
 from urllib.parse import quote
-from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop
+from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop, ePicLoad
 from skin import parameters
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
 from Screens.ChannelSelection import service_types_tv
@@ -55,7 +55,7 @@ config.plugins.AdvancedEventLibrary.omdbKey = ConfigText(default='intern')
 config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default="Extradaten und Bilder", choices=["Extradaten und Bilder", "nur Extradaten"])
 config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
+#config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default="Wallansicht", choices=["Listenansicht", "Wallansicht"])
 config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
 config.plugins.AdvancedEventLibrary.RefreshMovieWall = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop = ConfigYesNo(default=True)
@@ -4290,11 +4290,11 @@ class AELGlobals:
 	DESKTOPSIZE = getDesktop(0).size()
 	TEMPPATH = "/var/volatile/tmp"
 	LOGFILE = join(TEMPPATH, "AdvancedEventLibrary.log")
-	SKINPATH = resolveFilename(SCOPE_CURRENT_SKIN) # /usr/share/enigma2/MetrixHD/
+	SKINPATH = resolveFilename(SCOPE_CURRENT_SKIN)  # /usr/share/enigma2/MetrixHD/
 	SHAREPATH = resolveFilename(SCOPE_SKIN_IMAGE)  # /usr/share/enigma2/
-	CONFIGPATH = resolveFilename(SCOPE_CONFIG)	# /etc/enigma2/
-	PYTHONPATH = eEnv.resolve("${libdir}/enigma2/python/") # /usr/lib/enigma2/python/
-	PLUGINPATH = resolveFilename(SCOPE_CURRENT_PLUGIN, "Extensions/AdvancedEventLibrary/") # /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary
+	CONFIGPATH = resolveFilename(SCOPE_CONFIG)  # /etc/enigma2/
+	PYTHONPATH = eEnv.resolve("${libdir}/enigma2/python/")  # /usr/lib/enigma2/python/
+	PLUGINPATH = resolveFilename(SCOPE_CURRENT_PLUGIN, "Extensions/AdvancedEventLibrary/")  # /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary
 	SKINPATH = f"{PLUGINPATH}skin/1080/" if DESKTOPSIZE.width() == 1920 else f"{PLUGINPATH}skin/720/"
 
 	def __init__(self):
@@ -5144,3 +5144,18 @@ class BingImageSearch:
 
 #https://live.tvspielfilm.de/static/broadcast/list/ARD/2020-06-11
 #https://live.tvspielfilm.de/static/content/channel-list/livetv
+
+
+####################################################################################################################################################################
+class PicLoader:
+	def __init__(self, width, height):
+		self.picload = ePicLoad()
+		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
+
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload

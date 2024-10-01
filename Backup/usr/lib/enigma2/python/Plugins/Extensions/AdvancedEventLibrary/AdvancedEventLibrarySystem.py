@@ -31,6 +31,7 @@ from Tools import AdvancedEventLibrary as AEL
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
+
 def loadskin(filename):
 	with open(join(AEL.aelGlobals.SKINPATH, filename), "r") as f:
 		skin = f.read()
@@ -41,6 +42,7 @@ def loadskin(filename):
 class AELMenu(Screen):
 	ALLOW_SUSPEND = True
 	skin = str(loadskin("AdvancedEventLibraryMenu.xml"))
+
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		self.session = session
@@ -1520,18 +1522,3 @@ class Editor(Screen, ConfigListScreen):
 			AdvancedEventLibraryLists.removeFiles()
 			AEL.clearMem("AEL-Editor")
 			self.close()
-
-
-####################################################################################################################################################################
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

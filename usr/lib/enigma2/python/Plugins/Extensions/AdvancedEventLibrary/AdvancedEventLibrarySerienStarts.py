@@ -22,10 +22,9 @@ from Components.config import config
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
-# from .AdvancedEventLibrarySystem import Editor, PicLoader
-
+from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()

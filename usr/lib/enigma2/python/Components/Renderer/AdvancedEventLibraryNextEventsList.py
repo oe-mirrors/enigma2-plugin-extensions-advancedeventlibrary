@@ -5,7 +5,7 @@ from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HA
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem, PicLoader
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):
@@ -117,17 +117,3 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 				self.nameCache[eventName] = str(coverFileName)
 				return coverFileName
 			return self.defaultImage
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 1, 1, False, 1, '#ff000000'))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

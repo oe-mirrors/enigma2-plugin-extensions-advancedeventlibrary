@@ -21,8 +21,8 @@ from Components.config import getConfigListEntry, ConfigYesNo, ConfigSelection, 
 from Tools.Directories import fileExists
 from glob import glob
 
-# from .AdvancedEventLibrarySystem import Editor, PicLoader
-from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, clearMem, getDB, convert2base64, aelGlobals
+from .AdvancedEventLibrarySystem import Editor
+from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, clearMem, getDB, convert2base64, aelGlobals, PicLoader
 from .AdvancedEventLibraryLists import AELBaseWall, MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime

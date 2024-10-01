@@ -22,10 +22,9 @@ from ServiceReference import ServiceReference
 from Tools.Directories import fileExists
 import NavigationInstance
 
-# from .AdvancedEventLibrarySystem import Editor, PicLoader
-
+from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()

@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
 
 htmlParser = HTMLParser()
 
@@ -919,19 +919,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

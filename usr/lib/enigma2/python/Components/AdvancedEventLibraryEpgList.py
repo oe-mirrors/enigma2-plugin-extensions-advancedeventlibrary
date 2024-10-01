@@ -6,7 +6,7 @@ from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 
@@ -422,17 +422,3 @@ class AEL_EPGList(GUIComponent):
 				self.nameCache[eventName] = str(coverFileName)
 				return coverFileName
 			return self.defaultImage
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 1, 1, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

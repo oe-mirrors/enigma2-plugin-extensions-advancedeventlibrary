@@ -18,6 +18,7 @@ from Components.Sources.List import List
 from Components.Sources.StaticText import StaticText
 from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
+from Screens.LocationBox import defaultInhibitDirs, LocationBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from Screens.Setup import Setup
@@ -26,7 +27,8 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 
-from . import AdvancedEventLibraryPrimeTime, AdvancedEventLibrarySerienStarts, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryLists, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
+from .AdvancedEventLibraryLists import ImageList, SearchResultsList
+from . import _  # for localized messages
 from Tools import AdvancedEventLibrary as AEL
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -244,32 +246,38 @@ class AELMenu(Screen):
 		self.close()
 
 	def open_serienstarts(self):
+		from .AdvancedEventLibrarySerienStarts import AdvancedEventLibraryPlanerScreens
 		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 0
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySerienStarts.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 	def open_primetime(self):
+		from .AdvancedEventLibraryPrimeTime import AdvancedEventLibraryPlanerScreens
 		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 1
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPrimeTime.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 	def open_moviewall(self):
 		while AEL.aelGlobals.saving:
 			pass
+		from .AdvancedEventLibrarySimpleMovieWall import AdvancedEventLibrarySimpleMovieWall
 		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 2
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall.AdvancedEventLibrarySimpleMovieWall, "Listenansicht")
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibrarySimpleMovieWall, "Listenansicht")
 
 	def open_favourites(self):  # reload_module(AdvancedEventLibraryRecommendations)
+		from .AdvancedEventLibraryRecommendations import AdvancedEventLibraryPlanerScreens
 		#self.viewType = config.plugins.AdvancedEventLibrary.ViewType.value
 		self.screenType = 3
-		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryRecommendations.AdvancedEventLibraryPlanerScreens, "Listenansicht")
+		self.session.openWithCallback(self.goRestart, AdvancedEventLibraryPlanerScreens, "Listenansicht")
 
 	def open_channelSelection(self):
-		self.session.open(AdvancedEventLibraryChannelSelection.AdvancedEventLibraryChannelSelection)
+		from .AdvancedEventLibraryChannelSelection import AdvancedEventLibraryChannelSelection
+		self.session.open(AdvancedEventLibraryChannelSelection)
 
 	def open_mediaHub(self):
-		self.session.open(AdvancedEventLibraryMediaHub.AdvancedEventLibraryMediaHub)
+		from .AdvancedEventLibraryMediaHub import AdvancedEventLibraryMediaHub
+		self.session.open(AdvancedEventLibraryMediaHub)
 
 	def main(self):
 		self.session.open(AdvancedEventLibrarySetup)
@@ -315,21 +323,20 @@ class AELMenu(Screen):
 #			self.checkcity = True
 #		Setup.keySelect(self)
 
-
-#		LocationBox.__init__(
-#			self,
-#			session,
-#			text=_("What do you want to set as the default movie location?"),
-#			# filename="",
-#			currDir=config.usage.default_path.value,
-#			bookmarks=config.movielist.videodirs,
-#			windowTitle=_("Select Playback Location"),
-#			# minFree=None,
-#			autoAdd=True,
-#			editDir=True,
-#			inhibitDirs=DEFAULT_INHIBIT_DIRECTORIES,
-#			# inhibitMounts=None
-#		)
+class AdvancedEventLibrarySetupLocationBox(LocationBox):
+	def __init__(self, session, currDir):
+		inhibit = defaultInhibitDirs[:]
+		inhibit.remove("/usr")
+		inhibit.remove("/share")
+		if currDir == "":
+			currDir = None
+		LocationBox.__init__(
+			self,
+			session,
+			text=_("Where do you want to get the MetrixWeather icons?"),
+			currDir=currDir,
+			inhibitDirs=inhibit,
+		)
 
 
 ####################################################################################
@@ -337,63 +344,31 @@ class AdvancedEventLibrarySetup(Setup):
 	ALLOW_SUSPEND = True  # skin = str(loadskin("AdvancedEventLibrarySetup.xml"))
 
 	def __init__(self, session):
-		self.session = session
-		Setup.__init__(self, session, "Advanced-Event-Library-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
 		self.searchOptions = {}
 		if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 			self.searchOptions = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
-#		self.myFileListActive = False
+		Setup.__init__(self, session, "Advanced-Event-Library-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
 		self["key_yellow"] = StaticText(_("TVS-Setup"))
-		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
-														{
-														"green": (self.do_close, _("Save")),
-														"yellow": (self.key_yellow_handler, _("TVS-Setup"))
-														}, prio=0, description=_("Advanced-Event-Library-Setup"))
-		self["config"].onSelectionChanged.append(self.selectionChanged)
+		self["coloractions"] = HelpableActionMap(self, ["ColorActions"], {
+			"yellow": (self.keyYellow, _(" "))
+		}, prio=0)
 
-	def key_ok_handler(self):
-		return
-		try:
-			cur = self['config'].getCurrent()
-			if cur:
-				if (cur[0] == 'Daten-Verzeichnis (OK drücken)' or cur[0] == 'Backup-Verzeichnis (OK drücken)') and not self.myFileListActive:
-					self["key_blue"].setText("Übernehmen")
-					self.myFileListActive = True
-					self["myFileList"].show()
-				elif (cur[0] == 'Daten-Verzeichnis (OK drücken)' or cur[0] == 'Backup-Verzeichnis (OK drücken)') and self.myFileListActive:
-					if self["myFileList"].canDescent():
-						self["myFileList"].descent()
-					self.updatePath()
-				self.buildConfigList()
-		except Exception as ex:
-			AEL.aelGlobals.write_log("Setup - keyok : " + str(ex), DEFAULT_MODULE_NAME)
+#		self.myFileListActive = False
+#		self["config"].onSelectionChanged.append(self.selectionChanged)
 
-	def updatePath(self, confirmed=False, cur=""):
-		return
-		if self["myFileList"].getSelection():
-			cur = self['config'].getCurrent()
-			path = self["myFileList"].getSelection()[0]
-			path = str(path).replace('poster/', '').replace('cover/', '')
-			if not path.endswith('/'):
-				path = path + '/'
-			if cur[0] == 'Daten-Verzeichnis (OK drücken)':
-				if not path.endswith('AdvancedEventLibrary/'):
-					path = path + 'AdvancedEventLibrary/'
-			if cur[0] == 'Backup-Verzeichnis (OK drücken)':
-				if not path.endswith('AdvancedEventLibraryBackup/'):
-					path = path + 'AdvancedEventLibraryBackup/'
-			if confirmed:
-				if cur[0] == 'Daten-Verzeichnis (OK drücken)':
-					config.plugins.AdvancedEventLibrary.Location.value = path
-				elif cur[0] == 'Backup-Verzeichnis (OK drücken)':
-					self.backuppath.value = path
-				self.createDirs(path)
-				cur = self["config"].getCurrent()
-				#self["config"].updateConfigListView(cur)
-				self.buildConfigList()
+	def keyYellow(self):
+		self.session.open(TVSSetup)
+
+	def keySelect(self):
+		def keySelectCallback(value):
+			self.getCurrentItem().value = value
+			#self.createDirs(value) # TODO
+		if self.getCurrentItem() in (config.plugins.AdvancedEventLibrary.Location, config.plugins.AdvancedEventLibrary.dbFolder):
+			self.session.openWithCallback(keySelectCallback, AdvancedEventLibrarySetupLocationBox, currDir=self.getCurrentItem().value)
+			return
+		Setup.keySelect(self)
 
 	def createDirs(self, path):
-		return
 		if not exists(path):
 			makedirs(path)
 		if not exists(path + 'poster/'):
@@ -401,33 +376,6 @@ class AdvancedEventLibrarySetup(Setup):
 		if not exists(path + 'cover/'):
 			makedirs(path + 'cover/')
 
-#	def key_up_handler(self):
-#		if self.myFileListActive:
-#			self["myFileList"].up()
-#			self.updatePath()
-#		else:
-#			self["config"].instance.moveSelection(self["config"].instance.moveUp)
-
-#	def key_down_handler(self):
-#		if self.myFileListActive:
-#			self["myFileList"].down()
-#			self.updatePath()
-#		else:
-#			self["config"].instance.moveSelection(self["config"].instance.moveDown)
-
-#	def key_blue_handler(self):
-#		if self.myFileListActive:
-#			self["key_blue"].setText("")
-#			self["myFileList"].hide()
-#			self.myFileListActive = False
-#			self.updatePath(True)
-#			self.buildConfigList()
-
-	def key_yellow_handler(self):
-		self.session.openWithCallback(self.return_from_setup, TVSSetup)
-
-	def return_from_setup(self):
-		pass
 
 #	def buildConfigList(self):
 #		try:
@@ -496,49 +444,31 @@ class AdvancedEventLibrarySetup(Setup):
 #		except Exception as ex:
 #			AEL.aelGlobals.write_log("Fehler in buildConfigList : " + str(ex),DEFAULT_MODULE_NAME)
 
-	def changedEntry(self):
-		return
-		cur = self["config"].getCurrent()
-		if cur and cur is not None and "suche in" not in cur[0]:
-			self.buildConfigList()
-		self["config"].setList(self.configlist)
-		if cur and cur is not None:
-			if cur[0] == "Daten-Verzeichnis (OK drücken)":
-				if "AdvancedEventLibrary/" not in cur[1].value:
-					cur[1].value = cur[1].value + "AdvancedEventLibrary/"
-					self.buildConfigList()
-					self["config"].setList(self.configlist)
-			if cur[0] == "Backup-Verzeichnis (OK drücken)":
-				if "AdvancedEventLibraryBackup/" not in cur[1].value:
-					cur[1].value = cur[1].value + "AdvancedEventLibraryBackup/"
-					self.buildConfigList()
-					self["config"].setList(self.configlist)
-			#self["config"].updateConfigListView(cur)
 
-	def do_close(self):
-		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
-		restartbox.setTitle(_("GUI needs a restart."))
+#	def do_close(self):
+#		restartbox = self.session.openWithCallback(self.restartGUI, MessageBox, _("GUI needs a restart to apply new configuration.\nDo you want to restart the GUI now ?"), MessageBox.TYPE_YESNO)
+#		restartbox.setTitle(_("GUI needs a restart."))
 
-	def restartGUI(self, answer):
-		if answer is True:
-			for x in self["config"].list:
-				if len(x) > 1:
-					if "suche" not in x[0] and "Einstellungen" not in x[0] and x[0]:
-						AEL.aelGlobals.write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value), DEFAULT_MODULE_NAME)
-						x[1].save()
-					else:
-						if 'suche in Unterverzeichnissen von ' in str(x[0]):
-							for root, directories, files in walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
-								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
-									self.searchOptions[str(root)] = x[1].value
-							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
-						else:
-							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
-			config.plugins.AdvancedEventLibrary.searchPlaces.value = str(self.searchOptions)
-			config.plugins.AdvancedEventLibrary.searchPlaces.save()
-			self.session.open(TryQuitMainloop, 3)
-		else:
-			self.close()
+#	def restartGUI(self, answer):
+#		if answer is True:
+#			for x in self["config"].list:
+#				if len(x) > 1:
+#					if "suche" not in x[0] and "Einstellungen" not in x[0] and x[0]:
+#						AEL.aelGlobals.write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value), DEFAULT_MODULE_NAME)
+#						x[1].save()
+#					else:
+#						if 'suche in Unterverzeichnissen von ' in str(x[0]):
+#							for root, directories, files in walk(str(x[0]).replace('suche in Unterverzeichnissen von ', '')):
+#								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
+#									self.searchOptions[str(root)] = x[1].value
+#							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
+#						else:
+#							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
+#			config.plugins.AdvancedEventLibrary.searchPlaces.value = str(self.searchOptions)
+#			config.plugins.AdvancedEventLibrary.searchPlaces.save()
+#			self.session.open(TryQuitMainloop, 3)
+#		else:
+#			self.close()
 
 ####################################################################################
 
@@ -778,9 +708,9 @@ class Editor(Screen, ConfigListScreen):
 		self["key_blue"] = StaticText(_("Activate Cover selection"))
 		self.activeList = 'editor'
 		self.jahr = ''
-		self["pList"] = AdvancedEventLibraryLists.ImageList()
-		self["cList"] = AdvancedEventLibraryLists.ImageList()
-		self["sList"] = AdvancedEventLibraryLists.SearchResultsList()
+		self["pList"] = ImageList()
+		self["cList"] = ImageList()
+		self["sList"] = SearchResultsList()
 		self["cover"] = Pixmap()
 		self["poster"] = Pixmap()
 		self["cover"].hide()
@@ -1373,7 +1303,7 @@ class Editor(Screen, ConfigListScreen):
 				selection = self['pList'].l.getCurrentSelection()[0]
 				if selection:
 					size = self["poster"].instance.size()
-					picloader = PicLoader(size.width(), size.height())
+					picloader = AEL.PicLoader(size.width(), size.height())
 					if self.pSource == 1:
 						self["poster"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
 					else:
@@ -1384,7 +1314,7 @@ class Editor(Screen, ConfigListScreen):
 				selection = self['cList'].l.getCurrentSelection()[0]
 				if selection:
 					size = self["cover"].instance.size()
-					picloader = PicLoader(size.width(), size.height())
+					picloader = AEL.PicLoader(size.width(), size.height())
 					if self.cSource == 1:
 						self["cover"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
 					else:
@@ -1477,18 +1407,3 @@ class Editor(Screen, ConfigListScreen):
 				remove(f)
 			AEL.clearMem("AEL-Editor")
 			self.close()
-
-
-####################################################################################################################################################################
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

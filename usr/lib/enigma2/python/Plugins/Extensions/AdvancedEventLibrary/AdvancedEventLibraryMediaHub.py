@@ -26,7 +26,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import getPictureDir, convert2base64, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -1027,19 +1027,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-#################################################################################################################################################
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload

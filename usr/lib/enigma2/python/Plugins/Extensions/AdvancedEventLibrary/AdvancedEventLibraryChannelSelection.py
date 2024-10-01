@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 
 htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
@@ -854,17 +854,3 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload
