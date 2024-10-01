@@ -1,7 +1,7 @@
 from os.path import isfile, exists, join
 from threading import Thread
 from enigma import ePixmap, ePicLoad, ePoint, eSize, eWidget, loadPNG, iPlayableServicePtr, eServiceCenter
-from skin import parseColor, parseColor
+from skin import parseColor
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
@@ -332,7 +332,7 @@ class AdvancedEventLibraryImage(Renderer):
 		if self.picload:
 			picload = self.picload
 			ptr = picload.getData()
-			if self.image and ptr != None:
+			if self.image and ptr is not None:
 				self.image.setPixmap(ptr)
 				if self.ishide:
 					self.showimage()

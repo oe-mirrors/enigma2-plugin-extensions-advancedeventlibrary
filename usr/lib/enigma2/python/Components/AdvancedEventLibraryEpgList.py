@@ -1,7 +1,7 @@
 ﻿from datetime import datetime
 from os.path import isfile, join
 from time import localtime
-from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_TOP, ePicLoad
+from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_TOP
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from GUIComponent import GUIComponent
@@ -332,7 +332,7 @@ class AEL_EPGList(GUIComponent):
 		cnt = 0
 		for x in tmp:
 			changecount = self.list[cnt][0] + direction
-			if changecount >= 0 and if x[2] is not None:
+			if changecount >= 0 and x[2] is not None:
 				self.list[cnt] = (changecount, x[0], x[1], x[2], x[3], x[4], x[5], x[6])
 			cnt += 1
 		self.l.setList(self.list)
@@ -385,10 +385,10 @@ class AEL_EPGList(GUIComponent):
 	def fillSimilarList(self, refstr, event_id):
 		if event_id is None:  # search similar broadcastings
 			return
-		l = self.epgcache.search(('RIBND', 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, event_id))
-		if l and len(l):
-			l.sort(key=lambda x: x[2])
-		self.l.setList(l)
+		ln = self.epgcache.search(('RIBND', 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, event_id))
+		if ln and len(ln):
+			ln.sort(key=lambda x: x[2])
+		self.l.setList(ln)
 		self.selectionChanged()
 
 	def fillEPGBar(self, service):

@@ -12,7 +12,7 @@ from Components.FunctionTimer import functionTimer  # TODO: später dann from Ja
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 
-from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
+from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations
 from Tools.AdvancedEventLibrary import getDB, getallEventsfromEPG, createBackup, aelGlobals
 
 gSession = None

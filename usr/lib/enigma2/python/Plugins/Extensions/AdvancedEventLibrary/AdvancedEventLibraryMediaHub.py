@@ -4,7 +4,7 @@ from os.path import join, isfile, realpath, basename, exists
 from html.parser import HTMLParser
 from pickle import load
 from struct import unpack
-from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import variables, parseColor
 from Components.config import config
 from Components.Label import MultiColorLabel

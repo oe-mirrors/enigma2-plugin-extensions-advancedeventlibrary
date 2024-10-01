@@ -66,9 +66,9 @@ class AdvancedEventLibraryPrimeTimeEvent(Converter, object):
 		return str(time) + " " + str(title) + ' (' + str(duration) + ')' + str(self.getOneLineDescription(title, event))
 
 	def getOneLineDescription(self, title, event):
-		if (event != None):
+		if (event is not None):
 			desc = event.getShortDescription()
-			if (desc != "" and desc != None and desc != title):
+			if (desc != "" and desc is not None and desc != title):
 				desc = desc.replace(title + '\n', '')
 				if '\n' in desc:
 					desc = desc.replace('\n', ' ' + str(unescape('&#xB7;')) + ' ')

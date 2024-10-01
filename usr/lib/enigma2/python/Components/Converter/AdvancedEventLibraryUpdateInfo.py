@@ -16,7 +16,7 @@ class AdvancedEventLibraryUpdateInfo(Poll, Converter, object):
 	@cached
 	def getText(self):
 		for x in self.downstream_elements:
-			if aelGlobals.STATUS == None:
+			if aelGlobals.STATUS is None:
 				x.visible = True if self.invert else False
 			else:
 				x.visible = False if self.invert else True

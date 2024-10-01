@@ -24,7 +24,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -374,7 +374,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			write_log("key_play : " + str(ex))
 
 	def key_info_handler(self):
-		from Screens.EventView import EventViewSimple, EventViewMovieEvent
+		from Screens.EventView import EventViewSimple
 		try:
 			sRef = ""
 			if self.viewType == 1:  # 'Listenansicht'

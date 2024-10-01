@@ -2,7 +2,7 @@ from time import time, localtime
 from os.path import join, isfile
 from pickle import load
 from html.parser import HTMLParser
-from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP
 from skin import loadSkin, variables
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
@@ -718,7 +718,7 @@ class MySetup(Setup):
 	def changedEntry(self):
 		cur = self["config"].getCurrent()
 		if cur and cur is not None:
-			if not "ignoriere" in cur[0]:
+			if "ignoriere" not in cur[0]:
 				self.buildConfigList()
 		self["config"].setList(self.configlist)
 		#if cur and cur is not None:
@@ -732,7 +732,7 @@ class MySetup(Setup):
 		if answer is True:
 			excludedGenres = ""
 			for x in self["config"].list:
-				if not "ignoriere" in x[0]:
+				if "ignoriere" not in x[0]:
 					x[1].save()
 				else:
 					if x[1].value:

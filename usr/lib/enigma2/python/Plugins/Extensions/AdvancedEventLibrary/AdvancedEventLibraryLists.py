@@ -1,4 +1,4 @@
-﻿﻿from datetime import datetime
+﻿from datetime import datetime
 from glob import glob
 from html import unescape
 from os import remove
@@ -968,12 +968,12 @@ class AELBaseWall(GUIComponent, object):
 			self.instance.selectionChanged.get().remove(self.selectionchanged)
 			self.instance.setContent(None)
 
-	def setlist(self, l):
+	def setlist(self, lst):
 		try:
 			if self.instance is not None:
 				self.instance.moveSelectionTo(0)
-			self.l.setList(l)
-			self.list = l
+			self.l.setList(lst)
+			self.list = lst
 		except Exception as ex:
 			aelGlobals.write_log('set list : ' + str(ex), DEFAULT_MODULE_NAME)
 

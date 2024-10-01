@@ -947,9 +947,9 @@ class MovieDataBase(CommonDataBase):
 
 	def inTitleList(self, mytitle, shortDesc='', extDesc='', ratio_short_desc=0.95, ratio_ext_desc=0.85):
 		if int(config.misc.timer_show_movie_available.value) > 1:
-			if shortDesc == None:
+			if shortDesc is None:
 				shortDesc = ''
-			if extDesc == None:
+			if extDesc is None:
 				extDesc = ''
 			if shortDesc == '' and extDesc == '':
 				if mytitle in self.titlelist:
@@ -1027,7 +1027,7 @@ class MovieDataBase(CommonDataBase):
 			if idx is not None:
 				try:
 					self.titlelist_list.pop(idx)
-				except:
+				except Exception:
 					pass
 
 	def addToTitleList(self, mytitle, shortDesc='', extDesc=''):
@@ -1075,7 +1075,7 @@ class MovieDataBase(CommonDataBase):
 				if x[0]:
 					orig_path = eServiceReference(x[0]).getPath()
 					real_path = realpath(orig_path)
-					if not real_path[-3:] in ('mp3', 'ogg', 'wav'):
+					if real_path[-3:] not in ('mp3', 'ogg', 'wav'):
 						self.addToTitleList(x[1], x[2], x[3])
 
 	def searchContent(self, data, fields="*", query_type="AND", exactmatch=False, compareoperator='', skipCheckExists=False):

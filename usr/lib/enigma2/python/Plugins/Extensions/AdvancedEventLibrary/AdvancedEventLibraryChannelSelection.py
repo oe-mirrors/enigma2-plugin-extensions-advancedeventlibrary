@@ -4,7 +4,7 @@ import NavigationInstance
 from html.parser import HTMLParser
 from time import time
 
-from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import variables
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigSelection, ConfigSubsection, ConfigInteger

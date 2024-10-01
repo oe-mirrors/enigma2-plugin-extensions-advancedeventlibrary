@@ -2,13 +2,13 @@ from base64 import b64decode
 from datetime import datetime
 from glob import glob
 from json import dumps, loads
-from os import statvfs, makedirs, walk, system, remove, stat
+from os import statvfs, makedirs, system, remove, stat
 from os.path import isfile, getsize, exists, join, basename
 from re import compile, IGNORECASE
 from shutil import copy
 from requests import get
 from threading import Thread
-from enigma import eTimer, ePicLoad, eServiceReference, eServiceCenter
+from enigma import eTimer, eServiceReference, eServiceCenter
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
@@ -22,7 +22,7 @@ from Screens.LocationBox import defaultInhibitDirs, LocationBox
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from Screens.Setup import Setup
-from Screens.Standby import TryQuitMainloop
+#from Screens.Standby import TryQuitMainloop
 from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
@@ -150,9 +150,9 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			mounts = []
 			fd = open('/proc/mounts', 'r')
 			for line in fd:
-				l = line.split()
-				if len(l) > 1:
-					mounts.append(l[1])
+				ln = line.split()
+				if len(ln) > 1:
+					mounts.append(ln[1])
 			fd.close()
 			return mounts
 		resultList = []

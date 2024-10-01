@@ -17,7 +17,7 @@ from sqlite3 import connect
 from subprocess import check_output, CalledProcessError
 from time import time, localtime, mktime
 from threading import Thread
-from urllib.parse import quote
+from urllib.parse import quote, urlparse, urlunparse
 from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop, ePicLoad
 from skin import parameters
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
@@ -236,7 +236,7 @@ networks = {
 	'KIKA': 'DEU',
 	'Kiss': 'GBR',
 	'KTN': 'KEN',
-	'KTN': 'PAK',
+#	'KTN': 'PAK',
 	'LCI': 'FRA',
 	'Liberty Channel': 'USA',
 	'Liberty TV': 'GBR',
@@ -487,7 +487,7 @@ networks = {
 	'Syfy': 'USA',
 	'IFC': 'USA',
 	'SundanceTV': 'USA',
-	'TV 2': 'DNK',
+#	'TV 2': 'DNK',
 	'TV 3': 'DNK',
 	'Speed': 'USA',
 	'TV 4': 'POL',
@@ -596,7 +596,6 @@ networks = {
 	'TV6': 'SWE',
 	'TV7 (SE)': 'SWE',
 	'TV8': 'SWE',
-	'TV8': 'SWE',
 	'HDNet': 'USA',
 	'JIM': 'FIN',
 	'SuoimiTV': 'FIN',
@@ -656,7 +655,7 @@ networks = {
 	'LifeStyle HOME': 'AUS',
 	'MSNBC': 'USA',
 	'NHNZ': 'NZL',
-	'Kanal 5': 'SWE',
+#	'Kanal 5': 'SWE',
 	'RVU': 'NLD',
 	'Jupiter Broadcasting ': 'USA',
 	'TWiT': 'USA',
@@ -704,7 +703,7 @@ networks = {
 	'W9': 'FRA',
 	'Antenne 2': 'FRA',
 	'SET TV': 'TWN',
-	'Channel 5': 'GBR',
+#	'Channel 5': 'GBR',
 	'Oasis HD': 'CAN',
 	'eqhd': 'CAN',
 	'radX': 'CAN',
@@ -848,7 +847,7 @@ networks = {
 	'HGTV Canada': 'CAN',
 	'Discovery Shed': 'GBR',
 	'Pivot': 'USA',
-	'TVN': 'CHL',
+#	'TVN': 'CHL',
 	'Canal 13': 'CHL',
 	'MavTV': 'USA',
 	'Great American Country': 'USA',
@@ -1190,7 +1189,7 @@ def createBackup():
 				continue
 		aelGlobals.write_log(f"have copied {copied} poster to {backuppath} poster/")
 		del files
-		files = glob(f"getPictureDir()cover/*.jpg")
+		files = glob(getPictureDir() + 'poster/*.jpg')
 		progress = 0
 		pics = len(files)
 		copied = 0
@@ -2282,11 +2281,11 @@ def checkAllImages():
 		for dir in dirs:
 			filelist = glob(dir + "*.*")
 			c = 0
-			l = len(filelist)
+			ln = len(filelist)
 			for f in filelist:
 				try:
 					c += 1
-					STATUS = f"{c}/{l} überprüfe {f}"
+					STATUS = f"{c}/{ln} überprüfe {f}"
 					img = Image.open(f)
 					if img.format != 'JPEG':
 						aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
@@ -2725,7 +2724,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											try:
 												if str(episode['episodeName']).lower() == str(bestmatch[0]):
 													foundEpisode = True
-													if 'firstAired' in episode and episode['firstAired'] != None:
+													if 'firstAired' in episode and episode['firstAired'] is not None:
 														titleinfo['year'] = episode['firstAired'][:4]
 													if 'siteRating' in episode:
 														if episode['siteRating'] != '0' and episode['siteRating'] != 'None':
@@ -2742,7 +2741,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 													if 'filename' in episode and loadImages:
 														if str(episode['filename']).endswith('.jpg') and not titleinfo['backdrop_url'].startswith('http'):
 															titleinfo['backdrop_url'] = 'https://www.thetvdb.com/banners/' + episode['filename']
-													if 'imdbId' in episode and episode['imdbId'] != None:
+													if 'imdbId' in episode and episode['imdbId'] is not None:
 														imdb_id = episode['imdbId']
 													if response:
 														if titleinfo['genre'] == "" and 'genre' in response:
@@ -2750,7 +2749,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 																for genre in response['genre']:
 																	titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
 														titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-														if titleinfo['country'] == "" and response['network'] != None:
+														if titleinfo['country'] == "" and response['network'] is not None:
 															if response['network'] in networks:
 																titleinfo['country'] = networks[response['network']]
 														if response['poster'] and loadImages:
@@ -3888,7 +3887,7 @@ def get_searchResults(title, lang='de'):
 								for genre in item['show']['genres']:
 									genres = genres + genre + '-Serie '
 								genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-							if item['show']['rating']['average'] and str(item['show']['rating']['average']) != None:
+							if item['show']['rating']['average'] and str(item['show']['rating']['average']) is not None:
 								rating = item['show']['rating']['average']
 							itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
 							resultList.append((itm,))
@@ -4194,7 +4193,7 @@ class DB_Functions(object):
 				if "trailer" in row[1]:
 					found = True
 					break
-			if found == False:
+			if found is False:
 				query = "ALTER TABLE 'eventInfo' ADD COLUMN `trailer` TEXT DEFAULT NULL"
 				cur.execute(query)
 				self.conn.commit()
@@ -4225,10 +4224,10 @@ class DB_Functions(object):
 				return ret
 			else:
 				return default
-		elif action == PARAMETER_SET and value or value == False:
-			if value == False:
+		elif action == PARAMETER_SET and value or value is False:
+			if value is False:
 				val = "False"
-			elif value == True:
+			elif value is True:
 				val = "True"
 			else:
 				val = value
@@ -4869,9 +4868,6 @@ class DB_Functions(object):
 		self.conn.commit()
 
 ########################################### Download Helper Class #######################################################
-
-
-from urllib.parse import urlparse, urlunparse
 
 
 def url_parse(url, defaultPort=None):

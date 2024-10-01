@@ -18,13 +18,13 @@ from enigma import getDesktop, iServiceInformation, eServiceReference, eServiceC
 from ServiceReference import ServiceReference
 from enigma import eTimer, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigYesNo, ConfigSelection, config, ConfigSubsection
+from Components.config import getConfigListEntry, ConfigYesNo, config
 from Tools.Directories import fileExists
 from glob import glob
 
 from .AdvancedEventLibrarySystem import Editor
 from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, clearMem, getDB, convert2base64, aelGlobals, PicLoader
-from .AdvancedEventLibraryLists import AELBaseWall, MovieList
+from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime
 import os
@@ -322,7 +322,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						img = self.folderImage
 					itm = MovieEntry([k, k], 0, k.split('/')[-1] + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1] + '/'), img, True, 0, "")
 					hasElements = True
-					if not itm in currentList:
+					if itm not in currentList:
 						currentList.append((itm,))
 			else:
 				if 'parent' in self.moviedict[self.currentFolder[0]][self.currentFolder[1]]:
@@ -332,7 +332,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 							img = self.folderImage
 						itm = MovieEntry([self.currentFolder[0], self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent']], 0, '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1] + '/'), img, True, 0, "")
 						hasElements = True
-						if not itm in currentList:
+						if itm not in currentList:
 							currentList.append((itm,))
 					else:
 						for k in self.moviedict:
@@ -353,7 +353,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 								img = self.folderImage
 							itm = MovieEntry([self.currentFolder[0], self.currentFolder[1] + '/' + path], 0, path + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.currentFolder[1] + '/' + path + '/'), img, True, 0, "")
 							hasElements = True
-							if not itm in currentList:
+							if itm not in currentList:
 								currentList.append((itm,))
 
 				if 'files' in self.moviedict[self.currentFolder[0]][self.currentFolder[1]]:
@@ -428,7 +428,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			if ex:
 				return True
 			return False
-		except:
+		except Exception:
 			return False
 
 	def setMovieEntry(self, entrys):
@@ -1199,7 +1199,7 @@ def saveList(imageType):
 														name = removeExtension(info.getName(service))
 														mlen = info.getLength(service)
 														desc = info.getInfoString(service, iServiceInformation.sDescription)
-													except:
+													except Exception:
 														pass
 													date = os.path.getmtime(os.path.join(root, filename))
 													dbdata = db.getTitleInfo(convert2base64(name))

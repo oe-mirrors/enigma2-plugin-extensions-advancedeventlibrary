@@ -112,7 +112,7 @@ class SystemEvents:
 				for eventarg in eventargs:
 					args.append(eventarg)
 				hook[0](*args)
-			if not what in self.ignore_script_exec:
+			if what not in self.ignore_script_exec:
 				cmd = self.cmd_path + what + self.cmd_filetype
 				for eventarg in eventargs:
 					cmd += ' "' + eventarg + '"'

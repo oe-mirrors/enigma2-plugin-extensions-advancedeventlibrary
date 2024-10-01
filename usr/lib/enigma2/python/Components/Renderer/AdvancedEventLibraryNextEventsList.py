@@ -1,7 +1,7 @@
 from datetime import datetime
 from math import trunc
 from os.path import join
-from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_TOP, ePicLoad
+from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_VALIGN_TOP
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer

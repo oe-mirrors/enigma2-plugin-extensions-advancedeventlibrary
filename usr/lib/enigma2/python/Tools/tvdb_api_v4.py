@@ -1,5 +1,5 @@
 from base64 import b64decode
-from urllib.request import Request, urlopen
+from urllib.request import Request as uRequest, urlopen
 from urllib.parse import urlencode
 from json import dumps, load
 
@@ -11,7 +11,7 @@ class Auth:
 			loginInfo["pin"] = pin
 		self.token = None
 		loginInfoBytes = dumps(loginInfo, indent=2).encode('utf-8')
-		req = Request(url, data=loginInfoBytes)
+		req = uRequest(url, data=loginInfoBytes)
 		req.add_header("Content-Type", "application/json")
 		response = urlopen(req, data=loginInfoBytes, timeout=5)
 		if response:
@@ -29,7 +29,7 @@ class Request:
 		self.auth_token = auth_token
 
 	def make_request(self, url):
-		req = Request(url)
+		req = uRequest(url)
 		req.add_header("Authorization", f"Bearer {self.auth_token}")
 		response = urlopen(req, timeout=5)
 		if response:
@@ -37,6 +37,7 @@ class Request:
 			data = res.get("data", None)
 			if data and res.get('status', 'failure') != 'failure':
 				return data
+
 
 class Url:
 	def __init__(self):
@@ -161,7 +162,7 @@ class Url:
 		return url
 
 	def genre_url(self, id):
-		url = "{}/genres/{id}".format(self.base_url)
+		url = f"{self.base_url}/genres/{id}"
 		return url
 
 	def languages_url(self):
@@ -212,6 +213,7 @@ class Url:
 		filters["query"] = query
 		url = f"{self.base_url}/search?{urlencode(filters)}"
 		return url
+
 
 class TVDB:
 	def __init__(self, pin=""):

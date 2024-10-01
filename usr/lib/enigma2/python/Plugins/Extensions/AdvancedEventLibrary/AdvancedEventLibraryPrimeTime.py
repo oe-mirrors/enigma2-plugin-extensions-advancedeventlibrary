@@ -1,10 +1,10 @@
 from os.path import join, isfile
 from time import localtime, mktime
 from html.parser import HTMLParser
-from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import loadSkin, variables, parseColor
 from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.config import ConfigSelection, config
+from Components.config import config
 from Components.Label import Label
 from Components.Pixmap import Pixmap
 from Components.Sources.Event import Event
@@ -369,7 +369,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			write_log("key_play : " + str(ex))
 
 	def key_info_handler(self):
-		from Screens.EventView import EventViewSimple, EventViewMovieEvent
+		from Screens.EventView import EventViewSimple
 		try:
 			sRef = ""
 			if self.viewType == 1:  # 'Listenansicht'
@@ -604,7 +604,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					timers.append(_timer)
 
 			for serviceref, eit, name, begin, duration, shortdesc, extdesc, service_name in self.allevents:
-				if not 'Sendepause' in name and not 'Sendeschluss' in name:
+				if 'Sendepause' not in name and 'Sendeschluss' not in name:
 					desc = None
 					cleanname = name.strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
