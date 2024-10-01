@@ -87,7 +87,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 		self.title = "Prime-Time-Planer"
 		self.viewType = viewType
-		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 'Listenansicht' else "AdvancedEventLibraryWallPlaners"
+		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 1 else "AdvancedEventLibraryWallPlaners"
 		self.db = getDB()
 		self.isinit = False
 		self.lastidx = 0
@@ -105,9 +105,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.userBouquets.append('Alle Bouquets')
 		for bouquet in self.tvbouquets:
 			self.userBouquets.append(bouquet[1])
-		config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default="Alle Bouquets", choices=self.userBouquets)
 		self["Content"] = StaticText("")
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self["eventList"] = AdvancedEventLibraryLists.EPGList()
 			self["eventList"].connectsel_changed(self.sel_changed)
 		else:
@@ -122,7 +121,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self["genreList"] = AdvancedEventLibraryLists.MenuList()
 		self["genreList"].connectsel_changed(self.menu_sel_changed)
 		self.current_event = None
-		self.currentBouquet = config.plugins.AdvancedEventLibrary.StartBouquet.value
 
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
@@ -173,7 +171,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def infoKeyPressed(self):
 		try:
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				self.close('Wallansicht')
 			else:
 				self.close('Listenansicht')
@@ -187,7 +185,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		pass
 
 	def key_ok_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			selection = self["eventList"].l.getCurrentSelection()[0]
 			eventName = (selection[0], selection[2])
 		else:
@@ -197,7 +195,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def CELcallBack(self):
 		selected_element = self["genreList"].l.getCurrentSelection()[0]
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self["eventList"].setList(self.getEPGdata(selected_element[0]))
 		else:
 			self["eventWall"].setlist(self.getEPGdata(selected_element[0]))
@@ -216,7 +214,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def refreshAll(self):
 		if not self.isinit:
-			if self.viewType != 'Listenansicht':
+			if self.viewType != 1: # 'Listenansicht'
 				self.parameter = self["eventWall"].getParameter()
 				self.imageType = str(self.parameter[3])
 				self.substituteImage = str(self.parameter[5])
@@ -226,7 +224,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			ptr = LoadPixmap(join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			self.isinit = True
-			self.getAllEvents(currentBouquet=self.currentBouquet)
+			self.getAllEvents(currentBouquet=config.plugins.AdvancedEventLibrary.StartBouquet.value)
 			self.menu_sel_changed(config.plugins.AdvancedEventLibrary.Genres.value)
 
 	def key_red_handler(self):
@@ -245,10 +243,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def yellowCallBack(self, ret=None):
 		if ret:
-			self.currentBouquet = ret[0]
+			config.plugins.AdvancedEventLibrary.StartBouquet.value = ret[0]
 			self.getAllEvents(ret[0])
 			selected_element = self["genreList"].l.getCurrentSelection()[0]
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				self["eventList"].setList(self.getEPGdata(selected_element[0]))
 			else:
 				self["eventWall"].setlist(self.getEPGdata(selected_element[0]))
@@ -258,7 +256,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 
 	def key_blue_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			selected_element = self["eventList"].l.getCurrentSelection()[0]
 			sRef = str(selected_element[1])
 		else:
@@ -268,7 +266,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.close()
 
 	def key_right_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['eventList'].pageDown()
 		else:
 			old_idx = int(self['eventWall'].getCurrentIndex())
@@ -285,7 +283,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 
 	def key_left_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['eventList'].pageUp()
 		else:
 			old_idx = int(self['eventWall'].getCurrentIndex())
@@ -303,7 +301,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 
 	def key_down_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['eventList'].moveDown()
 		else:
 			old_idx = int(self['eventWall'].getCurrentIndex())
@@ -326,7 +324,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 
 	def key_up_handler(self):
-		if self.viewType == 'Listenansicht':
+		if self.viewType == 1:  # 'Listenansicht'
 			self['eventList'].moveUp()
 		else:
 			old_idx = int(self['eventWall'].getCurrentIndex())
@@ -355,7 +353,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 	def key_play_handler(self):
 		try:
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
 				if selected_element and selected_element[8]:
 					sRef = eServiceReference(4097, 0, str(selected_element[8]))
@@ -374,7 +372,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
 		try:
 			sRef = ""
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
 				sRef = str(selected_element[1])
 			else:
@@ -392,7 +390,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if self.current_event is None:
 				return False
 
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
 				sRef = str(selected_element[1])
 				eit = int(selected_element[2])
@@ -457,7 +455,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				simulTimerList = self.session.nav.RecordTimer.record(entry)
 				if simulTimerList is not None:
 					self.session.openWithCallback(self.finishSanityCorrection, TimerSanityConflict, simulTimerList)
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				self.lastidx = self["eventList"].getCurrentIndex()
 				cs = self["eventList"].l.getCurrentSelection()[0]
 				cs[5] = True
@@ -473,7 +471,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 	def sel_changed(self):
 		try:
 			selected_element = None
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
 				if selected_element:
 					sRef = str(selected_element[1])
@@ -517,27 +515,15 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 	def menu_sel_changed(self, what=None):
 		try:
 			if what:
-				if what == 'Serien':
-					self['genreList'].moveToIndex(1)
-				elif what == 'Dokus':
-					self['genreList'].moveToIndex(2)
-				elif what == 'Kinder':
-					self['genreList'].moveToIndex(3)
-				elif what == 'Shows':
-					self['genreList'].moveToIndex(4)
-				elif what == 'Sport':
-					self['genreList'].moveToIndex(5)
-				elif what == 'Music':
-					self['genreList'].moveToIndex(6)
-				elif what == 'Sonstiges':
-					self['genreList'].moveToIndex(7)
+				self['genreList'].moveToIndex(what)
 			selected_element = self["genreList"].l.getCurrentSelection()[0]
-			if self.viewType == 'Listenansicht':
-				self["eventList"].setList(self.getEPGdata(selected_element[0]))
+			choices = {0: _("Filme"), 1: _("Serien"), 2: _("Dokus"), 3: _("Music"), 4: _("Kinder"), 5: _("Shows"), 6: _("Sport")}
+			if self.viewType == 1:  # 'Listenansicht'
+				self["eventList"].setList(self.getEPGdata(str(choices.get(selected_element[0]))))
 				self["eventList"].moveToIndex(self.lastidx)
 			else:
 				self["eventWall"].movetoIndex(0)
-				self["eventWall"].setlist(self.getEPGdata(selected_element[0]))
+				self["eventWall"].setlist(self.getEPGdata(str(choices.get(selected_element[0]))))
 				self["eventWall"].refresh()
 				self.pageCount = self['eventWall'].getPageCount()
 				self['PageInfo'].setText('Seite ' + str(self['eventWall'].getCurrentPage()) + ' von ' + str(self.pageCount))
@@ -638,7 +624,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							dbdata = self.db.getTitleInfo(convert2base64(name))
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
-						if self.viewType == 'Listenansicht':
+						if self.viewType == 1:  # 'Listenansicht'
 							itm = [name, serviceref, eit, begin, duration, hasTimer, edesc, service_name, hasTrailer]
 						else:
 							image = None
@@ -666,7 +652,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						elif 'Sonstiges' in eventGenre:
 							self.unknownlist.append((itm,))
 
-			if self.viewType == 'Listenansicht':
+			if self.viewType == 1:  # 'Listenansicht'
 				itm = ['habe leider keine Sendungen zum Genre gefunden', '0', -1, 0, 0, False, '', '', None]
 			else:
 				itm = EventEntry('habe leider keine Sendungen zum Genre gefunden', None, -1, 0, 0, False, '', '', imgpath + "substituteImage.jpg", None)
