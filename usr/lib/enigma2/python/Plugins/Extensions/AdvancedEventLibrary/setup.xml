@@ -16,7 +16,7 @@
 		<item level="0" text="Type of search:" description="---Art der Suche---">config.plugins.AdvancedEventLibrary.SearchFor</item>
 		<if conditional="not config.plugins.AdvancedEventLibrary.SearchFor.value">
 			<item level="0" text="use AEL image server:" description="---benutze AEL Image-Server---">config.plugins.AdvancedEventLibrary.UseAELIS</item>
-			<item level="0" text="lade Previewbilder:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
+			<item level="0" text="load preview pictures:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
 			<item level="0" text="delete old preview images during the search run:" description="---lösche alte Previewbilder beim Suchlauf---">config.plugins.AdvancedEventLibrary.DelPreviewImages</item>
 			<item level="0" text="maximum resolution of the posters:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterQuality</item>
 			<item level="0" text="Maximum resolution of the covers:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverQuality</item>
