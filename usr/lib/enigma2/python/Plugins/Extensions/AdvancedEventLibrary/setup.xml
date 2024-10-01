@@ -1,6 +1,6 @@
 <setupxml>
 	<setup key="Advanced-Event-Library-Setup" title="Advanced-Event-Library-Setup">
-		# hier Text "Einstellungen Allgemein"
+		<item level="0" text="----Einstellungen Allgemein-------------------------------------------------------"/>
 		<item level="0" text="Location:" description="---Daten-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Location</item>
 		<item level="0" text="dbFolder:" description="---Datenbank-Verzeichnis---">config.plugins.AdvancedEventLibrary.dbFolder</item>
 		<item level="0" text="Backup:" description="---Backup-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Backup</item>
@@ -12,29 +12,33 @@
 		<item level="0" text="MaxUsedInodes:" description="---maximal zu benutzende Inodes (%)---">config.plugins.AdvancedEventLibrary.MaxUsedInodes</item>
 		<item level="0" text="CloseMenu:" description="---AEL-Menü automatisch schließen---">config.plugins.AdvancedEventLibrary.CloseMenu</item>
 		<item level="0" text="Log:" description="---schreibe erweitertes Logfile---">config.plugins.AdvancedEventLibrary.Log</item>
-		# hier Text "Einstellungen Download"
+		<item level="0" text="----Einstellungen Download---------------------------------------------------------"/>
 		<item level="0" text="SearchFor:" description="---Art der Suche---">config.plugins.AdvancedEventLibrary.SearchFor</item>
 		# CONDITIONAL: nachfolgendes nur einblenden wenn SeachFor = "Extradaten und Bilder"
-		<item level="0" text="UseAELIS:" description="---benutze AEL Image-Server---">config.plugins.AdvancedEventLibrary.UseAELIS</item>
-		<item level="0" text="UsePreviewImages:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
-		<item level="0" text="DelPreviewImages:" description="---lösche alte Previewbilder beim Suchlauf---">config.plugins.AdvancedEventLibrary.DelPreviewImages</item>
-		<item level="0" text="posterQuality:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterQuality</item>
-		<item level="0" text="coverQuality:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverQuality</item>
-		<item level="0" text="MaxImageSize:" description="---maximale Speichergröße pro Bild---">config.plugins.AdvancedEventLibrary.MaxImageSize</item>
-		<item level="0" text="MaxCompression:" description="---minimale JPEG-Qualität (%)---">config.plugins.AdvancedEventLibrary.MaxCompression</item>
-		<item level="0" text="PreviewCount:" description="---Anzahl Vorschaubilder im Editor---">config.plugins.AdvancedEventLibrary.PreviewCount</item>
-		# hier Text "Einstellungen EPG und MovieWall"
-		<item level="0" text="UseAELEPGLists:" description="---benutze AEL EPG-Listenstil---">config.plugins.AdvancedEventLibrary.UseAELEPGLists</item>
-		<item level="0" text="ShowInEPG:" description="---benutze EPG-Taste in EPGSelection für Plugin-Aufruf---">config.plugins.AdvancedEventLibrary.ShowInEPG</item>
-		<item level="0" text="UpdateAELMovieWall:" description="---benutze AEL-Movie-Wall---">config.plugins.AdvancedEventLibrary.UpdateAELMovieWall</item>
-		<item level="0" text="ignoreSortSeriesdetection:" description="---ignoriere die Serienerkennung bei der Sortierung (Movie-Wall)---">config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection</item>
-		# CONDITIONAL: nachfolgendes nur einblenden wenn UpdateAELMovieWall = True
-		<item level="0" text="UseAELMovieWall:" description="---benutze PVR-Taste zum Start für Movie-Wall---">config.plugins.AdvancedEventLibrary.UseAELMovieWall</item>
-		<item level="0" text="SearchLinks:" description="---beziehe Symlinks in die Suche nach Aufnahmen ein---">config.plugins.AdvancedEventLibrary.SearchLinks</item>
-		<item level="0" text="RefreshMovieWall:" description="---Scheint ungenutzt zu sein---">config.plugins.AdvancedEventLibrary.RefreshMovieWall</item>
-		<item level="0" text="RefreshMovieWallAtStart:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestop---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart</item>
-		<item level="0" text="RefreshMovieWallAtStop:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestart---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop</item>
-		# hier Text "Einstellungen Suche"
+		<if conditional="config.plugins.AdvancedEventLibrary.SearchFor.value == 'Extradaten und Bilder'">
+			<item level="0" text="UseAELIS:" description="---benutze AEL Image-Server---">config.plugins.AdvancedEventLibrary.UseAELIS</item>
+			<item level="0" text="UsePreviewImages:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
+			<item level="0" text="DelPreviewImages:" description="---lösche alte Previewbilder beim Suchlauf---">config.plugins.AdvancedEventLibrary.DelPreviewImages</item>
+			<item level="0" text="posterQuality:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterQuality</item>
+			<item level="0" text="coverQuality:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverQuality</item>
+			<item level="0" text="MaxImageSize:" description="---maximale Speichergröße pro Bild---">config.plugins.AdvancedEventLibrary.MaxImageSize</item>
+			<item level="0" text="MaxCompression:" description="---minimale JPEG-Qualität (%)---">config.plugins.AdvancedEventLibrary.MaxCompression</item>
+			<item level="0" text="PreviewCount:" description="---Anzahl Vorschaubilder im Editor---">config.plugins.AdvancedEventLibrary.PreviewCount</item>
+		</if>
+			<item level="0" text="-----Einstellungen EPG und MovieWall---------------------------------------------"/>
+			<item level="0" text="UseAELEPGLists:" description="---benutze AEL EPG-Listenstil---">config.plugins.AdvancedEventLibrary.UseAELEPGLists</item>
+			<item level="0" text="ShowInEPG:" description="---benutze EPG-Taste in EPGSelection für Plugin-Aufruf---">config.plugins.AdvancedEventLibrary.ShowInEPG</item>
+			<item level="0" text="ignoreSortSeriesdetection:" description="---ignoriere die Serienerkennung bei der Sortierung (Movie-Wall)---">config.plugins.AdvancedEventLibrary.ignoreSortSeriesdetection</item>
+			<item level="0" text="UpdateAELMovieWall:" description="---benutze AEL-Movie-Wall---">config.plugins.AdvancedEventLibrary.UpdateAELMovieWall</item>
+			# CONDITIONAL: nachfolgendes nur einblenden wenn UpdateAELMovieWall = True
+		<if conditional="config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value">
+			<item level="0" text="UseAELMovieWall:" description="---benutze PVR-Taste zum Start für Movie-Wall---">config.plugins.AdvancedEventLibrary.UseAELMovieWall</item>
+			<item level="0" text="SearchLinks:" description="---beziehe Symlinks in die Suche nach Aufnahmen ein---">config.plugins.AdvancedEventLibrary.SearchLinks</item>
+			<item level="0" text="RefreshMovieWall:" description="---Scheint ungenutzt zu sein---">config.plugins.AdvancedEventLibrary.RefreshMovieWall</item>
+			<item level="0" text="RefreshMovieWallAtStart:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestop---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStart</item>
+			<item level="0" text="RefreshMovieWallAtStop:" description="---aktualisiere Movie-Wall automatisch nach Aufnahmestart---">config.plugins.AdvancedEventLibrary.RefreshMovieWallAtStop</item>
+		</if>
+		<item level="0" text="----Einstellungen Suche----"/>
 		<item level="0" text="CreateMetaData:" description="---erstelle nicht vorhandene Metadaten---">config.plugins.AdvancedEventLibrary.CreateMetaData</item>
 		# hier self.usePictures = ConfigYesNo(default=self.searchOptions.get("Pictures", True)) oder ConfigYesNo(default=True)
 		# hier self.vtidb = ConfigYesNo(default=self.searchOptions.get("VTiDB", False))
@@ -51,7 +55,7 @@
 	</setup>
 
 	<setup key="AEL-Channel-Selection-Setup" title="AEL-Channel-Selection-Setup">
-		# hier Text "Einstellungen"
+		<item level="0" text="----Einstellungen-----------------------------------------------------------------"/>
 		<item level="0" text="ChannelSelectionStartBouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet</item>
 		<item level="0" text="EPGViewType:" description="---EPG-Taste öffnet---">config.plugins.AdvancedEventLibrary.EPGViewType</item>
 		<item level="0" text="ChannelSelectionEventListDuration:" description="---Event-List Dauer (Stunden)---">config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration</item>

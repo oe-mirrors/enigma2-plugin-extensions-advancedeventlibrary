@@ -1,6 +1,20 @@
-# coding=utf-8
-from __future__ import absolute_import
-from operator import itemgetter
+import datetime
+import os
+import NavigationInstance
+from html.parser import HTMLParser
+from time import time
+
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from skin import variables
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.config import config, ConfigSelection, ConfigSubsection, ConfigInteger
+from Components.Label import MultiColorLabel
+from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress, MultiContentEntryPixmapAlphaBlend
+from Components.Pixmap import Pixmap
+from Components.Sources.Event import Event
+from Components.Sources.ServiceEvent import ServiceEvent
+from Components.Sources.StaticText import StaticText
+from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
 from Screens.MessageBox import MessageBox
@@ -9,51 +23,19 @@ from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import InfoBar, MoviePlayer
 from Screens.Setup import Setup
-from Components.Label import Label, MultiColorLabel
-from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
-from Components.Pixmap import Pixmap
-from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress, MultiContentEntryRectangle, MultiContentEntryPixmap, MultiContentEntryPixmapAlphaBlend, MultiContentEntryLinearGradient
-from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.Alternatives import GetWithAlternative
-from time import time, localtime, mktime
-import datetime
-import os
-import re
-import json
-import NavigationInstance
-from html.parser import HTMLParser
-from skin import loadSkin
-import skin
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer, Thread
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+from Tools.Alternatives import GetWithAlternative
 from Tools.Directories import fileExists
-from Components.Sources.Event import Event
-
-from . import _  # for localized messages
-from .AdvancedEventLibrarySystem import Editor, PicLoader
-from . import AdvancedEventLibrarySystem
-from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
-htmlParser = HTMLParser()
+from . import AdvancedEventLibrarySystem, _  # for localized messages
+from . AdvancedEventLibraryLists import AELBaseWall
+from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem
 
+htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
-if desktopSize.width() == 1920:
-	skinpath = pluginpath + 'skin/1080/'
-else:
-	skinpath = pluginpath + 'skin/720/'
-
+skinpath = pluginpath + 'skin/1080/' if desktopSize.width() == 1920 else pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 
@@ -61,19 +43,10 @@ global active
 active = False
 
 
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log, "a")
-	AdvancedEventLibrary_log.write(str(logtime) + " : [ChannelSelection] : " + str(svalue) + "\n")
-	AdvancedEventLibrary_log.close()
-
-
 def loadskin(filename):
 	path = skinpath + filename
 	with open(path, "r") as f:
 		skin = f.read()
-		f.close()
 	return skin
 
 
@@ -113,7 +86,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		active = True
 		self.session = session
 		Screen.__init__(self, session)
-
 		self.nameCache = {}
 		self.title = "Advanced-Event-Library-ChannelSelection"
 		self.skinName = "AdvancedEventLibraryChannelSelection"
@@ -125,16 +97,11 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.eventListLen = 0
 		self.activeList = "Channels"
 		self.idx = 0
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-		if fileExists(imgpath + "shaper.png"):
-			self.shaper = LoadPixmap(imgpath + "shaper.png")
-		else:
-			self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+		imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		self.shaper = LoadPixmap(imgpath + "shaper.png") if fileExists(imgpath + "shaper.png") else LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 		self.switchWithPVR = False
-
 		self.userBouquets = []
 		self.userBouquets.append(('Alle Bouquets',))
-
 #		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 #		self.myBouquet = config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
 #		self.channelSelectionEventListDuration = config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
@@ -143,19 +110,14 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
 		config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
 		config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
-
 		self.CHANSEL = InfoBar.instance.servicelist
-		if sRef:
-			ref = sRef
-		else:
-			ref = ServiceReference(self.session.nav.getCurrentlyPlayingServiceReference()).__str__()
+		ref = sRef if sRef else ServiceReference(self.session.nav.getCurrentlyPlayingServiceReference()).__str__()
 		for protocol in ("http", "rtmp", "rtsp", "mms", "rtp"):
 			pos = ref.rfind(':' + protocol)
 			if pos != -1:
 				ref = ref.split(protocol)[0]
 				break
 		self.current_service_ref = ref
-
 		recordHandler = NavigationInstance.instance.RecordTimer
 		for timer in recordHandler.timer_list:
 			if timer and timer.service_ref:
@@ -165,7 +127,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			if timer and timer.eit:
 				_timer = str(timer.eit)
 				self.timers.append(_timer)
-
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
 		self.tvbouquets = serviceHandler.list(root).getContent("SN", True)
@@ -182,25 +143,20 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self.channelNumbers[bouquet[1]][serviceref] = channelNumber
 					channelNumber += 1
 		self.epgcache = eEPGCache.getInstance()
-
 		self["channelList"] = AELBaseWall()
 		self["channelList"].l.setBuildFunc(self.buildChannelList)
 		self["eventList"] = AELBaseWall()
 		self["eventList"].l.setBuildFunc(self.buildEventList)
 		self["trailer"] = Pixmap()
-
 		self["key_red"] = StaticText(_("Exit"))
 		self["key_green"] = StaticText(_("Add Timer"))
 		self["key_yellow"] = StaticText(_("Bouquets"))  # (self.myBouquet.value)
 		self["key_blue"] = StaticText(_("Advanced-Event-Library"))
-
 		self["channelsInfo"] = MultiColorLabel()
 		self["eventsInfo"] = MultiColorLabel()
-
 		self["Event"] = Event()
 		self["Service"] = ServiceEvent()
 		self.current_event = None
-
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_red": self.key_red_handler,
@@ -257,11 +213,9 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			self.eventListControl = eval(str(self.eventParameter[21]))
 			self.eventListCoverings = eval(str(self.eventParameter[23]))
 			self.eventListFontOrientation = self.getFontOrientation(self.eventParameter[24])
-
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
 			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
-
 			if config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet.value == 'Alle Bouquets':
 				self.getChannelList(self.tvbouquets)
 			else:
@@ -288,7 +242,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.channelList = []
 		mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 		self.idx = 0
-		id = 0
+		index = 0
 		number = 0
 		for bouquet in bouquets:
 			root = eServiceReference(str(bouquet[0]))
@@ -298,8 +252,8 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			for (serviceref, servicename) in ret:
 				if "::" not in serviceref:
 					if serviceref == self.current_service_ref:
-						self.idx = id
-					id += 1
+						self.idx = index
+					index += 1
 					events = self.epgcache.lookupEvent(['ITBD', (serviceref, 0, -1, 10)]) or [(0, 'kein EPG!', 0, 0)]
 					picon = self.findPicon(serviceref, servicename)
 					if picon is None:
@@ -319,11 +273,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					if "duration" in self.channelParameter[26]:
 						_timespan += '  ' + str(duration) + ' Min.'
 					_duration = str(duration) + ' Min.'
-					if int(events[0][3]) > 0:
-						_progress = (int(time()) - events[0][2]) * 100 / events[0][3]
-					else:
-						_progress = 0
-
+					_progress = (int(time()) - events[0][2]) * 100 / events[0][3] if int(events[0][3]) > 0 else 0
 					image = None
 					name = ''
 					hasTrailer = None
@@ -369,21 +319,14 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			textBegin = 100 - textHeight
 			if len(entrys.servicename) > maxLength:
 				entrys.servicename = str(entrys.servicename)[:maxLength] + '...'
-			if len(entrys.title) > maxLength:
-				title = str(entrys.title)[:maxLength] + '...'
-			else:
-				title = entrys.title
+			title = str(entrys.title)[:maxLength] + '...' if len(entrys.title) > maxLength else entrys.title
 			self.picloader = PicLoader(int(self.channelParameter[0]), int(self.channelParameter[1]))
 			if entrys.image:
 				image = self.picloader.load(entrys.image)
 			else:
-				if self.channelSubstituteImage == "replaceWithPicon":
-					image = LoadPixmap(entrys.picon)  # self.picloader.load(entrys.picon)
-				else:
-					image = self.picloader.load(self.channelSubstituteImage)
+				image = LoadPixmap(entrys.picon) if self.channelSubstituteImage == "replaceWithPicon" else self.picloader.load(self.channelSubstituteImage)  # self.picloader.load(entrys.picon)
 			self.picloader.destroy()
 			picon = LoadPixmap(entrys.picon)  # self.picloader.load(entrys.picon)
-
 			ret = [entrys]
 			#rework
 
@@ -425,20 +368,13 @@ class AdvancedEventLibraryChannelSelection(Screen):
 	def buildEventList(self, entrys):
 		try:
 			maxLength = self.eventParameter[2]
-			if len(entrys.title) > maxLength:
-				title = str(entrys.title)[:maxLength] + '...'
-			else:
-				title = entrys.title
+			title = str(entrys.title)[:maxLength] + '...' if len(entrys.title) > maxLength else entrys.title
 			self.picloader = PicLoader(int(self.eventParameter[0]), int(self.eventParameter[1]))
 			if entrys.image:
 				image = self.picloader.load(entrys.image)
 			else:
-				if self.eventSubstituteImage == "replaceWithPicon":
-					image = LoadPixmap(entrys.picon)  # self.picloader.load(entrys.picon)
-				else:
-					image = self.picloader.load(self.eventSubstituteImage)
+				image = LoadPixmap(entrys.picon) if self.eventSubstituteImage == "replaceWithPicon" else self.picloader.load(self.eventSubstituteImage)  # self.picloader.load(entrys.picon)
 			self.picloader.destroy()
-
 			ret = [entrys]
 			#rework
 			#ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.eventParameter[17][0], self.eventParameter[17][1], self.eventParameter[17][0], self.eventParameter[17][1], self.eventParameter[17][2], self.eventParameter[17][3], self.eventParameter[17][2], self.eventParameter[17][3], image, None, None, BT_SCALE))
@@ -568,12 +504,9 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 	def key_blue_handler(self):
 		if self.current_event:
-			if self.activeList != "Channels":
-				selection = self["eventList"].getcurrentselection()
-			else:
-				selection = self["channelList"].getcurrentselection()
+			selection = self["eventList"].getcurrentselection() if self.activeList != "Channels" else self["channelList"].getcurrentselection()
 			eventName = (selection.title, selection.eit)
-			self.session.openWithCallback(self.channel_changed, Editor, eventname=eventName)
+			self.session.openWithCallback(self.channel_changed, AdvancedEventLibrarySystem.Editor, eventname=eventName)
 
 	def key_right_handler(self):
 		self.controlChannelList(self.channelListControl["right"])
@@ -609,10 +542,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['channelList'].right()
 					new_idx = int(self['channelList'].getCurrentIndex())
 					if new_idx <= old_idx:
-						if (old_idx + 1) >= self.channelListLen:
-							dest = 0
-						else:
-							dest = old_idx + 1
+						dest = 0 if (old_idx + 1) >= self.channelListLen else old_idx + 1
 						self['channelList'].movetoIndex(dest)
 			elif what == "left":
 				old_idx = int(self['channelList'].getCurrentIndex())
@@ -623,10 +553,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['channelList'].left()
 					new_idx = int(self['channelList'].getCurrentIndex())
 					if new_idx >= old_idx:
-						if (new_idx - 1) < 0:
-							dest = self.channelListLen - 1
-						else:
-							dest = old_idx - 1
+						dest = self.channelListLen - 1 if (new_idx - 1) < 0 else old_idx - 1
 						self['channelList'].movetoIndex(dest)
 			elif what == "down":
 				old_idx = int(self['channelList'].getCurrentIndex())
@@ -636,10 +563,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['channelList'].down()
 					new_idx = int(self['channelList'].getCurrentIndex())
 					if new_idx <= old_idx:
-						if (new_idx + self.channelParameter[14]) >= self.channelListLen:
-							dest = 0
-						else:
-							dest = new_idx + self.channelParameter[14]
+						dest = 0 if (new_idx + self.channelParameter[14]) >= self.channelListLen else new_idx + self.channelParameter[14]
 						self['channelList'].movetoIndex(dest)
 			elif what == "up":
 				old_idx = int(self['channelList'].getCurrentIndex())
@@ -650,10 +574,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['channelList'].up()
 					new_idx = int(self['channelList'].getCurrentIndex())
 					if new_idx >= old_idx:
-						if (new_idx - self.channelParameter[14]) < 0:
-							dest = self.channelListLen - 1
-						else:
-							dest = new_idx - self.channelParameter[14]
+						dest = self.channelListLen - 1 if (new_idx - self.channelParameter[14]) < 0 else new_idx - self.channelParameter[14]
 						self['channelList'].movetoIndex(dest)
 			elif what == "pageDown":
 				self['channelList'].prevPage()
@@ -674,10 +595,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['eventList'].right()
 					new_idx = int(self['eventList'].getCurrentIndex())
 					if new_idx <= old_idx:
-						if (old_idx + 1) >= self.eventListLen:
-							dest = 0
-						else:
-							dest = old_idx + 1
+						dest = 0 if (old_idx + 1) >= self.eventListLen else old_idx + 1
 						self['eventList'].movetoIndex(dest)
 			elif what == "left":
 				old_idx = int(self['eventList'].getCurrentIndex())
@@ -688,10 +606,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['eventList'].left()
 					new_idx = int(self['eventList'].getCurrentIndex())
 					if new_idx >= old_idx:
-						if (new_idx - 1) < 0:
-							dest = self.eventListLen - 1
-						else:
-							dest = old_idx - 1
+						dest = self.eventListLen - 1 if (new_idx - 1) < 0 else old_idx - 1
 						self['eventList'].movetoIndex(dest)
 			elif what == "down":
 				old_idx = int(self['eventList'].getCurrentIndex())
@@ -701,10 +616,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['eventList'].down()
 					new_idx = int(self['eventList'].getCurrentIndex())
 					if new_idx <= old_idx:
-						if (new_idx + self.eventParameter[14]) >= self.eventListLen:
-							dest = 0
-						else:
-							dest = new_idx + self.eventParameter[14]
+						dest = 0 if (new_idx + self.eventParameter[14]) >= self.eventListLen else new_idx + self.eventParameter[14]
 						self['eventList'].movetoIndex(dest)
 			elif what == "up":
 				old_idx = int(self['eventList'].getCurrentIndex())
@@ -715,10 +627,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					self['eventList'].up()
 					new_idx = int(self['eventList'].getCurrentIndex())
 					if new_idx >= old_idx:
-						if (new_idx - self.eventParameter[14]) < 0:
-							dest = self.eventListLen - 1
-						else:
-							dest = new_idx - self.eventParameter[14]
+						dest = self.eventListLen - 1 if (new_idx - self.eventParameter[14]) < 0 else new_idx - self.eventParameter[14]
 						self['eventList'].movetoIndex(dest)
 			elif what == "pageDown":
 				self['eventList'].prevPage()
@@ -734,7 +643,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		try:
 			if self.current_event is None:
 				return False
-
 			selected_element = self["eventList"].getcurrentselection()
 			sRef = str(selected_element.serviceref)
 			eit = int(selected_element.eit)
@@ -872,7 +780,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 						hasTimer = False
 						if cleanname in self.timers or str(event[0]) in self.timers or name in self.timers:
 							hasTimer = True
-
 						if event == (0, ' ', 0, 0):
 							itm = ChannelEntry(sRef, event[0], ' ', 'keine Sendungsinformation', ' ', ' ', 0, picon, image, selected_channel.bouquet, False, 0, hasTrailer)
 						else:
@@ -947,3 +854,17 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
+
+
+class PicLoader:
+	def __init__(self, width, height):
+		self.picload = ePicLoad()
+		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
+
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload

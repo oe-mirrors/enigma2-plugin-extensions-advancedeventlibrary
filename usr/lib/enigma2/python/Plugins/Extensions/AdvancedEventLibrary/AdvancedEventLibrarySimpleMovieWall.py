@@ -1,5 +1,4 @@
 ﻿# coding=utf-8
-from __future__ import absolute_import
 from Screens.Screen import Screen
 from Screens.MessageBox import MessageBox
 from Screens.ChoiceBox import ChoiceBox
@@ -9,21 +8,20 @@ from Screens.LocationBox import MovieLocationBox
 from Screens.TaskList import TaskListScreen
 from Components.Pixmap import Pixmap
 from Components.Label import Label
-from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
 from Components.Sources.ServiceEvent import ServiceEvent
 from Components.FileTransfer import FileTransferJob
 from Components.Task import job_manager
-from time import time, localtime
+from time import localtime
 from enigma import getDesktop, iServiceInformation, eServiceReference, eServiceCenter, ePixmap
 from ServiceReference import ServiceReference
-from enigma import eTimer, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO, eWidget, fontRenderClass, ePoint
+from enigma import eTimer, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, config, ConfigSubsection, ConfigInteger, configfile
+from Components.config import getConfigListEntry, ConfigYesNo, ConfigSelection, config, ConfigSubsection
 from Tools.Directories import fileExists
 from glob import glob
 
-from .AdvancedEventLibrarySystem import Editor, PicLoader
+# from .AdvancedEventLibrarySystem import Editor, PicLoader
 from Tools.AdvancedEventLibrary import getPictureDir, getImageFile, clearMem, getDB, convert2base64, aelGlobals
 from .AdvancedEventLibraryLists import AELBaseWall, MovieList
 from Tools.LoadPixmap import LoadPixmap

@@ -1,39 +1,28 @@
-# coding=utf-8
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
 from Screens.MessageBox import MessageBox
 from Screens.ChannelSelection import service_types_tv
-from Screens.ChoiceBox import ChoiceBox
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
 from Screens.Setup import Setup
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
 from Components.Pixmap import Pixmap
-from time import time, localtime, mktime
-import datetime
+from time import localtime
 import os
-import re
-import json
 import skin
 import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
+from RecordTimer import RecordTimerEntry, parseEvent, AFTEREVENT
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer, Thread
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigNumber, ConfigSelection, ConfigClock, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+from Components.config import config
 from Tools.Directories import fileExists
 from Components.Sources.Event import Event
 
-from .AdvancedEventLibrarySystem import Editor, PicLoader
+# from .AdvancedEventLibrarySystem import Editor, PicLoader
 
 from . import AdvancedEventLibraryLists
 from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem

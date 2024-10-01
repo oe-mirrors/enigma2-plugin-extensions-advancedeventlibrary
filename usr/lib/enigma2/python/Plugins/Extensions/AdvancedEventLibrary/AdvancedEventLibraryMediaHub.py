@@ -1,71 +1,43 @@
-# coding=utf-8
-from __future__ import absolute_import
-from operator import itemgetter
+from time import time, localtime, mktime, strftime
+from datetime import datetime, timedelta
+from os.path import join, isfile, realpath, basename, exists
+from html.parser import HTMLParser
+from pickle import load
+from struct import unpack
+from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, ePicLoad, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
+from skin import variables, parseColor
+from Components.config import config
+from Components.Label import MultiColorLabel
+from Components.ActionMap import ActionMap, HelpableActionMap
+from Components.Sources.StaticText import StaticText
+from Components.Pixmap import Pixmap
+from Components.Sources.ServiceEvent import ServiceEvent
 from Screens.Screen import Screen
 from Screens.Standby import TryQuitMainloop
 from Screens.MessageBox import MessageBox
 from Screens.ChannelSelection import service_types_tv
 from Screens.ChoiceBox import ChoiceBox
-from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import InfoBar, MoviePlayer
 from Screens.Setup import Setup
-from Components.Label import Label, MultiColorLabel
-from Components.ActionMap import ActionMap, HelpableActionMap
-from Components.Sources.StaticText import StaticText
-from Components.GUIComponent import GUIComponent
-from Components.Pixmap import Pixmap
-from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.Alternatives import GetWithAlternative
-from time import time, localtime, mktime, strftime
-import datetime
-import os
-import re
-import json
-import NavigationInstance
-from html.parser import HTMLParser
-from skin import loadSkin
-import pickle
-import struct
-from datetime import timedelta
-from RecordTimer import RecordTimerEntry, RecordTimer, parseEvent, AFTEREVENT
-from enigma import getDesktop, eEPGCache, iServiceInformation, eServiceReference, eServiceCenter, ePixmap, loadJPG
 from ServiceReference import ServiceReference
-from enigma import eTimer, eListbox, ePicLoad, eLabel, eListboxPythonMultiContent, gFont, eRect, eSize, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE, BT_FIXRATIO
-from threading import Timer, Thread
-from Components.ConfigList import ConfigListScreen
-from Components.config import getConfigListEntry, ConfigEnableDisable, \
-	ConfigYesNo, ConfigText, ConfigNumber, ConfigSelection, ConfigClock, \
-	ConfigDateTime, config, NoSave, ConfigSubsection, ConfigInteger, ConfigIP, configfile, ConfigNothing
+from Tools.Alternatives import GetWithAlternative
 from Tools.Directories import fileExists
+import NavigationInstance
 
-from .AdvancedEventLibrarySystem import Editor, PicLoader
-from . import AdvancedEventLibrarySimpleMovieWall
-from . import AdvancedEventLibraryChannelSelection
-from .AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem
+from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
+from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
+from Tools.AdvancedEventLibrary import getPictureDir, convert2base64, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
-
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
-if desktopSize.width() == 1920:
-	skinpath = pluginpath + 'skin/1080/'
-else:
-	skinpath = pluginpath + 'skin/720/'
+skinpath = pluginpath + 'skin/1080/' if desktopSize.width() == 1920 else pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
 
 global active
 active = False
-
-
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log, "a")
-	AdvancedEventLibrary_log.write(str(logtime) + " : [Media-Hub] : " + str(svalue) + "\n")
-	AdvancedEventLibrary_log.close()
 
 
 def loadskin(filename):
@@ -149,11 +121,8 @@ class AdvancedEventLibraryMediaHub(Screen):
 		self.currentBouquet = None
 		self.switchWithPVR = False
 		self.myFavourites = {}
-		imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-		if fileExists(imgpath + "shaper.png"):
-			self.shaper = LoadPixmap(imgpath + "shaper.png")
-		else:
-			self.shaper = LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
+		imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+		self.shaper = LoadPixmap(imgpath + "shaper.png") if fileExists(imgpath + "shaper.png") else LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 		self.userBouquets = []
 		self.userBouquets.append(('Alle Bouquets',))
 		self.channelType = int(config.plugins.AdvancedEventLibrary.MediaHubStartType.value)
@@ -165,7 +134,6 @@ class AdvancedEventLibraryMediaHub(Screen):
 				ref = ref.split(protocol)[0]
 				break
 		self.current_service_ref = ref
-
 		recordHandler = NavigationInstance.instance.RecordTimer
 		for timer in recordHandler.timer_list:
 			if timer and timer.service_ref:
@@ -175,12 +143,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			if timer and timer.eit:
 				_timer = str(timer.eit)
 				self.timers.append(_timer)
-
-		if fileExists(os.path.join(pluginpath, 'favourites.data')):
-			self.favourites = self.load_pickle(os.path.join(pluginpath, 'favourites.data'))
-		else:
-			self.favourites = {'genres': {'Nachrichten': [2, time()]}, 'titles': {}}
-
+		self.favourites = self.load_pickle(join(pluginpath, 'favourites.data')) if fileExists(join(pluginpath, 'favourites.data')) else {'genres': {'Nachrichten': [2, time()]}, 'titles': {}}
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
 		self.tvbouquets = serviceHandler.list(root).getContent("SN", True)
@@ -209,10 +172,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 		self["moviesInfo"] = MultiColorLabel()
 		self["timeInfo"] = MultiColorNTextLabel()
 
-		self["key_red"] = StaticText("Beenden")
-		self["key_green"] = StaticText("Kanalliste")
-		self["key_yellow"] = StaticText("Bouquetauswahl")
-		self["key_blue"] = StaticText("Advanced-Event-Library")
+		self["key_red"] = StaticText(_("Exit"))
+		self["key_green"] = StaticText(_("Channellist"))
+		self["key_yellow"] = StaticText(_("Bouqueta"))
+		self["key_blue"] = StaticText(_("Advanced-Event-Library"))
 
 		self["Service"] = ServiceEvent()
 		self.current_event = None
@@ -303,8 +266,8 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self["channelList"].refresh()
 				self.channel_changed()
 
-			imgpath = skin.variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
+			ptr = LoadPixmap(join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 
 			self.movieParameter = self["movieList"].getParameter()
@@ -313,8 +276,8 @@ class AdvancedEventLibraryMediaHub(Screen):
 			self.movieListControl = eval(self.movieParameter[22])
 			self.movieListCoverings = eval(str(self.movieParameter[23]))
 			self.movieListFontOrientation = self.getFontOrientation(self.movieParameter[25])
-			if fileExists(os.path.join(pluginpath, 'moviewall.data')):
-				self.moviedict = self.load_pickle(os.path.join(pluginpath, 'moviewall.data'))
+			if fileExists(join(pluginpath, 'moviewall.data')):
+				self.moviedict = self.load_pickle(join(pluginpath, 'moviewall.data'))
 				self.getMovieList()
 			else:
 				self.moviedict = {}
@@ -337,7 +300,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 
 	def load_pickle(self, filename):
 		with open(filename, 'rb') as f:
-			data = pickle.load(f)
+			data = load(f)
 		return data
 
 	def infoKeyPressed(self):
@@ -417,31 +380,23 @@ class AdvancedEventLibraryMediaHub(Screen):
 					picon = self.findPicon(str(favourite[1]), None)
 					if picon is None:
 						picon = imgpath + 'folder.png'
-
-					if int(event.getDuration()) > 0:
-						_progress = (int(time()) - event.getBeginTime()) * 100 / event.getDuration()
-					else:
-						_progress = 0
-
+					_progress = (int(time()) - event.getBeginTime()) * 100 / event.getDuration() if int(event.getDuration()) > 0 else 0
 					image = None
 					name = ''
 					hasTrailer = None
 					evt = self.db.getliveTV(event.getEventId(), event.getEventName(), event.getBeginTime())
-					if evt:
-						if evt[0][16].endswith('mp4'):
-							hasTrailer = evt[0][16]
+					if evt and evt[0][16].endswith('mp4'):
+						hasTrailer = evt[0][16]
 					if hasTrailer is None:
 						dbdata = self.db.getTitleInfo(convert2base64(event.getEventName()))
 						if dbdata and dbdata[7].endswith('mp4'):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
-						if evt:
-							if evt[0][3] != '':
-								image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
-								name = evt[0][3]
+						if evt and evt[0][3] != '':
+							image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
+							name = evt[0][3]
 						if image is None:
 							image = getImageFile(getPictureDir() + self.channelImageType, event.getEventName())
-
 					cleanname = str(event.getEventName()).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
 					if cleanname in self.timers or str(event.getEventId()) in self.timers or name in self.timers:
@@ -472,7 +427,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 						t = int(time())
 					else:
 						now = localtime(time())
-						dt = datetime.datetime(now.tm_year, now.tm_mon, now.tm_mday, config.plugins.AdvancedEventLibrary.StartTime.value[0], config.plugins.AdvancedEventLibrary.StartTime.value[1])
+						dt = datetime(now.tm_year, now.tm_mon, now.tm_mday, config.plugins.AdvancedEventLibrary.StartTime.value[0], config.plugins.AdvancedEventLibrary.StartTime.value[1])
 						if time() > mktime(dt.timetuple()):
 							dt += timedelta(days=1)
 						t = int(mktime(dt.timetuple()))
@@ -500,12 +455,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 							picon = self.findPicon(serviceref, servicename)
 							if picon is None:
 								picon = imgpath + 'folder.png'
-
-							if int(event.getDuration()) > 0:
-								_progress = (int(time()) - event.getBeginTime()) * 100 / event.getDuration()
-							else:
-								_progress = 0
-
+							_progress = (int(time()) - event.getBeginTime()) * 100 / event.getDuration() if int(event.getDuration()) > 0 else 0
 							image = None
 							name = ''
 							hasTrailer = ""
@@ -543,26 +493,20 @@ class AdvancedEventLibraryMediaHub(Screen):
 		ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.movieParameter[17][0], self.movieParameter[17][1], self.movieParameter[17][2], self.movieParameter[17][3], image, None, None, BT_SCALE))
 		for covering in self.movieListCoverings:
 			ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, covering[0], covering[1], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
-		ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.movieParameter[19][0], self.movieParameter[19][1], self.movieParameter[19][2], self.movieParameter[19][3], self.movieParameter[19][5], self.movieParameter[19][5], self.movieListFontOrientation, name, skin.parseColor(self.movieParameter[6]).argb(), skin.parseColor(self.movieParameter[7]).argb()))
-		ret.append((eListboxPythonMultiContent.TYPE_PROGRESS, self.movieParameter[24][0], self.movieParameter[24][1], self.movieParameter[24][2], self.movieParameter[24][3], entrys.progress, self.movieParameter[13], skin.parseColor(self.movieParameter[9]).argb(), skin.parseColor(self.movieParameter[11]).argb(), skin.parseColor(self.movieParameter[10]).argb(), skin.parseColor(self.movieParameter[12]).argb()))
+		ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.movieParameter[19][0], self.movieParameter[19][1], self.movieParameter[19][2], self.movieParameter[19][3], self.movieParameter[19][5], self.movieParameter[19][5], self.movieListFontOrientation, name, parseColor(self.movieParameter[6]).argb(), parseColor(self.movieParameter[7]).argb()))
+		ret.append((eListboxPythonMultiContent.TYPE_PROGRESS, self.movieParameter[24][0], self.movieParameter[24][1], self.movieParameter[24][2], self.movieParameter[24][3], entrys.progress, self.movieParameter[13], parseColor(self.movieParameter[9]).argb(), parseColor(self.movieParameter[11]).argb(), parseColor(self.movieParameter[10]).argb(), parseColor(self.movieParameter[12]).argb()))
 		return ret
 
 	def buildChannelList(self, entrys):
 		maxLength = self.channelParameter[2]
 		if len(entrys.servicename) > maxLength:
 			entrys.servicename = str(entrys.servicename)[:maxLength] + '...'
-		if len(entrys.title) > maxLength:
-			title = str(entrys.title)[:maxLength] + '...'
-		else:
-			title = entrys.title
+		title = str(entrys.title)[:maxLength] + '...' if len(entrys.title) > maxLength else entrys.title
 		self.picloader = PicLoader(int(self.channelParameter[0]), int(self.channelParameter[1]))
 		if entrys.image:
 			image = self.picloader.load(entrys.image)
 		else:
-			if self.channelSubstituteImage == "replaceWithPicon":
-				image = LoadPixmap(str(entrys.picon))  # self.picloader.load(entrys.picon)
-			else:
-				image = self.picloader.load(self.channelSubstituteImage)
+			image = LoadPixmap(str(entrys.picon)) if self.channelSubstituteImage == "replaceWithPicon" else self.picloader.load(self.channelSubstituteImage)  # self.picloader.load(entrys.picon)
 		self.picloader.destroy()
 #		self.picloader = PicLoader(100, 60)
 		picon = LoadPixmap(str(entrys.picon))  # self.picloader.load(entrys.picon)
@@ -575,22 +519,22 @@ class AdvancedEventLibraryMediaHub(Screen):
 			ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, covering[0], covering[1], covering[2], covering[3], self.shaper, None, None, BT_SCALE))
 		# ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
 		ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.channelParameter[21][0], self.channelParameter[21][1], self.channelParameter[21][2], self.channelParameter[21][3], picon, None, None, BT_SCALE))
-		# ret.append((eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], skin.parseColor(self.channelParameter[9]).argb(), skin.parseColor(self.channelParameter[11]).argb(), skin.parseColor(self.channelParameter[10]).argb(), skin.parseColor(self.channelParameter[12]).argb()))
-		ret.append((eListboxPythonMultiContent.TYPE_PROGRESS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], skin.parseColor(self.channelParameter[9]).argb(), skin.parseColor(self.channelParameter[11]).argb(), skin.parseColor(self.channelParameter[10]).argb(), skin.parseColor(self.channelParameter[12]).argb()))
+		# ret.append((eWallPythonMultiContent.TYPE_PROGRESS, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], parseColor(self.channelParameter[9]).argb(), parseColor(self.channelParameter[11]).argb(), parseColor(self.channelParameter[10]).argb(), parseColor(self.channelParameter[12]).argb()))
+		ret.append((eListboxPythonMultiContent.TYPE_PROGRESS, self.channelParameter[24][0], self.channelParameter[24][1], self.channelParameter[24][2], self.channelParameter[24][3], entrys.progress, self.channelParameter[13], parseColor(self.channelParameter[9]).argb(), parseColor(self.channelParameter[11]).argb(), parseColor(self.channelParameter[10]).argb(), parseColor(self.channelParameter[12]).argb()))
 		if entrys.hasTimer and fileExists(self.channelParameter[15]):
-			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
+			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][0] + self.channelParameter[19][4], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
+			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][0] + self.channelParameter[20][4], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
 			# ret.append((eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[18][0], self.channelParameter[18][1], self.channelParameter[18][0], self.channelParameter[18][1], self.channelParameter[18][2], self.channelParameter[18][3], self.channelParameter[18][2], self.channelParameter[18][3], LoadPixmap(self.channelParameter[15]), None, None, BT_SCALE))
 			ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.channelParameter[18][0], self.channelParameter[18][1], self.channelParameter[18][2], self.channelParameter[18][3], LoadPixmap(self.channelParameter[15]), None, None, BT_SCALE))
 		else:
-			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
-			ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()))
+			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
+			ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.channelParameter[19][0], self.channelParameter[19][1], self.channelParameter[19][2], self.channelParameter[19][3], self.channelParameter[19][5], self.channelParameter[19][5], self.channelListFontOrientation, str(entrys.number) + ' ' + entrys.servicename, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
+			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
+			ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
 		return ret
 #		write_log("error in entrys : " + str(entrys))
 #		return [entrys,
-#							(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.channelParameter[6]).argb(), skin.parseColor(self.channelParameter[7]).argb()),
+#							(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()),
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
@@ -603,12 +547,12 @@ class AdvancedEventLibraryMediaHub(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, service + ".png")
+			if isfile(pngname):
 				return pngname
 		if serviceName is not None:
-			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, serviceName + ".png")
+			if isfile(pngname):
 				return pngname
 		return None
 
@@ -725,10 +669,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 		if self.activeList == "TV":
 			selection = self["channelList"].getcurrentselection()
 			eventName = (selection.title, selection.eit)
-			self.session.openWithCallback(self.channel_changed, Editor, eventname=eventName)
+			self.session.openWithCallback(self.channel_changed, AdvancedEventLibrarySystem.Editor, eventname=eventName)
 		else:
 			selection = self["movieList"].getcurrentselection()
-			self.session.openWithCallback(self.movie_changed, Editor, service=selection.service, eventname=None)
+			self.session.openWithCallback(self.movie_changed, AdvancedEventLibrarySystem.Editor, service=selection.service, eventname=None)
 
 	def key_right_handler(self):
 		if self.switchWithPVR:
@@ -799,10 +743,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['channelList'].right()
 				new_idx = int(self['channelList'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (old_idx + 1) >= self.channelListLen:
-						dest = 0
-					else:
-						dest = old_idx + 1
+					dest = 0 if (old_idx + 1) >= self.channelListLen else old_idx + 1
 					self['channelList'].movetoIndex(dest)
 		elif what == "left":
 			old_idx = int(self['channelList'].getCurrentIndex())
@@ -813,10 +754,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['channelList'].left()
 				new_idx = int(self['channelList'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - 1) < 0:
-						dest = self.channelListLen - 1
-					else:
-						dest = old_idx - 1
+					dest = self.channelListLen - 1 if (new_idx - 1) < 0 else old_idx - 1
 					self['channelList'].movetoIndex(dest)
 		elif what == "down":
 			old_idx = int(self['channelList'].getCurrentIndex())
@@ -826,10 +764,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['channelList'].down()
 				new_idx = int(self['channelList'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (new_idx + self.channelParameter[14]) >= self.channelListLen:
-						dest = 0
-					else:
-						dest = new_idx + self.channelParameter[14]
+					dest = 0 if (new_idx + self.channelParameter[14]) >= self.channelListLen else new_idx + self.channelParameter[14]
 					self['channelList'].movetoIndex(dest)
 		elif what == "up":
 			old_idx = int(self['channelList'].getCurrentIndex())
@@ -840,10 +775,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['channelList'].up()
 				new_idx = int(self['channelList'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - self.channelParameter[14]) < 0:
-						dest = self.channelListLen - 1
-					else:
-						dest = new_idx - self.channelParameter[14]
+					dest = self.channelListLen - 1 if (new_idx - self.channelParameter[14]) < 0 else new_idx - self.channelParameter[14]
 					self['channelList'].movetoIndex(dest)
 		elif what == "pageDown":
 			self['channelList'].prevPage()
@@ -863,10 +795,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['movieList'].right()
 				new_idx = int(self['movieList'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (old_idx + 1) >= self.movieListLen:
-						dest = 0
-					else:
-						dest = old_idx + 1
+					dest = 0 if (old_idx + 1) >= self.movieListLen else old_idx + 1
 					self['movieList'].movetoIndex(dest)
 		elif what == "left":
 			old_idx = int(self['movieList'].getCurrentIndex())
@@ -877,10 +806,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['movieList'].left()
 				new_idx = int(self['movieList'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - 1) < 0:
-						dest = self.movieListLen - 1
-					else:
-						dest = old_idx - 1
+					dest = self.movieListLen - 1 if (new_idx - 1) < 0 else old_idx - 1
 					self['movieList'].movetoIndex(dest)
 		elif what == "down":
 			old_idx = int(self['movieList'].getCurrentIndex())
@@ -890,10 +816,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['movieList'].down()
 				new_idx = int(self['movieList'].getCurrentIndex())
 				if new_idx <= old_idx:
-					if (new_idx + self.movieParameter[14]) >= self.movieListLen:
-						dest = 0
-					else:
-						dest = new_idx + self.movieParameter[14]
+					dest = 0 if (new_idx + self.movieParameter[14]) >= self.movieListLen else new_idx + self.movieParameter[14]
 					self['movieList'].movetoIndex(dest)
 		elif what == "up":
 			old_idx = int(self['movieList'].getCurrentIndex())
@@ -904,10 +827,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self['movieList'].up()
 				new_idx = int(self['movieList'].getCurrentIndex())
 				if new_idx >= old_idx:
-					if (new_idx - self.movieParameter[14]) < 0:
-						dest = self.movieListLen - 1
-					else:
-						dest = new_idx - self.movieParameter[14]
+					dest = self.movieListLen - 1 if (new_idx - self.movieParameter[14]) < 0 else new_idx - self.movieParameter[14]
 					self['movieList'].movetoIndex(dest)
 		elif what == "pageDown":
 			self['movieList'].prevPage()
@@ -951,7 +871,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				self["Service"].newService(cs.service, self.current_event)
 			else:
 				self["Service"].newService(cs.service)
-		beginTime = datetime.datetime.fromtimestamp(cs.date)
+		beginTime = datetime.fromtimestamp(cs.date)
 		_timeInfo = beginTime.strftime("%d.%m.%Y - %H:%M")
 		timeText = "Aufnahme vom " + _timeInfo
 		self["timeInfo"].setText(timeText)
@@ -1000,15 +920,12 @@ class AdvancedEventLibraryMediaHub(Screen):
 		if extended_desc != "":
 			extended_desc += "\n\n"
 		extensions = (".txt", ".info")
-		info_file = os.path.realpath(ref.getPath())
-		name = os.path.basename(info_file)
+		info_file = realpath(ref.getPath())
+		name = basename(info_file)
 		ext_pos = name.rfind('.')
-		if ext_pos > 0:
-			name = (name[:ext_pos]).replace("_", " ")
-		else:
-			name = name.replace("_", " ")
+		name = (name[:ext_pos]).replace("_", " ") if ext_pos > 0 else name.replace("_", " ")
 		for ext in extensions:
-			if os.path.exists(info_file + ext):
+			if exists(info_file + ext):
 				f = info_file + ext
 				break
 		if not f:
@@ -1018,7 +935,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			if ext_len <= 5:
 				info_file = info_file[:ext_pos]
 				for ext in extensions:
-					if os.path.exists(info_file + ext):
+					if exists(info_file + ext):
 						f = info_file + ext
 						break
 		if f:
@@ -1038,7 +955,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = struct.unpack('>QI', packedCue)
+					cue = unpack('>QI', packedCue)
 					if cue[1] == 5:
 						movie_len = cue[0] / 90000
 						return movie_len
@@ -1059,7 +976,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = struct.unpack('>QI', packedCue)
+					cue = unpack('>QI', packedCue)
 					cut_list.append(cue)
 			except Exception as ex:
 				movie_len = -1
@@ -1071,12 +988,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			for (pts, what) in cut_list:
 				if what == 3:
 					last_end_point = pts / 90000
-
-		if movie_len > 0 and last_end_point is not None:
-			play_progress = (last_end_point * 100) / movie_len
-		else:
-			play_progress = 0
-
+		play_progress = (last_end_point * 100) / movie_len if movie_len > 0 and last_end_point is not None else 0
 		if play_progress > 100:
 			play_progress = 100
 		return play_progress
@@ -1115,3 +1027,19 @@ class MySetup(Setup):
 			self.session.open(TryQuitMainloop, 3)
 		else:
 			self.close()
+
+#################################################################################################################################################
+
+
+class PicLoader:
+	def __init__(self, width, height):
+		self.picload = ePicLoad()
+		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
+
+	def load(self, filename):
+		self.picload.startDecode(filename, 0, 0, False)
+		data = self.picload.getData()
+		return data
+
+	def destroy(self):
+		del self.picload

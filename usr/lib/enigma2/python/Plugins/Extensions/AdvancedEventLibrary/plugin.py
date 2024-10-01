@@ -7,21 +7,13 @@ from re import compile, IGNORECASE
 from pickle import load, dump
 from time import time
 from enigma import eEPGCache, eTimer, eServiceReference, addFont
-from Components.ActionMap import HelpableActionMap
-from Components.Button import Button
 from Components.config import config
-from Components.EpgList import EPG_TYPE_SINGLE
 from Components.FunctionTimer import functionTimer  # TODO: später dann from Janitor import functionTimer
-from Components.Label import Label
-from Components.Sources.StaticText import StaticText
-from Components.Pixmap import Pixmap
 from Plugins.Plugin import PluginDescriptor
-from Screens.HelpMenu import HelpableScreen
-from Screens.Screen import Screen
 from Tools.Directories import fileExists
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations, _  # for localized messages
-from Tools.AdvancedEventLibrary import getDB, convert2base64, getallEventsfromEPG, createBackup, aelGlobals
+from Tools.AdvancedEventLibrary import getDB, getallEventsfromEPG, createBackup, aelGlobals
 
 gSession = None
 ServiceTrack = None
@@ -109,10 +101,7 @@ def getMovieDescriptionFromTXT(ref):
 	info_file = realpath(ref.getPath())
 	name = basename(info_file)
 	ext_pos = name.rfind('.')
-	if ext_pos > 0:
-		name = (name[:ext_pos]).replace("_", " ")
-	else:
-		name = name.replace("_", " ")
+	name = (name[:ext_pos]).replace("_", " ") if ext_pos > 0 else name.replace("_", " ")
 	for ext in extensions:
 		if exists(info_file + ext):
 			f = info_file + ext
@@ -133,7 +122,6 @@ def getMovieDescriptionFromTXT(ref):
 				extended_desc = txtfile.read()
 		except OSError:
 			pass
-
 	return (name, extended_desc)
 
 
@@ -171,10 +159,7 @@ def open_aelMenu(session, **kwargs):  # Einstieg mit 'AEL-Übersicht'
 
 def aelMenu_in_mainmenu(menuid, **kwargs):
 	if menuid == 'mainmenu':
-		return [('Advanced-Event-Library',
-		  open_aelMenu,
-		  'Advanced-Event-Library',
-		  1)]
+		return [('Advanced-Event-Library', open_aelMenu, 'Advanced-Event-Library', 1)]
 	return []
 
 
