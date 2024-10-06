@@ -21,12 +21,14 @@
 		</convert>
 	</widget>
 	<!-- Button Bar -->
-	<ePixmap pixmap="buttons/red.png" position="90,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
-	<widget source="key_red" render="Label" position="130,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
-	<ePixmap pixmap="buttons/green.png" position="380,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
-	<widget source="key_green" render="Label" position="420,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
-	<ePixmap pixmap="buttons/yellow.png" position="670,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
-	<widget source="key_yellow" render="Label" position="710,686" size="240,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/red.png" position="30,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_red" render="Label" position="60,686" size="190,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/green.png" position="250,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_green" render="Label" position="280,686" size="190,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/yellow.png" position="470,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_yellow" render="Label" position="500,686" size="190,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
+	<ePixmap pixmap="buttons/blue.png" position="690,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
+	<widget source="key_blue" render="Label" position="720,686" size="190,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>
 	<eLabel position="1000,686" size="100,25" text="OK" font="Regular;20" halign="left" valign="center" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd" transparent="1" zPosition="1" />
 	<eLabel position="1100,686" size="100,25" text="Exit " font="Regular;20" halign="left" valign="center" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd" transparent="1" zPosition="1" />
 </screen>

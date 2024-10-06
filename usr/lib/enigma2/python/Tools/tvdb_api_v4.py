@@ -6,7 +6,7 @@ from json import dumps, load
 
 class Auth:
 	def __init__(self, url, pin=""):
-		loginInfo = {"apikey": b64decode('N2UwYTVjN2EtNTQ0NS00YWU2LTg4OTItOGZlYWQyYzc2ZTI3').decode()}
+		loginInfo = {"apikey": b64decode("N2UwYTVjN2EtNTQ0NS00YWU2LTg4OTItOGZlYWQyYzc2ZTI3Z"[:-1]).decode()}
 		if pin != "":
 			loginInfo["pin"] = pin
 		self.token = None
