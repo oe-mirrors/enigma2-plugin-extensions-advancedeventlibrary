@@ -3746,7 +3746,8 @@ class AELGlobals:
 		except Exception:
 			try:  # 2nd try without language and/or without year
 				response = libcall(**kwargs.pop("language", None).pop("year", None))
-			except Exception:
+			except Exception as errmsg:
+				aelGlobals.write_log(f"[{DEFAULT_MODULE_NAME}] ERROR in module 'callLibrary': {errmsg}")
 				response = ""
 		return response
 
