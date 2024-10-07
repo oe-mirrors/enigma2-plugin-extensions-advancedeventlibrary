@@ -24,7 +24,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -610,9 +610,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							if self.imageType == "cover":
 								if evt:
 									if evt[0][3] != '':
-										image = getImageFile(getPictureDir() + self.imageType + '/', evt[0][3])
+										image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', evt[0][3])
 							if image is None:
-								image = getImageFile(getPictureDir() + self.imageType + '/', name)
+								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
 						if 'Reportage' in startEvent[2]:
 							self.doculist.append((itm,))

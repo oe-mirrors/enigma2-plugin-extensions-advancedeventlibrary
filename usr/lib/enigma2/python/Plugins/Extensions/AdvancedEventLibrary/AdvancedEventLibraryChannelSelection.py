@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 
 htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
@@ -290,7 +290,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
+								image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, evt[0][3])
 								if image is not None:
 									self.nameCache[evt[0][3]] = str(image)
 							name = evt[0][3]
@@ -299,7 +299,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(getPictureDir() + self.channelImageType, events[0][1])
+								image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, events[0][1])
 								if image is not None:
 									self.nameCache[events[0][1]] = str(image)
 
@@ -763,7 +763,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(getPictureDir() + self.eventImageType, evt[0][3])
+									image = getImageFile(aelGlobals.LOCPATH + self.eventImageType, evt[0][3])
 									if image is not None:
 										self.nameCache[evt[0][3]] = str(image)
 								name = evt[0][3]
@@ -772,7 +772,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(getPictureDir() + self.eventImageType, event[1])
+									image = getImageFile(aelGlobals.LOCPATH + self.eventImageType, event[1])
 									if image is not None:
 										self.nameCache[event[1]] = str(image)
 

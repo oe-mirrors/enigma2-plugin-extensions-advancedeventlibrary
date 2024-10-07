@@ -3,12 +3,10 @@
 	<eLabel backgroundColor="#00050505" position="0,0" size="1280,150" zPosition="-10" />
 	<widget source="Title" render="Label" position="95,50" size="1110,100" font="Normal;35" halign="center" valign="top" foregroundColor="foreground" backgroundColor="background" transparent="1" />
 	<ePixmap pixmap="AELImages/info.png" scale="1" position="20,20" size="80,80" zPosition="2" alphatest="blend" />
-	<widget backgroundColor="background" font="Normal; 30" foregroundColor="foreground" halign="center" position="1000,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
+	<widget backgroundColor="background" font="Normal; 30" foregroundColor="foreground" halign="center" position="1000,50" render="Label" size="240,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
 		<convert type="ClockToText">Format: %H:%M</convert>
 	</widget>
-	<widget source="info" render="Label" position="500,140" size="1100,620" zPosition="1" valign="top" halign="left" font="Small;22" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
-	<widget source="status" render="Label" position="20,580" size="1240,100" zPosition="1" valign="center" halign="left" font="Small;25" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
-	<widget source="menulist" render="Listbox" position="25,140" size="460,520" zPosition="1" scrollbarMode="showOnDemand" transparent="1" foregroundColor="foreground" backgroundColor="black" foregroundColorSelected="background" backgroundColorSelected="foreground" enableWrapAround="1">
+	<widget source="menulist" render="Listbox" position="20,140" size="460,520" zPosition="1" scrollbarMode="showOnDemand" transparent="1" foregroundColor="foreground" backgroundColor="black" foregroundColorSelected="background" backgroundColorSelected="foreground" enableWrapAround="1">
 		<convert type="TemplatedMultiContent">
 			{"template": [
 					MultiContentEntryText(pos = (70, 1), size = (400, 29), font=0, flags = RT_HALIGN_LEFT, text = 0), # Screen
@@ -20,6 +18,8 @@
 			}
 		</convert>
 	</widget>
+	<widget source="info" render="Label" position="490,140" size="770,620" zPosition="1" valign="top" halign="left" font="Small;22" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
+	<widget source="status" render="Label" position="20,580" size="1240,100" zPosition="1" valign="center" halign="left" font="Small;25" transparent="1" foregroundColor="foreground" backgroundColor="black"/>
 	<!-- Button Bar -->
 	<ePixmap pixmap="buttons/red.png" position="30,686" size="25,25" alphatest="blend" transparent="1" scale="1"/>
 	<widget source="key_red" render="Label" position="60,686" size="190,25" zPosition="1" font="Regular;20" halign="left" transparent="1" valign="center" noWrap="1" foregroundColor="menu-buttons-frgrnd" backgroundColor="fullscreen-buttons-bkgrnd"/>

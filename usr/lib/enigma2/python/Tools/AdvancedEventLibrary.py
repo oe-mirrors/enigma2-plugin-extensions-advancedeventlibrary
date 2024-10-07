@@ -1,4 +1,3 @@
-__all__ = ['randbelow']   # TODO: Was das?
 from base64 import b64decode, b64encode
 from datetime import datetime
 from difflib import get_close_matches
@@ -9,14 +8,14 @@ from linecache import getline
 from os import makedirs, system, remove, walk, access, stat, listdir, W_OK
 from os.path import join, exists, basename, getmtime, isdir, getsize
 from PIL import Image
-from random import SystemRandom, choice
+from random import randrange, choice
 from re import sub, compile, findall, IGNORECASE, MULTILINE, DOTALL
 from requests import get, exceptions
 from shutil import copy2, copyfileobj, move
 from sqlite3 import connect
 from subprocess import check_output
 from time import time, localtime, mktime
-from threading import Thread
+from twisted.internet.reactor import callInThread
 from urllib.parse import urlparse, urlunparse
 from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop, ePicLoad
 from skin import parameters
@@ -32,8 +31,8 @@ import tvdbsimple as tvdb
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
-config.plugins.AdvancedEventLibrary.Location = ConfigText(default=f"{defaultRecordingLocation().replace('movie/', '')}AdvancedEventLibrary/")
-config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AdvancedEventLibraryBackup/")
+config.plugins.AdvancedEventLibrary.Location = ConfigText(default=f"{defaultRecordingLocation().replace('movie/', '')}AEL/")
+config.plugins.AdvancedEventLibrary.Backup = ConfigText(default="/media/hdd/AELbackup/")
 config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1, 100))
 config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))
 config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)
@@ -72,9 +71,7 @@ config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
 config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
 
-dir = config.plugins.AdvancedEventLibrary.Location.value
-if "AdvancedEventLibrary/" not in dir:
-	dir = f"{dir}AdvancedEventLibrary/"
+
 sPDict = {}
 if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 	sPDict = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
@@ -88,969 +85,25 @@ ADDLOG = config.plugins.AdvancedEventLibrary.Log.value
 coverqualityDict = {"w300": "300x169", "w780": "780x439", "w1280": "1280x720", "w1920": "1920x1080"}
 posterqualityDict = {"w185": "185x280", "w342": "342x513", "w500": "500x750", "w780": "780x1170"}
 tmdb_genres = {10759: "Action-Abenteuer", 16: "Animation", 10762: "Kinder", 10763: "News", 10764: "Reality", 10765: "Sci-Fi-Fantasy", 10766: "Soap", 10767: "Talk", 10768: "War & Politics", 28: "Action", 12: "Abenteuer", 35: "Comedy", 80: "Crime", 99: "Dokumentation", 18: "Drama", 10751: "Familie", 14: "Fantasy", 36: "History", 27: "Horror", 10402: "Music", 9648: "Mystery", 10749: "Romance", 878: "Science-Fiction", 10770: "TV-Movie", 53: "Thriller", 10752: "War", 37: "Western"}
-convNames = ['Polizeiruf', 'Tatort', 'Die Bergpolizei', 'Axte X', 'ANIXE auf Reisen', 'Close Up', 'Der Zürich-Krimi', 'Buffy', 'Das Traumschiff', 'Die Land', 'Faszination Berge', 'Hyperraum', 'Kreuzfahrt ins Gl', 'Lost Places', 'Mit offenen Karten', 'Newton', 'Planet Schule', 'Punkt 12', 'Regular Show', 'News Reportage', 'News Spezial', 'S.W.A.T', 'Xenius', 'Der Barcelona-Krimi', 'Die ganze Wahrheit', 'Firmen am Abgrund', 'GEO Reportage', 'Kommissar Wallander', 'Rockpalast', 'SR Memories', 'Wildes Deutschland', 'Wilder Planet', 'Die rbb Reporter', 'Flugzeug-Katastrophen', 'Heute im Osten', 'Kalkofes Mattscheibe', 'Neue Nationalparks', 'Auf Entdeckungsreise']
+# convNames = ['Polizeiruf', 'Tatort', 'Die Bergpolizei', 'Axte X', 'ANIXE auf Reisen', 'Close Up', 'Der Zürich-Krimi', 'Buffy', 'Das Traumschiff', 'Die Land', 'Faszination Berge', 'Hyperraum', 'Kreuzfahrt ins Gl', 'Lost Places', 'Mit offenen Karten', 'Newton', 'Planet Schule', 'Punkt 12', 'Regular Show', 'News Reportage', 'News Spezial', 'S.W.A.T', 'Xenius', 'Der Barcelona-Krimi', 'Die ganze Wahrheit', 'Firmen am Abgrund', 'GEO Reportage', 'Kommissar Wallander', 'Rockpalast', 'SR Memories', 'Wildes Deutschland', 'Wilder Planet', 'Die rbb Reporter', 'Flugzeug-Katastrophen', 'Heute im Osten', 'Kalkofes Mattscheibe', 'Neue Nationalparks', 'Auf Entdeckungsreise']
 excludeNames = ['RTL UHD', '--', 'Sendeschluss', 'Dokumentation', 'EaZzzy', 'MediaShop', 'Dauerwerbesendung', 'Impressum']
 coverIDs = [3, 8, 11, 15]
 posterIDs = [2, 7, 14]
 ApiKeys = {"tmdb": ["ZTQ3YzNmYzJkYzRlMWMwN2UxNGE4OTc1YjI5MTE1NWI=", "MDA2ZTU5NGYzMzFiZDc1Nzk5NGQwOTRmM2E0ZmMyYWM=", "NTRkMzg1ZjBlYjczZDE0NWZhMjNkNTgyNGNiYWExYzM="],
 		   	"tvdb": ["NTRLVFNFNzFZWUlYM1Q3WA==", "MzRkM2ZjOGZkNzQ0ODA5YjZjYzgwOTMyNjI3ZmE4MTM=", "Zjc0NWRiMDIxZDY3MDQ4OGU2MTFmNjY2NDZhMWY4MDQ="],
-			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]
+			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]  # ["fd0b9216", "bf911bfc", "9fd71c32"]
 			}
-networks = {
-	'3sat': 'DEU',
-	'A&E': 'USA',
-	'AAG TV': 'PAK',
-	'Aaj TV': 'PAK',
-	'ABC (US)': 'USA',
-	'ABC (AU)': 'AUS',
-	'ABC (JA)': 'JPN',
-	'ABC (PH)': 'PHL',
-	'ABC Family': 'USA',
-	'ABS-CBN Broadcasting Company': 'PHL',
-	'Abu Dhabi TV': 'ARE',
-	'Adult Channel': 'GBR',
-	'Al Alam': 'IRN',
-	'Al Arabiyya': 'ARE',
-	'Al Jazeera': 'QAT',
-	'Alpha TV GUJARATI': 'IND',
-	'Alpha TV PUNJABI': 'IND',
-	'America One Television Network': 'USA',
-	'Animal Planet': 'USA',
-	'Anime Network': 'USA',
-	'ANT1': 'GRC',
-	'Antena 3': 'ESP',
-	'ARY Digital': 'PAK',
-	'ARY One World': 'PAK',
-	'ARY Shopping Channel': 'PAK',
-	'ARY Zouq': 'PAK',
-	'ATN Aastha Channel': 'IND',
-	'AXN': 'USA',
-	'B4U Movies': 'GBR',
-	'B4U Music': 'GBR',
-	'BabyFirstTV': 'USA',
-	'BBC America': 'USA',
-	'BBC Canada': 'CAN',
-	'BBC Four': 'GBR',
-	'BBC Kids': 'CAN',
-	'BBC News': 'GBR',
-	'BBC One': 'GBR',
-	'BBC Parliament': 'GBR',
-	'BBC Prime': 'GBR',
-	'BBC Three': 'GBR',
-	'BBC Two': 'GBR',
-	'BBC World News': 'GBR',
-	'FYI': 'USA',
-	'Boomerang': 'USA',
-	'BR': 'DEU',
-	'BR-alpha': 'DEU',
-	'Bravo (US)': 'USA',
-	'Bravo (UK)': 'GBR',
-	'Bravo (CA)': 'CAN',
-	'Bubble Hits': 'IRL',
-	'Canal+': 'FRA',
-	'Canvas/Ketnet': 'BEL',
-	'Carlton Television': 'GBR',
-	'Cartoon Network': 'USA',
-	'CBBC': 'GBR',
-	'CBC (CA)': 'CAN',
-	'CBeebies': 'GBR',
-	'CBS': 'USA',
-	'CCTV': 'CHN',
-	'Challenge': 'GBR',
-	'Channel [V]': 'CHN',
-	'Channel 4': 'GBR',
-	'Channel 5': 'SGP',
-	'Channel 6': 'IRL',
-	'Channel 8': 'SGP',
-	'Channel U': 'SGP',
-	'Chart Show TV': 'GBR',
-	'Chorus Sports': 'IRL',
-	'City Channel': 'IRL',
-	'Classic Arts Showcase': 'USA',
-	'Classic FM TV': 'GBR',
-	'CN8': 'USA',
-	'CNBC TV18': 'IND',
-	'CNN': 'USA',
-	'Comedy Channel': 'USA',
-	'CPAC': 'CAN',
-	'C-Span': 'USA',
-	'CTV': 'CAN',
-	'DR1': 'DNK',
-	'Das Erste': 'DEU',
-	'Dawn News': 'PAK',
-	'Deutsche Welle TV': 'DEU',
-	'Discovery': 'USA',
-	'Discovery Kids': 'USA',
-	'Dish TV': 'USA',
-	'Disney Channel (US)': 'USA',
-	'WOWOW': 'JPN',
-	'Disney Cinemagic': 'GBR',
-	'Doordarshan National': 'IND',
-	'DD-Gujarati': 'IND',
-	'Doordarshan News': 'IND',
-	'Doordarshan Sports': 'IND',
-	'E!': 'USA',
-	'E! (CA)': 'CAN',
-	'E4': 'GBR',
-	'EBS': 'KOR',
-	'ERT': 'GRC',
-	'ESPN': 'USA',
-	'ESPN Asia': 'HKG',
-	'ESPN Hong Kong': 'HKG',
-	'ESPN India': 'IND',
-	'ESPN Philippines': 'PHL',
-	'ESPN Taiwan': 'TWN',
-	'ETV Gujarati': 'IND',
-	'Eurosport': 'GBR',
-	'Family (CA)': 'CAN',
-	'Fashion TV': 'FRA',
-	'Five': 'GBR',
-	'Five Life': 'GBR',
-	'Five US': 'GBR',
-	'Fox Reality': 'USA',
-	'France 2': 'FRA',
-	'France 3': 'FRA',
-	'France 4': 'FRA',
-	'France 5': 'FRA',
-	'France Ô': 'FRA',
-	'Fred TV': 'USA',
-	'Fuji TV': 'JPN',
-	'FUNimation Channel': 'USA',
-	'FX': 'USA',
-	'GEO Super': 'PAK',
-	'Geo TV': 'PAK',
-	'GMA': 'PHL',
-	'GSN': 'USA',
-	'Guardian Television Network': 'USA',
-	'Hallmark Channel': 'USA',
-	'Indus Music': 'PAK',
-	'Indus News': 'PAK',
-	'Indus Vision': 'PAK',
-	'Ion Television': 'USA',
-	'KanaalTwee': 'BEL',
-	'Kashish TV': 'PAK',
-	'KBS': 'KOR',
-	'Kerrang! TV': 'GBR',
-	'Kids and Teens TV': 'USA',
-	'KIKA': 'DEU',
-	'Kiss': 'GBR',
-	'KTN': 'KEN',
-#	'KTN': 'PAK',
-	'LCI': 'FRA',
-	'Liberty Channel': 'USA',
-	'Liberty TV': 'GBR',
-	'Living': 'GBR',
-	'M6': 'FRA',
-	'Magic': 'GBR',
-	'MATV': 'GBR',
-	'MBS': 'JPN',
-	'MDR': 'DEU',
-	'Mega Channel': 'GRC',
-	'MTV (US)': 'USA',
-	'MTV Base': 'GBR',
-	'MTV Dance': 'GBR',
-	'MTV Hits': 'USA',
-	'MTV2': 'USA',
-	'MBC': 'KOR',
-	'MUTV': 'GBR',
-	'National Geographic (US)': 'USA',
-	'NBC': 'USA',
-	'NDR': 'DEU',
-	'NDTV 24x7': 'IND',
-	'NDTV India': 'IND',
-	'New Tang Dynasty TV': 'USA',
-	'News One': 'PAK',
-	'NHK': 'JPN',
-	'Nick at Nite': 'USA',
-	'Nick GAS': 'USA',
-	'Nickelodeon': 'USA',
-	'NickToons': 'USA',
-	'Nine Network': 'AUS',
-	'Noggin': 'USA',
-	'NTA': 'NGA',
-	'NTV (JP)': 'JPN',
-	'Ovation TV': 'USA',
-	'Paramount Comedy': 'GBR',
-	'PBS': 'USA',
-	'PBS Kids Sprout': 'USA',
-	'Phoenix': 'DEU',
-	'Phoenix TV': 'CHN',
-	'Playboy TV': 'USA',
-	'Playhouse Disney': 'USA',
-	'PlayJam': 'GBR',
-	'Press TV': 'IRN',
-	'PRO TV': 'ROU',
-	'PTV Bolan': 'PAK',
-	'PTV Global': 'USA',
-	'PTV Home': 'PAK',
-	'PTV News': 'PAK',
-	'Pub Channel': 'GBR',
-	'Q TV': 'GBR',
-	'QTV': 'PAK',
-	'QVC': 'USA',
-	'Radio Bremen': 'DEU',
-	'Radio Canada': 'CAN',
-	'RAI': 'ITA',
-	'RBB': 'DEU',
-	'RCTI': 'IDN',
-	'Record': 'BRA',
-	'Red Hot TV': 'GBR',
-	'Rede Globo': 'BRA',
-	'Revelation TV': 'GBR',
-	'rmusic TV': 'GBR',
-	'Royal News': 'PAK',
-	'RTÉ One': 'IRL',
-	'RTÉ Two': 'IRL',
-	'RTL Television': 'DEU',
-	'RTP Açores': 'PRT',
-	'RTP África': 'PRT',
-	'RTP Internacional': 'PRT',
-	'RTP Madeira': 'PRT',
-	'RTP N': 'PRT',
-	'RTP1': 'PRT',
-	'S4/C': 'GBR',
-	'S4C2': 'GBR',
-	'Sab TV': 'IND',
-	'Sahara ONE': 'IND',
-	'Sanskar': 'IND',
-	'SBS': 'KOR',
-	'SBS (AU)': 'AUS',
-	'Scuzz': 'GBR',
-	'SET MAX': 'IND',
-	'Setanta Ireland': 'IRL',
-	'Seven Network': 'AUS',
-	'Showtime': 'USA',
-	'SIC': 'PRT',
-	'SIC Comédia': 'PRT',
-	'SIC Mulher': 'PRT',
-	'SIC Notícias': 'PRT',
-	'SIC Radical': 'PRT',
-	'SIC Sempre Gold': 'PRT',
-	'Sirasa': 'LKA',
-	'Sky Box Office': 'GBR',
-	'Sky Cinema (UK)': 'GBR',
-	'Sky Movies': 'GBR',
-	'Sky News': 'GBR',
-	'Sky News Ireland': 'IRL',
-	'Sky Sports': 'GBR',
-	'Sky Travel': 'GBR',
-	'Sky1': 'GBR',
-	'Sky2': 'GBR',
-	'Sky3': 'GBR',
-	'Sleuth': 'USA',
-	'Smash Hits': 'GBR',
-	'SOAPnet': 'USA',
-	'Sony Entertainment Television': 'USA',
-	'Sony TV': 'IND',
-	'Spike TV': 'USA',
-	'STAR Gold': 'IND',
-	'STAR Movies': 'HKG',
-	'STAR News': 'IND',
-	'STAR Plus': 'IND',
-	'STAR Sports Asia': 'HKG',
-	'STAR Sports Hong Kong': 'HKG',
-	'STAR Sports India': 'IND',
-	'STAR Sports Southeast Asia': 'HKG',
-	'STAR Sports Malaysia': 'MYS',
-	'STAR Sports Taiwan': 'TWN',
-	'STAR Vijay': 'IND',
-	'Star World': 'HKG',
-	'Starz!': 'USA',
-	'Studio 23': 'PHL',
-	'STV (UK)': 'GBR',
-	'Style': 'USA',
-	'SUN music': 'IND',
-	'SUN news': 'IND',
-	'SUN TV': 'IND',
-	'Superstation WGN': 'USA',
-	'Swarnawahini': 'LKA',
-	'SWR': 'DEU',
-	'Tokyo Broadcasting System': 'JPN',
-	'TBS': 'USA',
-	'TCM': 'GBR',
-	'TeleG': 'GBR',
-	'Telemundo': 'USA',
-	'Televisa': 'MEX',
-	'TEN Sports': 'IND',
-	'TF1': 'FRA',
-	'The Amp': 'GBR',
-	'The Box': 'GBR',
-	'The CW': 'USA',
-	'The Den': 'IRL',
-	'TeenNick': 'USA',
-	'The WB': 'USA',
-	'The Weather Channel': 'USA',
-	'TMC': 'MCO',
-	'TMF': 'NLD',
-	'TNT': 'USA',
-	'Toon Disney': 'USA',
-	'TQS': 'CAN',
-	'Travel Channel (UK)': 'GBR',
-	'Treehouse TV': 'CAN',
-	'truTV': 'USA',
-	'Turner South': 'USA',
-	'TV Asahi': 'JPN',
-	'TV Cabo': 'PRT',
-	'TV Chile': 'CHL',
-	'TV Guide Channel': 'USA',
-	'TV Land': 'USA',
-	'TVOne Global': 'PAK',
-	'TV Tokyo': 'JPN',
-	'TV5 Monde': 'FRA',
-	'TVB': 'CHN',
-	'TVBS': 'CHN',
-	'TVE': 'ESP',
-	'TVG Network': 'USA',
-	'TVI': 'PRT',
-	'TVM': 'MLT',
-	'TVRI': 'IDN',
-	'TVS Sydney': 'AUS',
-	'UK Entertainment Channel': 'GBR',
-	'Eden': 'GBR',
-	'UKTV Drama': 'GBR',
-	'UKTV Food': 'GBR',
-	'Dave': 'GBR',
-	'UKTV Gold': 'GBR',
-	'UKTV History': 'GBR',
-	'UKTV Style': 'GBR',
-	'Univision': 'USA',
-	'UNTV 37': 'PHL',
-	'UPN': 'USA',
-	'USA Network': 'USA',
-	'UTV': 'IRL',
-	'Varsity TV': 'USA',
-	'VH1': 'USA',
-	'VH1 Classics': 'USA',
-	'VijfTV': 'BEL',
-	'Volksmusik TV': 'DEU',
-	'VT4': 'BEL',
-	'VTM': 'BEL',
-	'Warner Channel': 'USA',
-	'WDR': 'DEU',
-	'WE tv': 'USA',
-	'XY TV': 'USA',
-	'YLE': 'FIN',
-	'YTV (CA)': 'CAN',
-	'ZDF': 'DEU',
-	'Zee Gujarati': 'IND',
-	'Zee Cinema': 'IND',
-	'Zee Muzic': 'IND',
-	'Zee TV': 'IND',
-	'ZOOM': 'IND',
-	'ITV': 'GBR',
-	'BBC HD': 'GBR',
-	'ITV1': 'GBR',
-	'ITV2': 'GBR',
-	'ITV3': 'GBR',
-	'ITV4': 'GBR',
-	'FOX (US)': 'USA',
-	'Space': 'CAN',
-	'HBO': 'USA',
-	'SciFi': 'USA',
-	'Syndicated': '',
-	'Showcase (CA)': 'CAN',
-	'Teletoon': 'CAN',
-	'Télétoon': 'FRA',
-	'TVNZ': 'NZL',
-	'Comedy Central (US)': 'USA',
-	'TLC': 'USA',
-	'Food Network': 'USA',
-	'Global': 'CAN',
-	'DuMont Television Network': 'USA',
-	'History': 'USA',
-	'Encore': 'USA',
-	'Lifetime': 'USA',
-	'één': 'BEL',
-	'G4': 'USA',
-	'Revision3': 'USA',
-	'Network Ten': 'AUS',
-	'Cinemax': 'USA',
-	'Canale 5': 'ITA',
-	'Oxygen': 'USA',
-	'Court TV': 'USA',
-	'HGTV': 'USA',
-	'CTC': 'JPN',
-	'NRK1': 'NOR',
-	'NRK2': 'NOR',
-	'NRK3': 'NOR',
-	'NRK Super': 'NOR',
-	'TV 2': 'NOR',
-	'TV 2 Zebra': 'NOR',
-	'TV 2 Filmkanalen': 'NOR',
-	'TV 2 Nyhetskanalen': 'NOR',
-	'TV 2 Sport': 'NOR',
-	'TV 2 Science Fiction': 'NOR',
-	'TVNorge': 'NOR',
-	'Viasat 4': 'NOR',
-	'FEM': 'GBR',
-	'Syfy': 'USA',
-	'IFC': 'USA',
-	'SundanceTV': 'USA',
-#	'TV 2': 'DNK',
-	'TV 3': 'DNK',
-	'Speed': 'USA',
-	'TV 4': 'POL',
-	'TVN': 'POL',
-	'TVN Turbo': 'POL',
-	'TVP SA': 'POL',
-	'TVP1': 'POL',
-	'TVP2': 'POL',
-	'Tokyo MX': 'JPN',
-	'SAT.1': 'DEU',
-	'ProSieben': 'DEU',
-	'TV4': 'SWE',
-	'History (CA)': 'CAN',
-	'BS11': 'JPN',
-	'Arte': 'FRA',
-	'Planet Green': 'USA',
-	'Schweizer Fernsehen': 'CHE',
-	'CBC (JP)': 'JPN',
-	'HBO Canada': 'CAN',
-	'The Movie Network': 'CAN',
-	'Movie Central': 'CAN',
-	'Travel Channel': 'USA',
-	'AMC': 'USA',
-	'ORF 1': 'AUT',
-	'ORF 2': 'AUT',
-	'Animax': 'JPN',
-	'Telecinco': 'ESP',
-	'La Siete': 'ESP',
-	'TVA (JP)': 'JPN',
-	'Investigation Discovery': 'USA',
-	'TV Azteca': 'MEX',
-	'Séries+': 'CAN',
-	'V': 'CAN',
-	'Television Osaka': 'JPN',
-	'SVT': 'SWE',
-	'Ztélé': 'CAN',
-	'Vrak.TV': 'CAN',
-	'Casa': 'CAN',
-	'Logo': 'USA',
-	'Disney XD': 'USA',
-	'Prime (NZ)': 'NZL',
-	'2×2': 'RUS',
-	'TV Nova': 'CZE',
-	'Ceská televize': 'CZE',
-	'Prima televize': 'CZE',
-	'Science Channel': 'USA',
-	'DIY Network': 'USA',
-	'AVRO': 'NLD',
-	'NCRV': 'NLD',
-	'KRO': 'NLD',
-	'VPRO': 'NLD',
-	'VARA': 'NLD',
-	'BNN (NL)': 'NLD',
-	'EO': 'NLD',
-	'TROS': 'NLD',
-	'Veronica': 'NLD',
-	'SBS 6': 'NLD',
-	'NET 5': 'NLD',
-	'BET': 'USA',
-	'ORTF': 'FRA',
-	'Fox Business': 'USA',
-	'AT-X': 'JPN',
-	'OWN': 'USA',
-	'CMT': 'USA',
-	'Cooking Channel': 'USA',
-	'HOT': 'ISR',
-	'yes': 'ISR',
-	'Current TV': 'USA',
-	'The Hub': 'USA',
-	'1+1': 'UKR',
-	'ICTV': 'UKR',
-	'Military Channel': 'USA',
-	'WealthTV': 'USA',
-	'MTV3': 'FIN',
-	'Nelonen': 'FIN',
-	'TV3 (NZ)': 'NZL',
-	'TV 2 Zulu': 'DNK',
-	'TV 2 Charlie': 'DNK',
-	'TV3+': 'DNK',
-	'TV3 Puls': 'DNK',
-	'DR2': 'DNK',
-	'DR K': 'DNK',
-	'DR Ramasjang': 'DNK',
-	'Kanal 4': 'DNK',
-	'Kanal 5': 'DNK',
-	'dk4': 'DNK',
-	'Magyar Televízió': 'HUN',
-	'Outdoor Channel': 'USA',
-	'The Sportsman Channel': 'USA',
-	'ATV': 'AUT',
-	'Puls 4': 'AUT',
-	'Servus TV': 'AUT',
-	'LifeStyle': 'AUS',
-	'SVT1': 'SWE',
-	'SVT2': 'SWE',
-	'Kunskapskanalen': 'SWE',
-	'SVT24': 'SWE',
-	'SVTB': 'SWE',
-	'TV11': 'SWE',
-	'TV4 Plus': 'SWE',
-	'TV4 Guld': 'SWE',
-	'TV4 Fakta': 'SWE',
-	'TV4 Komedi': 'SWE',
-	'TV4 Science Fiction': 'SWE',
-	'TV3 (SE)': 'SWE',
-	'TV6': 'SWE',
-	'TV7 (SE)': 'SWE',
-	'TV8': 'SWE',
-	'HDNet': 'USA',
-	'JIM': 'FIN',
-	'SuoimiTV': 'FIN',
-	'Sub': 'FIN',
-	'MoonTV': 'FIN',
-	'ReelzChannel': 'USA',
-	'BYU Television': 'USA',
-	'DMAX (DE)': 'DEU',
-	'OLN': 'CAN',
-	'Action': 'CAN',
-	'Rai 1': 'ITA',
-	'Rai 2': 'ITA',
-	'Rai 3': 'ITA',
-	'Rete 4': 'ITA',
-	'Italia 1': 'ITA',
-	'Joi': 'ITA',
-	'Mya': 'ITA',
-	'Steel': 'ITA',
-	'Fox (IT)': 'ITA',
-	'Fox Life': 'ITA',
-	'Fox Crime': 'ITA',
-	'RTL 4': 'NLD',
-	'RTL 5': 'NLD',
-	'RTL 7': 'NLD',
-	'RTL 8': 'NLD',
-	'CNBC': 'USA',
-	'ZDF.Kultur': 'DEU',
-	'ZDFneo': 'DEU',
-	'Kids Station': 'JPN',
-	'Watch': 'GBR',
-	'YTV (JP)': 'JPN',
-	'TNU': 'URY',
-	'Canal 10 Saeta': 'URY',
-	'Teledoce': 'URY',
-	'Canal 4 Montecarlo': 'URY',
-	'TevéCiudad': 'URY',
-	'Encuentro': 'ARG',
-	'TV Pública': 'ARG',
-	'Einsfestival': 'DEU',
-	'SR': 'DEU',
-	'Kyoto Broadcasting System': 'JPN',
-	'YTV (UK)': 'GBR',
-	'Velocity': 'USA',
-	'ITV Granada': 'GBR',
-	'Netflix': 'USA',
-	'NTR': 'NLD',
-	'TV3 (ES)': 'ESP',
-	'BNT1': 'BGR',
-	'bTV': 'BGR',
-	'NovaTV': 'BGR',
-	'TV7 (BG)': 'BGR',
-	'MNN': 'USA',
-	'Voyage': 'FRA',
-	'Fox8': 'AUS',
-	'CI': 'AUS',
-	'LifeStyle FOOD': 'AUS',
-	'LifeStyle HOME': 'AUS',
-	'MSNBC': 'USA',
-	'NHNZ': 'NZL',
-#	'Kanal 5': 'SWE',
-	'RVU': 'NLD',
-	'Jupiter Broadcasting ': 'USA',
-	'TWiT': 'USA',
-	'Smithsonian Channel': 'USA',
-	'Discovery HD World': 'SGP',
-	'Discovery Turbo UK': 'GBR',
-	'Discovery Turbo': 'USA',
-	'Discovery Science': 'USA',
-	'FOX Traveller': 'IND',
-	'DDR1': 'DEU',
-	'G4 Canada': 'CAN',
-	'H2': 'USA',
-	'TV3 (NO)': 'NOR',
-	'TG4': 'IRL',
-	'Sky Arts': 'GBR',
-	'ABC1': 'AUS',
-	'ABC2': 'AUS',
-	'ABC3': 'AUS',
-	'ABC4Kids': 'AUS',
-	'ABC News 24': 'AUS',
-	'Fuel TV': 'USA',
-	'RT': 'RUS',
-	'Russia Today': 'RUS',
-	'Télé-Québec': 'CAN',
-	'FOX (FI)': 'FIN',
-	'C31': 'AUS',
-	'La7': 'ITA',
-	'LaSexta': 'ITA',
-	'Cuatro': 'ESP',
-	'YouTube': 'USA',
-	'TNT Serie': 'DEU',
-	'TFO': 'CAN',
-	'TVA': 'CAN',
-	'Slice': 'CAN',
-	'IKON': 'NLD',
-	'KBS TV1': 'KOR',
-	'KBS TV2': 'KOR',
-	'KBS World': 'KOR',
-	'FOX SPORTS': 'AUS',
-	'City': 'CAN',
-	'tvN': 'KOR',
-	'Sky Atlantic': 'GBR',
-	'Pick TV': 'GBR',
-	'Niconico': 'JPN',
-	'W9': 'FRA',
-	'Antenne 2': 'FRA',
-	'SET TV': 'TWN',
-#	'Channel 5': 'GBR',
-	'Oasis HD': 'CAN',
-	'eqhd': 'CAN',
-	'radX': 'CAN',
-	'HIFI': 'CAN',
-	'La Une': 'BEL',
-	'La Deux': 'BEL',
-	'La Trois': 'BEL',
-	'RTL TVI': 'BEL',
-	'Club RTL': 'BEL',
-	'Plug RTL': 'BEL',
-	'SBT': 'BRA',
-	'Multishow': 'BRA',
-	'Audience Network': 'USA',
-	'Sky Uno': 'ITA',
-	'Cielo': 'ITA',
-	'VIER': 'BEL',
-	'2BE': 'BEL',
-	'Tele 5': 'DEU',
-	'Hulu': 'USA',
-	'Star TV': 'TUR',
-	'Show TV': 'TUR',
-	'Kanal D': 'TUR',
-	'Rooster Teeth': 'USA',
-	'here!': 'USA',
-	'Prime (BE)': 'BEL',
-	'laSexta': 'ESP',
-	'GNT': 'BRA',
-	'NT1': 'FRA',
-	'NBCSN': 'USA',
-	'Destination America': 'USA',
-	'ARTV': 'CAN',
-	'Yahoo! Screen': 'USA',
-	'Duna TV': 'HUN',
-	'Hír TV': 'HUN',
-	'National Geographic Adventure': 'USA',
-	'Nat Geo Wild': 'USA',
-	'More4': 'GBR',
-	'National Geographic (UK)': 'GBR',
-	'TV Aichi': 'JPN',
-	'FTV': 'TWN',
-	'CTV (CN)': 'CHN',
-	'DR3': 'DNK',
-	'Sky Cinema (IT)': 'ITA',
-	'TV Cultura': 'BRA',
-	'MTV Italia': 'ITA',
-	'TV3 (IE)': 'IRL',
-	'EinsPlus': 'DEU',
-	'TRT 1': 'TUR',
-	'RTL': 'LUX',
-	'ATV Türkiye': 'TUR',
-	'RCN TV': 'COL',
-	'Caracol TV': 'COL',
-	'Venevision': 'VEN',
-	'Televen': 'VEN',
-	'RCTV': 'VEN',
-	'Hrvatska radiotelevizija': 'HRV',
-	'tvk': 'JPN',
-	'Amazon': 'USA',
-	'MBC Plus Media': 'KOR',
-	'MBN': 'KOR',
-	'CGV': 'KOR',
-	'OCN': 'KOR',
-	'Fox Channel': 'DEU',
-	'Ustream': 'USA',
-	'BTV': 'CHN',
-	'Mnet': 'KOR',
-	'Australian Christian Channel': 'AUS',
-	'The Africa Channel': 'GBR',
-	'Esquire Network': 'USA',
-	'ORF III': 'AUT',
-	'Nolife': 'FRA',
-	'TestTube': 'USA',
-	'jTBC': 'KOR',
-	'Hunan TV': 'CHN',
-	'La Cinq': 'FRA',
-	'AlloCiné': 'FRA',
-	'FXX': 'USA',
-	'BBC ALBA': 'GBR',
-	'TVGN': 'USA',
-	'SABC1': 'ZAF',
-	'SABC2': 'ZAF',
-	'SABC3': 'ZAF',
-	'SoHo': 'AUS',
-	'TheBlaze': 'USA',
-	'Comedy (CA)': 'CAN',
-	'MTV (UK)': 'GBR',
-	'TV One (US)': 'USA',
-	'Crackle': 'USA',
-	'Nick Jr.': 'USA',
-	'Gulli': 'FRA',
-	'Canal J': 'FRA',
-	'Syndication': 'USA',
-	'FOX Sports 1': 'USA',
-	'FOX Sports 2': 'USA',
-	'Chérie 25': 'FRA',
-	'NOS': 'NLD',
-	'Colors': 'IND',
-	'Omroep MAX': 'NLD',
-	'PowNed': 'NLD',
-	'WNL': 'NLD',
-	'The Verge': 'USA',
-	'WGN America': 'USA',
-	'Adult Swim': 'USA',
-	'Super Channel': 'CAN',
-	'RLTV': 'USA',
-	'W Network': 'CAN',
-	'PTS': 'TWN',
-	'PTS HD': 'TWN',
-	'Hakka TV': 'TWN',
-	'TITV': 'TWN',
-	'CTS': 'TWN',
-	'CTi TV': 'TWN',
-	'ETTV': 'TWN',
-	'ETTV Yoyo': 'TWN',
-	'GTV': 'TWN',
-	'MTV Mandarin': 'TWN',
-	'NTV (TW)': 'TWN',
-	'SET Metro': 'TWN',
-	'STAR Chinese Channel': 'TWN',
-	'TTV': 'TWN',
-	'TVBS Entertainment Channel': 'TWN',
-	'Videoland Television Network': 'TWN',
-	'DaAi TV': 'TWN',
-	'Much TV': 'TWN',
-	'Aizo TV': 'TWN',
-	'STV (TW)': 'TWN',
-	'Nou 24': 'ESP',
-	'Nou Televisió': 'ESP',
-	'Teletama': 'JPN',
-	'Toei Channel': 'JPN',
-	'CTV (JP)': 'JPN',
-	'VOX': 'DEU',
-	'El Rey Network': 'USA',
-	'Sky Living': 'GBR',
-	'Channel 3': 'THA',
-	'Kampüs TV': 'TUR',
-	'Life OK': 'IND',
-	'Canal Once': 'MEX',
-	'Food Network Canada': 'CAN',
-	'Al Jazeera America': 'USA',
-	'HGTV Canada': 'CAN',
-	'Discovery Shed': 'GBR',
-	'Pivot': 'USA',
-#	'TVN': 'CHL',
-	'Canal 13': 'CHL',
-	'MavTV': 'USA',
-	'Great American Country': 'USA',
-	'D8': 'FRA',
-	'BNN': 'CAN',
-	'Crime & Investigation Network': 'USA',
-	'CSTV': 'KOR',
-	'TrueVisions': 'THA',
-	'LMN': 'USA',
-	'Jeuxvideo.com': 'FRA',
-	'Thames Television': 'GBR',
-	'Polsat': 'POL',
-	'TVN Style': 'POL',
-	'Arena': 'AUS',
-	'AXS TV': 'USA',
-	'TV One (NZ)': 'NZL',
-	'TV2': 'NZL',
-	'KCET': 'USA',
-	'Omroep Brabant': 'NLD',
-	'fuse': 'USA',
-	'TSN': 'CAN',
-	'El Trece': 'ARG',
-	'Vimeo': 'USA',
-	'Xbox Video': 'USA',
-	'FEARnet': 'USA',
-	'Channel 7': 'THA',
-	'AHC': 'USA',
-	'FOX Türkiye': 'TUR',
-	'RTBF': 'BEL',
-	'Ora TV': 'USA',
-	'Discovery MAX': 'ESP',
-	'DMAX (IT)': 'ITA',
-	'ITV Wales': 'GBR',
-	'OCS': 'FRA',
-	'vtmKzoom': 'BEL',
-	'TVO': 'CAN',
-	'Televisión de Galicia': 'ESP',
-	'RTL Klub': 'HUN',
-	'Showcase (AU)': 'AUS',
-	'Canal Sur': 'ESP',
-	'RTL Televizija': 'HRV',
-	'Discovery Channel (Asia)': 'SGP',
-	'Lifetime UK': 'GBR',
-	'TSR': 'CHE',
-	'RTS Un': 'CHE',
-	'SRF 1': 'CHE',
-	'Maori Television': 'NZL',
-	'MusiquePlus': 'CAN',
-	'Spektrum': 'HUN',
-	'Disney Channel (Germany)': 'DEU',
-	'TeleZüri': 'CHE',
-	'3+': 'CHE',
-	'MBC Every1': 'KOR',
-	'Sportsman Channel': 'USA',
-	'Anhui TV': 'CHN',
-	'Dragon TV': 'CHN',
-	'Jiangsu TV': 'CHN',
-	'Zhejiang TV': 'CHN',
-	'TVS China': 'CHN',
-	'NECO': 'JPN',
-	'ART TV': 'GRC',
-	'Epsilon TV': 'GRC',
-	'Skai': 'GRC',
-	'TV São Carlos': 'BRA',
-	'TBN (Trinity Broadcasting Network)': 'USA',
-	'Bounce TV': 'USA',
-	'HLN': 'USA',
-	'APTN': 'CAN',
-	'Omni': 'CAN',
-	'addikTV': 'CAN',
-	'Centric': 'USA',
-	'ICI Tou.tv': 'CAN',
-	'RDI': 'CAN',
-	'TV Osaka': 'JPN',
-	'PlayStation Network': 'USA',
-	'ICI Explora': 'CAN',
-	'MBC Drama': 'KOR',
-	'Sky Deutschland': 'DEU',
-	'AOL': 'USA',
-	'Channel 2': 'ISR',
-	'DRAMAcube': 'KOR',
-	'Community Channel': 'GBR',
-	'This TV': 'USA',
-	'Nagoya Broadcasting Network': 'JPN',
-	'M-Net': 'ZAF',
-	'NFL Network': 'USA',
-	'Pop': 'USA',
-	'Super!': 'ITA',
-	'Cartoon Network Australia': 'AUS',
-	'Canadian Learning Television': 'CAN',
-	'Oprah Winfrey Network': 'USA',
-	'Alpha TV': 'GRC',
-	'TV Net': 'TUR',
-	'TRT Kurdî': 'TUR',
-	'Kanal A (Turkey)': 'TUR',
-	'TRT HD': 'TUR',
-	'TRT Haber': 'TUR',
-	'TRT Belgesel': 'TUR',
-	'TRT World': 'TUR',
-	'360': 'TUR',
-	'TRT Türk': 'TUR',
-	'TRT Çocuk': 'TUR',
-	'TRT Avaz': 'TUR',
-	'TRT Arabic': 'TUR',
-	'TRT Diyanet': 'TUR',
-	'TRT Okul': 'TUR',
-	'Cine 5': 'TUR',
-	'Dost TV': 'TUR',
-	'24': 'TUR',
-	'Semerkand TV': 'TUR',
-	'A Haber': 'TUR',
-	'Kanal 7': 'TUR',
-	'Ülke TV': 'TUR',
-	'TGRT Haber': 'TUR',
-	'Beyaz TV': 'TUR',
-	'Lâlegül TV': 'TUR',
-	'HBO Nordic': 'SWE',
-	'Bandai Channel': 'JPN',
-	'Sixx': 'DEU',
-	'element14': 'USA',
-	'HBO Magyarország': 'HUN',
-	'HBO Europe': 'HUN',
-	'HBO Latin America': 'BRA',
-	'Canal Off': 'BRA',
-	'ETV': 'EST',
-	'Super Écran': 'CAN',
-	'Discovery Life': 'USA',
-	'The Family Channel': 'USA',
-	'Fox Family': 'USA',
-	'Canal 9 (AR)': 'ARG',
-	'B92': 'SRB',
-	'Ceskoslovenská televize': 'CZE',
-	'CNNI': 'USA',
-	'Channel 101': 'USA',
-	'Canal 5': 'MEX',
-	'MyNetworkTV': 'USA',
-	'Blip': 'USA',
-	'WPIX': 'USA',
-	'Canal Famille': 'CAN',
-	'Canal D': 'CAN',
-	'Évasion': 'CAN',
-	'DIY Network Canada': 'CAN',
-	'Much (CA)': 'CAN',
-	'MTV Brazil': 'BRA',
-	'UKTV Yesterday': 'GBR',
-	'Swearnet': 'CAN',
-	'Dailymotion': 'USA',
-	'RMC Découverte': 'FRA',
-	'Discovery Family': 'USA',
-	'SBS Plus': 'KOR',
-	'Olive': 'KOR',
-	'NAVER tvcast': 'KOR',
-	'BBC iPlayer': 'GBR',
-	'E-Channel': 'KOR',
-	'Pakapaka': 'ARG',
-	'Trend E': 'KOR',
-	'MBC Queen': 'KOR',
-	'iQiyi': 'CHN',
-	'CW Seed': 'USA',
-	'Rede Bandeirantes': 'BRA',
-	'NBA TV': 'USA',
-	'ITVBe': 'GBR',
-	'Comedy Central (UK)': 'GBR',
-	'NRJ 12': 'FRA',
-	'Gaiam TV ': 'USA',
-	'STAR One': 'IND',
-	'Canal de las Estrellas': 'MEX',
-	'TVQ (Japan)': 'JPN',
-	'TVQ (Australia)': 'AUS',
-	'UP TV': 'USA',
-	'Universal Channel': 'BRA',
-	'Golf Channel': 'USA',
-	'CITV': 'GBR',
-	'SKY PerfecTV!': 'JPN',
-	'Disney Junior': 'USA',
-	'Mondo TV': 'ITA',
-	'téva': 'FRA',
-	'MCM': 'FRA',
-	'June': 'FRA',
-	'Comédie !': 'FRA',
-	'Comédie+': 'FRA',
-	'Filles TV': 'FRA',
-	'Discovery Channel (Australia)': 'AUS',
-	'FOX (UK)': 'GBR',
-	'Disney Junior (UK)': 'GBR',
-	'n-tv': 'DEU',
-	'OnStyle': 'KOR'
-	}
 
 
 def getDB():
-	return DB_Functions(join(aelGlobals.CONFIGPATH, "eventLibrary.db")) if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else DB_Functions(join(getPictureDir(), "eventLibrary.db"))
+	basepath = aelGlobals.CONFIGPATH if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else aelGlobals.HDDPATH
+	return DB_Functions(join(basepath, "eventLibrary.db"))
 
 
 def load_json(filename):
 	with open(filename, 'r') as f:
 		data = f.read().replace('null', '""')
 	return eval(data)
-
-
-def randbelow(exclusive_upper_bound):
-	if exclusive_upper_bound <= 0:
-		return 0
-	return SystemRandom()._randbelow(exclusive_upper_bound)
 
 
 def get_keys(forwhat):
@@ -1064,7 +117,7 @@ def get_keys(forwhat):
 	elif forwhat == 'omdb' and omdbKey != _("internal"):
 		return omdbKey
 	else:
-		return b64decode(ApiKeys[forwhat][randbelow(3)]).decode()
+		return b64decode(ApiKeys[forwhat][randrange(3)]).decode()
 
 
 def get_TVDb():
@@ -1076,46 +129,22 @@ def get_TVDb():
 
 
 def convert2base64(title):
-#	TODO: Kann nach den Tests weg
-#	if title.find('(') > 1:
-#		return b64encode(title.lower().encode().split(b'(')[0].strip()).replace(b'/', b'').decode('utf-8')
-#	return b64encode(title.lower().strip().encode()).replace(b'/', b'').decode('utf-8')
 	if title.find('(') > 1:
 		return b64encode(title.lower().split("(")[0].strip().replace("/", "").encode()).decode()
 	return b64encode(title.lower().strip().replace("/", "").encode()).decode()
 
 
 def convertSigns(text):
-#	TODO: Kann nach den Tests weg
-#	text = text.replace('\xc3\x84', '\xc4').replace('\xc3\x96', '\xd6').replace('\xc3\x9c', '\xdc').replace('\xc3\x9f', '\xdf').replace('\xc3\xa4', '\xe4').replace('\xc3\xb6', '\xf6').replace('\xc3\xbc', '\xfc').replace('&', '%26').replace('\xe2\x80\x90', '-').replace('\xe2\x80\x91', '-').replace('\xe2\x80\x92', '-').replace('\xe2\x80\x93', '-')
 	text = text.replace('\xe2\x80\x90', '-').replace('\xe2\x80\x91', '-').replace('\xe2\x80\x92', '-').replace('\xe2\x80\x93', '-')
 	return text
 
 
 def createDirs(path):
-	path = str(path).replace('poster/', '').replace('cover/', '')
-	if not path.endswith('/'):
-		path = path + '/'
-	if not path.endswith('AdvancedEventLibrary/'):
-		path = path + 'AdvancedEventLibrary/'
 	if not exists(path):
 		makedirs(path)
-	if not exists(path + 'poster/'):
-		makedirs(path + 'poster/')
-	if not exists(path + 'cover/'):
-		makedirs(path + 'cover/')
-	if not exists(path + 'preview/'):
-		makedirs(path + 'preview/')
-	if not exists(path + 'cover/thumbnails/'):
-		makedirs(path + 'cover/thumbnails/')
-	if not exists(path + 'preview/thumbnails/'):
-		makedirs(path + 'preview/thumbnails/')
-	if not exists(path + 'poster/thumbnails/'):
-		makedirs(path + 'poster/thumbnails/')
-
-
-def getPictureDir():
-	return dir
+	for subpath in ["poster/", "cover/", "preview/", "cover/thumbnails/", "poster/thumbnails/"]:
+		if not exists(join(path, subpath)):
+			makedirs(join(path, subpath))
 
 
 def removeExtension(ext):
@@ -1155,92 +184,92 @@ def getSizeStr(value, u=0):
 
 
 def clearMem(screenName=""):
-	aelGlobals.write_log(str(screenName) + ' - Speicherauslastung vor Bereinigung : ' + str(getMemInfo('Mem')))
+	aelGlobals.write_log(f"{screenName} - Memory utilization before cleanup: {getMemInfo('Mem')}")
 	system('sync')
 	system('sh -c "echo 3 > /proc/sys/vm/drop_caches"')
-	aelGlobals.write_log(str(screenName) + ' - Speicherauslastung nach Bereinigung : ' + str(getMemInfo('Mem')))
+	aelGlobals.write_log(f"{screenName} - Memory utilization before cleanup: {getMemInfo('Mem')}")
 
 
 def createBackup():
 	global STATUS
 	backuppath = config.plugins.AdvancedEventLibrary.Backup.value
-	STATUS = f"erzeuge Backup in {backuppath}"
+	STATUS = f"{_('create backup in')} {backuppath}"
 	aelGlobals.write_log(f"create backup in {backuppath}")
 	for currpath in [backuppath, f"{backuppath}poster/", f"{backuppath}cover/"]:
 		if not exists(currpath):
 			makedirs(currpath)
-	dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(getPictureDir(), 'eventLibrary.db')
+	dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(aelGlobals.HDDPATH, 'eventLibrary.db')
 	if fileExists(dbpath):
 		copy2(dbpath, join(backuppath, 'eventLibrary.db'))
-	files = glob(getPictureDir() + 'poster/*.jpg')
+	files = glob(f"{aelGlobals.HDDPATH}poster/*.jpg")
 	progress = 0
 	pics = len(files)
 	copied = 0
-	for file in files:
+	for filename in files:
 		progress += 1
-		target = join(f"{backuppath}poster/", basename(file))
-		if not fileExists(target) or getmtime(file) > (getmtime(target) + 7200):
-			copy2(file, target)
-			STATUS = f"({progress}/{pics} sichere Poster : {file}"
+		target = join(f"{backuppath}poster/", basename(filename))
+		if not fileExists(target) or getmtime(filename) > (getmtime(target) + 7200):
+			copy2(filename, target)
+			STATUS = f"({progress}/{pics} {_('save poster:')} {filename}"
 			copied += 1
 	aelGlobals.write_log(f"have copied {copied} poster to {backuppath} poster/")
 	del files
-	files = glob(getPictureDir() + 'poster/*.jpg')
+	files = glob(f"{aelGlobals.HDDPATH}poster/*.jpg")
 	progress = 0
 	pics = len(files)
 	copied = 0
-	for file in files:
+	for filename in files:
 		progress += 1
-		target = join(f"{backuppath}cover/", basename(file))
-		if not fileExists(target) or getmtime(file) > getmtime(target):
-			copy2(file, target)
-			STATUS = f"({progress}/{pics}) sichere Cover : {file}"
+		target = join(f"{backuppath}cover/", basename(filename))
+		if not fileExists(target) or getmtime(filename) > getmtime(target):
+			copy2(filename, target)
+			STATUS = f"({progress}/{pics}) {_('save cover')}: {filename}"
 			copied += 1
 	aelGlobals.write_log(f"have copied {copied} cover to {backuppath}cover/")
 	del files
-	STATUS = None
+	STATUS = ""
 	clearMem("createBackup")
-	aelGlobals.write_log("backup finished")
+	aelGlobals.write_log(_("backup finished"))
 
 
 def checkUsedSpace(db=None):
 	recordings = getRecordings()
-	dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(getPictureDir(), "eventLibrary.db")
+	dbpath = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else join(aelGlobals.HDDPATH, "eventLibrary.db")
 	if fileExists(dbpath) and db:
-		maxSize = 1 * 1024.0 * 1024.0 if "/etc" in dir else config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
-		PDIR = f"{dir}poster/"
-		CDIR = f"{dir}cover/"
-		PRDIR = f"{dir}preview/"
-		posterSize = float(check_output(['du', '-sk', PDIR]).split()[0])
-		coverSize = float(check_output(['du', '-sk', CDIR]).split()[0])
-		previewSize = float(check_output(['du', '-sk', PRDIR]).split()[0])
-		inodes = check_output(['df', '-i', dir]).split()[-2].decode()
-		aelGlobals.write_log(f"benutzte Inodes = {inodes}")
-		aelGlobals.write_log(f"benutzter Speicherplatz = {(posterSize + coverSize)} kB von {maxSize} kB.")
+		maxSize = 1 * 1024.0 * 1024.0 if "/etc" in aelGlobals.HDDPATH else config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
+		PDIR = f"{aelGlobals.HDDPATH}poster/"
+		CDIR = f"{aelGlobals.HDDPATH}cover/"
+		PRDIR = f"{aelGlobals.HDDPATH}preview/"
+		posterSize = float(check_output(['du', '-sk', PDIR]).decode().split()[0])
+		coverSize = float(check_output(['du', '-sk', CDIR]).decode().split()[0])
+		previewSize = float(check_output(['du', '-sk', PRDIR]).decode().split()[0])
+		inodes = check_output(['df', '-i', aelGlobals.HDDPATH]).decode().split()[-2]
+		aelGlobals.write_log(f"used Inodes: {inodes}")
+		aelGlobals.write_log(f"used memory space: {(posterSize + coverSize)} KB von {maxSize} KB.")
 		usedInodes = int(inodes[:-1])
-		if (((int(posterSize) + int(coverSize) + int(previewSize)) > int(maxSize)) or usedInodes >= config.plugins.AdvancedEventLibrary.MaxUsedInodes.value):
-			removeList = glob(join(PRDIR, "*.jpg"))
+		if (((round(posterSize) + round(coverSize) + round(previewSize)) > round(maxSize)) or usedInodes >= config.plugins.AdvancedEventLibrary.MaxUsedInodes.value):
+			removeList = glob(join("{PRDIR}*.jpg"))
 			for f in removeList:
 				remove(f)
 			i = 0
 			while i < 100:
 				titles = db.getUnusedTitles()
 				if titles:
-					aelGlobals.write_log(str(i + 1) + '. Bereinigung des Speicherplatzes.')
+					aelGlobals.write_log(f"{(i + 1)}. Cleaning up the storage space.")
 					for title in titles:
 						if str(title[1]) not in recordings:
 							for currdir in [f"{PDIR}{title[0]}", f"{PDIR}thumbnails/{title[0]}", f"{CDIR}{title[0]}", f"{CDIR}thumbnails/{title[0]}"]:
-								for file in glob(f"{currdir}*.jpg"):
-									remove(file)
+								for filename in glob(f"{currdir}*.jpg"):
+									remove(filename)
 								db.cleanDB(title[0])
-					posterSize = float(check_output(['du', '-sk', PDIR]).split()[0])
-					coverSize = float(check_output(['du', '-sk', CDIR]).split()[0])
-					aelGlobals.write_log('benutzter Speicherplatz = ' + str(float(posterSize) + float(coverSize)) + ' kB von ' + str(maxSize) + ' kB.')
+					posterSize = float(check_output(['du', '-sk', PDIR]).decode().split()[0])
+					coverSize = float(check_output(['du', '-sk', CDIR]).decode().split()[0])
+					aelGlobals.write_log(f"used memory space: {(posterSize + coverSize)} KB von {maxSize} KB.")
 				if (posterSize + coverSize) < maxSize:
 					break
 				i += 1
 			db.vacuumDB()
-			aelGlobals.write_log(f"Used memory space = {float(posterSize) + float(coverSize)} kB of {maxSize} kB.")
+			aelGlobals.write_log(f"used memory space: {posterSize + coverSize} KB of {maxSize} KB.")
 
 
 def removeLogs():
@@ -1249,8 +278,7 @@ def removeLogs():
 
 
 def startUpdate():
-	thread = Thread(target=getallEventsfromEPG, args=())
-	thread.start()
+	thread = callInThread(getallEventsfromEPG)
 
 
 def createMovieInfo(db):
@@ -1278,8 +306,8 @@ def createMovieInfo(db):
 									if title and title != '' and title != ' ':
 										tmdb.API_KEY = get_keys('tmdb')
 										titleinfo = {"title": mtitle, "genre": "", "year": "", "country": "", "overview": ""}
-										STATUS = _("search meta information for %s") % title
-										aelGlobals.write_log(STATUS, ADDLOG)
+										STATUS = f"{_("search meta information for")} {title}"
+										aelGlobals.write_log(STATUS)
 										search = tmdb.Search()
 										res = search.movie(query=title, language='de', year=jahr) if jahr != '' else search.movie(query=title, language='de')
 										if res and res['results']:
@@ -1315,9 +343,9 @@ def createMovieInfo(db):
 											search = tmdb.Search()
 											searchName = findEpisode(title)
 											if searchName:
-												res = aelGlobals.callLibrary(search.tv, query=searchName[2], language='de', include_adult=True, search_type='ngram')
+												res = aelGlobals.callLibrary(search.tv, None, query=searchName[2], language='de', include_adult=True, search_type='ngram')
 											else:
-												res = aelGlobals.callLibrary(search.tv, query=title, language='de', include_adult=True, search_type='ngram')
+												res = aelGlobals.callLibrary(search.tv, None, query=title, language='de', include_adult=True, search_type='ngram')
 											if res:
 												if res['results']:
 													reslist = []
@@ -1381,7 +409,7 @@ def createMovieInfo(db):
 											seriesid = None
 											ctitle = title
 											title = convertTitle2(title)
-											response = aelGlobals.callLibrary(search.series, title=title, language="de")
+											response = aelGlobals.callLibrary(search.series, title, language="de")
 											if response:
 												reslist = []
 												for result in response:
@@ -1403,37 +431,39 @@ def createMovieInfo(db):
 													episoden = epis.all()
 												except Exception:
 													episoden = []
-												if episoden:
-													for episode in episoden:
-														if str(episode['episodeName']) in str(ctitle):
-															if 'firstAired' in episode:
-																titleinfo['year'] = episode['firstAired'][:4]
-																if 'overview' in episode:
-																	titleinfo['overview'] = episode['overview']
-															if response:
-																searchName = findEpisode(title)
-																titleinfo['title'] = response['seriesName'] + ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName'] if searchName else response['seriesName'] + ' - ' + episode['episodeName']
-																if titleinfo['genre'] == "":
-																	for genre in response['genre']:
-																		titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
-																titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-																if titleinfo['country'] == "" and response['network'] in networks:
+												networks = loads(join(aelGlobals.CONFIGPATH, "networks.json"))
+												if networks:
+													if episoden:
+														for episode in episoden:
+															if str(episode['episodeName']) in str(ctitle):
+																if 'firstAired' in episode:
+																	titleinfo['year'] = episode['firstAired'][:4]
+																	if 'overview' in episode:
+																		titleinfo['overview'] = episode['overview']
+																if response:
+																	searchName = findEpisode(title)
+																	titleinfo['title'] = response['seriesName'] + ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName'] if searchName else response['seriesName'] + ' - ' + episode['episodeName']
+																	if titleinfo['genre'] == "":
+																		for genre in response['genre']:
+																			titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
+																	titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+																	if titleinfo['country'] == "" and response['network'] in networks:
+																		titleinfo['country'] = networks[response['network']]
+																	break
+													else:
+														if response:
+															titleinfo['title'] = response['seriesName']
+															if titleinfo['year'] == "":
+																titleinfo['year'] = response['firstAired'][:4]
+															if titleinfo['genre'] == "":
+																for genre in response['genre']:
+																	titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
+															titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+															if titleinfo['country'] == "":
+																if response['network'] in networks:
 																	titleinfo['country'] = networks[response['network']]
-																break
-												else:
-													if response:
-														titleinfo['title'] = response['seriesName']
-														if titleinfo['year'] == "":
-															titleinfo['year'] = response['firstAired'][:4]
-														if titleinfo['genre'] == "":
-															for genre in response['genre']:
-																titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
-														titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-														if titleinfo['country'] == "":
-															if response['network'] in networks:
-																titleinfo['country'] = networks[response['network']]
-														if 'overview' in response:
-															titleinfo['overview'] = response['overview']
+															if 'overview' in response:
+																titleinfo['overview'] = response['overview']
 										if titleinfo['overview'] != "":
 											txt = open(join(root, removeExtension(filename) + ".txt"), "w")
 											txt.write(titleinfo['overview'])
@@ -1445,11 +475,11 @@ def createMovieInfo(db):
 												txt = open(join(root, filename + ".meta"), "w")
 												minfo = "1:0:0:0:B:0:C00000:0:0:0:\n" + str(titleinfo['title']) + "\n"
 												if str(titleinfo['genre']) != "":
-													minfo += str(titleinfo['genre']) + ", "
+													minfo += f"{titleinfo['genre']}, "
 												if str(titleinfo['country']) != "":
-													minfo += str(titleinfo['country']) + ", "
+													minfo += f"{titleinfo['country']}, "
 												if str(titleinfo['year']) != "":
-													minfo += str(titleinfo['year']) + ", "
+													minfo += f"{titleinfo['year']}, "
 												if minfo.endswith(', '):
 													minfo = minfo[:-2]
 												else:
@@ -1468,16 +498,11 @@ def createMovieInfo(db):
 def getAllRecords(db):
 	global STATUS
 	names = set()
-	STATUS = "search recording directories..."
-	PDIR = dir + 'poster/'
-	CDIR = dir + 'cover/'
+	STATUS = _("search recording directories...")
+	PDIR = f"{aelGlobals.HDDPATH}poster/"
+	CDIR = f"{aelGlobals.HDDPATH}cover/"
 	recordPaths = config.movielist.videodirs.value
-	doPics = False
-	if "Pictures" in sPDict:
-		if sPDict["Pictures"]:
-			doPics = True
-	else:
-		doPics = True
+	doPics = True if "Pictures" not in sPDict or ("Pictures" in sPDict and sPDict["Pictures"]) else False
 	for recordPath in recordPaths:
 		if isdir(recordPath):
 			for root, directories, files in walk(recordPath):
@@ -1487,26 +512,26 @@ def getAllRecords(db):
 						name = ""
 						for filename in files:
 							if (filename.endswith('.ts') or filename.endswith('.mkv') or filename.endswith('.avi') or filename.endswith('.mpg') or filename.endswith('.mp4') or filename.endswith('.iso') or filename.endswith('.mpeg2')) and doPics:
-								if fileExists(join(root, filename + '.meta')):
-									fname = convertDateInFileName(getline(join(root, filename + '.meta'), 2).replace("\n", ""))
+								if fileExists(join(root, f"{filename}.meta")):
+									fname = convertDateInFileName(getline(join(root, f"{filename}.meta"), 2).replace("\n", ""))
 								else:
 									fname = convertDateInFileName(convertSearchName(convertTitle(((filename.split('/')[-1]).rsplit('.', 3)[0]).replace('_', ' '))))
-								searchName = filename + '.jpg'
-								if (fileExists(join(root, searchName)) and not fileExists(PDIR + convert2base64(fname) + '.jpg')):
-									aelGlobals.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
-									copy2(join(root, searchName), PDIR + convert2base64(fname) + ".jpg")
-								searchName = removeExtension(filename) + '.jpg'
-								if (fileExists(join(root, searchName)) and not fileExists(PDIR + convert2base64(fname) + '.jpg')):
-									aelGlobals.write_log('copy poster ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
-									copy2(join(root, searchName), PDIR + convert2base64(fname) + ".jpg")
-								searchName = filename + '.bdp.jpg'
-								if (fileExists(join(root, searchName)) and not fileExists(CDIR + convert2base64(fname) + '.jpg')):
-									aelGlobals.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
-									copy2(join(root, searchName), CDIR + convert2base64(fname) + ".jpg")
-								searchName = removeExtension(filename) + '.bdp.jpg'
-								if (fileExists(join(root, searchName)) and not fileExists(CDIR + convert2base64(fname) + '.jpg')):
-									aelGlobals.write_log('copy cover ' + str(searchName) + ' nach ' + str(fname) + ".jpg")
-									copy2(join(root, searchName), CDIR + convert2base64(fname) + ".jpg")
+								searchName = f"{filename}.jpg"
+								if (fileExists(join(root, searchName)) and not fileExists(f"{PDIR}{convert2base64(fname)}.jpg")):
+									aelGlobals.write_log(f"copy poster {searchName} nach {fname}.jpg")
+									copy2(join(root, searchName), f"{PDIR}{convert2base64(fname)}.jpg")
+								searchName = f"{removeExtension(filename)}.jpg"
+								if (fileExists(join(root, searchName)) and not fileExists(f"{PDIR}{convert2base64(fname)}.jpg")):
+									aelGlobals.write_log(f"copy poster {searchName} nach {fname}.jpg")
+									copy2(join(root, searchName), f"{PDIR}{convert2base64(fname)}.jpg")
+								searchName = f"{filename}.bdp.jpg"
+								if (fileExists(join(root, searchName)) and not fileExists(f"{CDIR}{convert2base64(fname)}.jpg")):
+									aelGlobals.write_log(f"copy cover {searchName} nach {fname}.jpg")
+									copy2(join(root, searchName), f"{CDIR}{convert2base64(fname)}.jpg")
+								searchName = f"{removeExtension(filename)}.bdp.jpg"
+								if (fileExists(join(root, searchName)) and not fileExists(f"{CDIR}{convert2base64(fname)}.jpg")):
+									aelGlobals.write_log(f"copy cover {searchName} nach {fname}.jpg")
+									copy2(join(root, searchName), f"{CDIR}{convert2base64(fname)}.jpg")
 							if filename.endswith('.meta'):
 								fileCount += 1
 								foundInBl = False
@@ -1537,12 +562,12 @@ def getAllRecords(db):
 											foundInBl = True
 								if not db.checkTitle(convert2base64(name)) and not foundInBl and name != '' and name != ' ':
 									names.add(name)
-						aelGlobals.write_log('check ' + str(fileCount) + ' meta Files in ' + str(root))
+						aelGlobals.write_log(f"check {fileCount} meta Files in {root}")
 				else:
-					aelGlobals.write_log('recordPath ' + str(root) + ' is not exists')
+					aelGlobals.write_log(f"recordPath {root} is not exists")
 		else:
-			aelGlobals.write_log('recordPath ' + str(recordPath) + ' is not exists')
-	aelGlobals.write_log('found ' + str(len(names)) + ' new Records in meta Files')
+			aelGlobals.write_log(f"recordPath {recordPath} is not exists")
+	aelGlobals.write_log(f"found {len(names)} new Records in meta Files")
 #		check vtidb
 		#doIt = False
 		#if "VTiDB" in sPDict:
@@ -1613,42 +638,42 @@ def cleanPreviewImages(db):
 	it = 0
 	for image in prevImages:
 		if convert2base64(image) not in recImages:
-			img = dir + 'preview/' + convert2base64(image) + '.jpg'
+			img = f"{aelGlobals.HDDPATH}preview/{convert2base64(image)}.jpg"
 			if fileExists(img):
 				remove(img)
 				ic += 1
-			img = dir + 'preview/thumbnails/' + convert2base64(image) + '.jpg'
+			img = f"{aelGlobals.HDDPATH}preview/thumbnails/{convert2base64(image)}.jpg"
 			if fileExists(img):
 				remove(img)
 				it += 1
 		else:
-			aelGlobals.write_log("can't remove " + str(image) + ", because it's a record")
-	aelGlobals.write_log('have removed ' + str(ic) + ' preview images')
-	aelGlobals.write_log('have removed ' + str(it) + ' preview thumbnails')
+			aelGlobals.write_log(f"can't remove {image}, because it's a record")
+	aelGlobals.write_log(f"have removed {ic} preview images")
+	aelGlobals.write_log(f"'have removed {it} preview thumbnails")
 	del recImages
 	del prevImages
 
 
 def getallEventsfromEPG():
 	global STATUS
-	STATUS = "überprüfe Verzeichnisse..."
-	createDirs(dir)
-	STATUS = "entferne Logfile..."
+	STATUS = _("verify directories...")
+	createDirs(aelGlobals.HDDPATH)
+	STATUS = _("remove logfile...")
 	removeLogs()
-	aelGlobals.write_log("Update start...")
-	aelGlobals.write_log("default image path is " + str(dir)[:-1])
+	aelGlobals.write_log(_("Update start..."))
+	aelGlobals.write_log(f"default image path is {aelGlobals.HDDPATH[:-1]}")
 #	aelGlobals.write_log("load preview images is: " + str(config.plugins.AdvancedEventLibrary.UsePreviewImages.value))
-	aelGlobals.write_log("searchOptions " + str(sPDict))
+	aelGlobals.write_log(f"searchOptions {sPDict}")
 	db = getDB()
 	db.parameter(PARAMETER_SET, 'laststart', str(time()))
 	cversion = db.parameter(PARAMETER_GET, 'currentVersion', None, 111)
 	if cversion and int(cversion) < 113:
 		db.parameter(PARAMETER_SET, 'currentVersion', '115')
 		db.cleanliveTV(int(time() + (14 * 86400)))
-	STATUS = "überprüfe reservierten Speicherplatz..."
+	STATUS = _("check reserved disk space...")
 	checkUsedSpace(db)
 	names = getAllRecords(db)
-	STATUS = "search current EPG..."
+	STATUS = _("current EPG...")  # Holger
 	lines = []
 	mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
@@ -1674,7 +699,7 @@ def getallEventsfromEPG():
 	test = ["RITB", 0]
 	for line in lines:
 		test.append((line[0], 0, int(time() + 1000), -1))
-	aelGlobals.write_log(f"debug test: {test}")
+	# aelGlobals.write_log(f"debug test: {test}")
 	epgcache = eEPGCache.getInstance()
 	allevents = epgcache.lookupEvent(test) or []
 	aelGlobals.write_log(f"found {len(allevents)} Events in EPG")
@@ -1682,16 +707,16 @@ def getallEventsfromEPG():
 	liveTVRecords = []
 	for serviceref, eid, name, begin in allevents:
 		evt += 1
-		STATUS = f"search current EPG... ({evt}/{len(allevents)})"
+		STATUS = f"{_('search current EPG...')} ({evt}/{len(allevents)})"
 		tvname = name
-		tvname = sub(r'\\(.*?\\)', '', tvname).strip()
-		tvname = sub(r' +', ' ', tvname)
+		# tvname = sub(r'\\(.*?\\)', '', tvname).strip()  # TODO: Ist dieser komische Regex wirklich nötig?
+		# tvname = tvname.replace(" +", " ") # TODO: Ist replace wirklich nötig?
 		#if not db.checkliveTV(eid, serviceref) and str(tvname) not in excludeNames and not 'Invictus' in str(tvname):
 		minEPGBeginTime = time() - 7200  # -2h
 		maxEPGBeginTime = time() + 1036800  # 12Tage
 		if begin > minEPGBeginTime and begin < maxEPGBeginTime:
 			if not db.checkliveTV(eid, serviceref):
-				if str(tvname) not in excludeNames and 'Invictus' not in str(tvname):
+				if tvname not in excludeNames and 'Invictus' not in str(tvname):
 					record = (eid, 'in progress', '', '', '', '', '', tvname, begin, '', '', '', '', '', '', '', '', serviceref)
 					liveTVRecords.append(record)
 		foundInBl = False
@@ -1717,7 +742,7 @@ def getTVSpielfilm(db, tvsref):
 	founded = 0
 	imgcount = 0
 	trailers = 0
-	coverDir = f"{getPictureDir()}preview/"
+	coverDir = f"{aelGlobals.HDDPATH}preview/"
 	refs = db.getSrefsforUpdate()
 	tcount = db.getUpdateCount()
 	if refs and tvsref:
@@ -1728,14 +753,11 @@ def getTVSpielfilm(db, tvsref):
 				curDate = db.getMinAirtimeforUpdate(sref)
 				while (int(curDate) - 86400) <= int(maxDate) + 86400:  # while int(curDate) <= int(maxDate) + 86400:
 					curDatefmt = datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")
-					STATUS = f"({evt}/{len(refs)}) durchsuche {tvsref[sref]} für den {curDatefmt} auf TV-Spielfilm ({founded}/{tcount} | {imgcount})"
-#					Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#					Beispiel: https://live.tvspielfilm.de/static/broadcast/list/ARD/2020-06-11
-#					unkodierte URL: https://live.tvspielfilm.de/static/broadcast/list/
-					url = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
-					errmsg, res = aelGlobals.getAPIdata(f"{url}{tvsref[sref].upper()}/{curDatefmt}")
+					STATUS = f"({evt}/{len(refs)}) {_('search')} {tvsref[sref]} {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({founded}/{tcount} | {imgcount})"
+					tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
+					errmsg, res = aelGlobals.getAPIdata(f"{tvsurl}{tvsref[sref][1].upper()}/{curDatefmt}")
 					if errmsg:
-						aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'getTVSpielfilm'")
+						aelGlobals.write_log("API download error in module 'getTVSpielfilm'")
 					if res:
 						lastImage = ""
 						fulltext = {"U": _("Entertainment"), "SE": _("Series"), "SPO": _("Sport"), "SP": _("Movie"), "KIN": _("Children"), "RE": _("Reportage"), "AND": _("Other")}
@@ -1793,7 +815,7 @@ def getTVSpielfilm(db, tvsref):
 							db.updateliveTVS(eid, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sref, airtime, title)
 							founded = tcount - db.getUpdateCount()
 							if founded == success:
-								aelGlobals.write_log('no matches found for ' + str(title) + ' on ' + tvsref[sref] + ' at ' + str(datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")) + ' with TV-Spielfilm ', ADDLOG)
+								aelGlobals.write_log(f"no matches found for {title} on {tvsref[sref]} at {datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")} with TV-Spielfilm")
 							if founded > success and imdb != "":
 								trailers += 1
 							if founded > success and bld != "" and config.plugins.AdvancedEventLibrary.SearchFor.value != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
@@ -1814,7 +836,7 @@ def getTVMovie(db, secondRun=False):
 	evt = 0
 	founded = 0
 	imgcount = 0
-	coverDir = f"{getPictureDir()}preview/"
+	coverDir = f"{aelGlobals.HDDPATH}preview/"
 	failedNames = []
 	tcount = db.getUpdateCount()
 	if not secondRun:
@@ -1825,30 +847,15 @@ def getTVMovie(db, secondRun=False):
 		for name in failedNames:
 			tvnames.append(name)
 		aelGlobals.write_log('recheck ' + str(len(tvnames)) + ' titles on TV-Movie')
-	url = 0
 	for title in tvnames:
 		evt += 1
-		if not secondRun:
-			tvname = correctTitleName(title[0])
-			for convName in convNames:
-				if str(tvname).startswith(str(convName)):
-					if str(tvname).startswith('Die Bergpolizei'):
-						tvname = convertTitle2(tvname) + ' - Ganz nah am Himmel'
-					else:
-						tvname = convertTitle2(tvname)
-		else:
-			tvname = convertTitle2(title[0])
+		tvname = title[0] if not secondRun else convertTitle2(title[0])
 		results = None
-		STATUS = f"({evt}/{len(tvnames)}) suche auf TV-Movie nach {tvname} ({founded}/{tcount} | {imgcount})"
-#		Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#		searchurl = 'http://capi.tvmovie.de/v1/broadcasts/search?q=%s&page=1&rows=400'
-#		url = searchurl % quote(sub(r'[^0-9a-zA-Z-:!., ]+', '*', str(tvname)))#.lower())
-#		url = searchurl % quote(str(tvname))  # .lower())
-#		unkodierte URL: http://capi.tvmovie.de/v1/broadcasts/search
-		url = b64decode(b"aHR0cDovL2NhcGkudHZtb3ZpZS5kZS92MS9icm9hZGNhc3RzL3NlYXJjaA==2"[:-1]).decode
-		errmsg, res = aelGlobals.getAPIdata(url, params={"q": tvname, "page": 1, "rows": 400})
+		STATUS = f"({evt}/{len(tvnames)}) {_('search on TV-Movie for')} {tvname} ({founded}/{tcount} | {imgcount})"
+		tvmovieurl = b64decode(b"aHR0cDovL2NhcGkudHZtb3ZpZS5kZS92MS9icm9hZGNhc3RzL3NlYXJjaA==2"[:-1]).decode
+		errmsg, res = aelGlobals.getAPIdata(tvmovieurl, params={"q": tvname, "page": 1, "rows": 400})
 		if errmsg:
-			aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'getTVMovie'")
+			aelGlobals.write_log("API download error in module 'getTVMovie'")
 		if results and 'results' in res:
 			reslist = set()
 			for event in res['results']:
@@ -1955,9 +962,9 @@ def getTVMovie(db, secondRun=False):
 									imgcount += 1
 									lastImage = image
 			if nothingfound:
-				aelGlobals.write_log('nothing found on TV-Movie for ' + str(title[0]) + ' url ' + str(url), ADDLOG)
-	aelGlobals.write_log('have updated ' + str(founded) + ' events from TV-Movie')
-	aelGlobals.write_log('have downloaded ' + str(imgcount) + ' images from TV-Movie')
+				aelGlobals.write_log(f"nothing found on TV-Movie for {title[0]}")
+	aelGlobals.write_log(f"have updated {founded} events from TV-Movie")
+	aelGlobals.write_log(f"have downloaded {imgcount} images from TV-Movie")
 	if not secondRun:
 		tvsImages = db.parameter(PARAMETER_GET, 'lastpreviewImageCount', None, 0)
 		imgcount += int(tvsImages)
@@ -2126,51 +1133,48 @@ def convertYearInTitle(title):
 def downloadImage(url, filename, timeout=5):
 	try:
 		if not fileExists(filename):
-			r = get(url, stream=True, timeout=timeout)
-			if r.status_code == 200:
-				with open(filename, 'wb') as f:
-					r.raw.decode_content = True
-					copyfileobj(r.raw, f)
-					f.close()
-				r = None
+			response = get(url, stream=True, timeout=timeout)
+			if response.status_code == 200:
+				with open(filename, 'wb') as file:
+					response.raw.decode_content = True
+					copyfileobj(response.raw, file)
 			else:
-				aelGlobals.write_log("Fehlerhafter Statuscode beim Download für : " + str(filename) + ' auf ' + str(url))
+				aelGlobals.write_log(f"Incorrect status code during download for {filename} on '{url}'")
 		else:
-			aelGlobals.write_log("Picture : " + str(b64decode(filename.split('/')[-1].replace('.jpg', ''))) + ' exists already ', ADDLOG)
-	except Exception as ex:
-		aelGlobals.write_log("Error in download image: " + str(ex))
+			aelGlobals.write_log(f"Picture {b64decode(filename.split('/')[-1].replace('.jpg', ''))} exists already ")
+	except Exception as errmsg:
+		aelGlobals.write_log(f"Error in download image: {errmsg}")
 
 
 def downloadImage2(url, filename, timeout=5):
 	try:
 		if not fileExists(filename):
-			r = get(url, stream=True, timeout=timeout)
-			if r.status_code != 200:
-				with open(filename, 'wb') as f:
-					r.raw.decode_content = True
-					copyfileobj(r.raw, f)
-					f.close()
-				r = None
+			response = get(url, stream=True, timeout=timeout)
+			if response.status_code != 200:
+				with open(filename, 'wb') as file:
+					response.raw.decode_content = True
+					copyfileobj(response.raw, file)
 				return True
 			else:
 				return False
 		else:
 			return True
-	except Exception:
+	except Exception as errmsg:
+		aelGlobals.write_log(f"Error in download image: {errmsg}")
 		return False
 
 
 def checkAllImages():
 	global STATUS
 	removeList = []
-	dirs = [f"{getPictureDir()}cover/", getPictureDir() + 'cover/thumbnails/', f"{getPictureDir()}poster/", getPictureDir() + 'poster/thumbnails/']
-	for dir in dirs:
-		filelist = glob(dir + "*.*")
+	dirs = [f"{aelGlobals.HDDPATH}cover/", f"{aelGlobals.HDDPATH}cover/thumbnails/", f"{aelGlobals.HDDPATH}poster/", f"{aelGlobals.HDDPATH}poster/thumbnails/"]
+	for aelGlobals.HDDPATH in dirs:
+		filelist = glob(f"{aelGlobals.HDDPATH}*.*")
 		c = 0
 		ln = len(filelist)
 		for f in filelist:
 			c += 1
-			STATUS = f"{c}/{ln} überprüfe {f}"
+			STATUS = f"{c}/{ln} {_('verify')} {f}"
 			img = Image.open(f)
 			if img.format != 'JPEG':
 				aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
@@ -2182,7 +1186,7 @@ def checkAllImages():
 			aelGlobals.write_log('remove image : ' + str(f))
 			remove(f)
 		del removeList
-	STATUS = None
+	STATUS = ""
 	clearMem("checkAllImages")
 
 
@@ -2199,17 +1203,17 @@ def reduceImageSize(path, db):
 				oldSize = int(getsize(f) / 1024.0)
 				if oldSize > maxSize:
 					try:
-						fn = b64decode((f.split('/')[-1]).rsplit('.', 1)[0])
+						filename = b64decode((f.split('/')[-1]).rsplit('.', 1)[0])
 					except Exception:
-						fn = (f.split('/')[-1]).rsplit('.', 1)[0]
-						fn = fn.replace('.jpg', '')
+						filename = (f.split('/')[-1]).rsplit('.', 1)[0]
+						filename = filename .replace('.jpg', '')
 					try:
 						img = Image.open(f)
 					except Exception:
 						continue
 					w = int(img.size[0])
 					h = int(img.size[1])
-					STATUS = f"Bearbeite {fn}.jpg mit {bytes2human(getsize(f), 1)} und {w})x{h}px"
+					STATUS = f"{_('edit')} {filename}.jpg {_('with')} {bytes2human(getsize(f), 1)} {_('and')} {w})x{h}px"
 					img_bytes = StringIO()
 					img1 = img.convert('RGB', colors=256)
 					img1.save(str(img_bytes), format='jpeg')
@@ -2232,14 +1236,12 @@ def reduceImageSize(path, db):
 							if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 								break
 					img1.save(f, format='jpeg', quality=q)
-					aelGlobals.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(f), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+					aelGlobals.write_log(f"file {filename}.jpg reduced from {bytes2human(int(oldSize * 1024), 1)} to {bytes2human(getsize(f), 1)} and {w}x{h}px")
 					if getsize(f) / 1024.0 > maxSize:
 						aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
 						db.addimageBlackList(str(f))
-					img_bytes = None
-					img = None
-		except Exception as ex:
-			aelGlobals.write_log("Error in reduceImageSize: " + str(ex))
+		except Exception as errmsg:
+			aelGlobals.write_log(f"Error in module 'reduceImageSize': {errmsg}")
 			continue
 	del filelist
 
@@ -2252,15 +1254,15 @@ def reduceSigleImageSize(src, dest):
 	oldSize = int(getsize(src) / 1024.0)
 	if oldSize > maxSize:
 		try:
-			fn = b64decode((src.split('/')[-1]).rsplit('.', 1)[0])
+			filename = b64decode((src.split('/')[-1]).rsplit('.', 1)[0])
 		except Exception:
-			fn = (src.split('/')[-1]).rsplit('.', 1)[0]
-			fn = fn.replace('.jpg', '')
+			filename = (src.split('/')[-1]).rsplit('.', 1)[0]
+			filename = filename .replace('.jpg', '')
 		try:
 			img = Image.open(src)
 			w = int(img.size[0])
 			h = int(img.size[1])
-			aelGlobals.write_log('convert image ' + str(fn) + '.jpg with ' + str(bytes2human(getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+			aelGlobals.write_log('convert image ' + str(filename) + '.jpg with ' + str(bytes2human(getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 			img_bytes = StringIO()
 			img1 = img.convert('RGB', colors=256)
 			img1.save(str(img_bytes), format='jpeg')
@@ -2283,13 +1285,13 @@ def reduceSigleImageSize(src, dest):
 					if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 						break
 			img1.save(dest, format='jpeg', quality=q)
-			aelGlobals.write_log('file ' + str(fn) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+			aelGlobals.write_log('file ' + str(filename) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
 			if getsize(dest) / 1024.0 > maxSize:
 				aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
 			img_bytes = None
 			img = None
-		except Exception as ex:
-			aelGlobals.write_log("Error in reduceSingleImageSize: " + str(ex))
+		except Exception as errmsg:
+			aelGlobals.write_log(f"Error in module 'reduceSingleImageSize': {errmsg}")
 
 
 def createThumbnails(path):
@@ -2297,23 +1299,22 @@ def createThumbnails(path):
 	wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
 	wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
 	filelist = glob(join(path, "*.jpg"))
-	for f in filelist:
+	for filename in filelist:
 		try:
-			if f.endswith('.jpg'):
-				if 'bGl2ZSBibDog' in str(f):
-					remove(f)
+			if filename .endswith('.jpg'):
+				if 'bGl2ZSBibDog' in str(filename):
+					remove(filename)
 				else:
-					destfile = f.replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails').replace('preview', 'preview/thumbnails')
+					destfile = filename .replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails').replace('preview', 'preview/thumbnails')
 					if not fileExists(destfile):
-						STATUS = f"erzeuge Thumbnail für {f}"
-						img = Image.open(f)
+						STATUS = f"{_('create thumbnail for')} {filename}"
+						img = Image.open(filename)
 						imgnew = img.convert('RGBA', colors=256)
-						imgnew = img.resize((wc, hc), Image.LANCZOS) if 'cover' in str(f) or 'preview' in str(f) else img.resize((wp, hp), Image.LANCZOS)
+						imgnew = img.resize((wc, hc), Image.LANCZOS) if 'cover' in str(filename) or 'preview' in str(filename) else img.resize((wp, hp), Image.LANCZOS)
 						imgnew.save(destfile)
-						img = None
-		except Exception as ex:
-			aelGlobals.write_log("Error in createThumbnails: " + str(f) + ' - ' + str(ex))
-			remove(f)
+		except Exception as errmsg:
+			aelGlobals.write_log(f"Error in module 'createThumbnails': {filename} - {errmsg}")
+			remove(filename)
 			continue
 	del filelist
 
@@ -2337,16 +1338,14 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	tvdbV4 = get_TVDb()
 	if not tvdbV4:
 		aelGlobals.write_log('TVDb API-V4 is not in use!')
-	posterDir = f"{getPictureDir()}poster/"
-	coverDir = f"{getPictureDir()}cover/"
-	previewDir = f"{getPictureDir()}preview/"
+	posterDir = f"{aelGlobals.HDDPATH}poster/"
+	coverDir = f"{aelGlobals.HDDPATH}cover/"
+	previewDir = f"{aelGlobals.HDDPATH}preview/"
 	posters = 0
 	covers = 0
 	entrys = 0
 	blentrys = 0
 	position = 0
-#	TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#	unkodierte URL: http://image.tmdb.org/t/p/original
 	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
 	for title in titles:
 		if title and title != '' and title != ' ' and 'BL:' not in title:
@@ -2364,8 +1363,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 			foundAsMovie = False
 			foundAsSeries = False
 			aelGlobals.write_log('################################################### themoviedb movie ##############################################')
-			STATUS = f"{position}/{len(titles)} : themoviedb movie -{title} ({posters}|{covers}|{entrys}|{blentrys})"
-			aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb movie', aelGlobals.addlog)
+			STATUS = f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+			aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb movie')
 			search = tmdb.Search()
 			res = search.movie(query=title, language='de', year=jahr) if jahr != '' else search.movie(query=title, language='de')
 			if res and res['results']:
@@ -2379,7 +1378,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 				for item in res['results']:
 					if item['title'].lower() == bestmatch[0]:
 						foundAsMovie = True
-						aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb movie', aelGlobals.addlog)
+						aelGlobals.write_log(f"found {bestmatch[0]} for {title.lower()} on themoviedb movie")
 						if item['original_title']:
 							org_name = item['original_title']
 						if item['poster_path'] and loadImages:
@@ -2418,14 +1417,14 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						break
 			aelGlobals.write_log('################################################### themoviedb tv ##############################################')
 			if not foundAsMovie:
-				STATUS = f"{position}/{len(titles)} : themoviedb tv -{title} ({posters}|{covers}|{entrys}|{blentrys})"
-				aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb tv', aelGlobals.addlog)
+				STATUS = f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+				aelGlobals.write_log(f"looking for {str(title)} on themoviedb tv")
 				search = tmdb.Search()
 				searchName = findEpisode(title)
 				if searchName:
-					res = aelGlobals.callLibrary(search.tv, query=searchName[2], language='de', year=jahr, include_adult=True, search_type='ngram')
+					res = aelGlobals.callLibrary(search.tv, None, query=searchName[2], language='de', year=jahr, include_adult=True, search_type='ngram')
 				else:
-					res = aelGlobals.callLibrary(search.tv, query=title, language='de', year=jahr)
+					res = aelGlobals.callLibrary(search.tv, None, query=title, language='de', year=jahr)
 				if res and res['results']:
 					reslist = []
 					for item in res['results']:
@@ -2442,7 +1441,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					for item in res['results']:
 						if item['name'].lower() == bestmatch[0]:
 							foundAsSeries = True
-							aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on themoviedb tv', aelGlobals.addlog)
+							aelGlobals.write_log(f"found ' {bestmatch[0]} for {title.lower()} on themoviedb tv")
 							if searchName:
 								details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
 								if details:
@@ -2502,12 +1501,12 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							break
 			aelGlobals.write_log('################################################### thetvdb ##############################################')
 			if not foundAsMovie and not foundAsSeries:
-				STATUS = f"{position}/{len(titles)} : thetvdb -{title} ({posters}|{covers}|{entrys}|{blentrys})"
-				aelGlobals.write_log('looking for ' + str(title) + ' on thetvdb', aelGlobals.addlog)
+				STATUS = f"{position}/{len(titles)}: thetvdb - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+				aelGlobals.write_log(f"looking for {title} on thetvdb")
 				seriesid = None
 				search = tvdb.Search()
 				searchTitle = convertTitle2(title)
-				response = aelGlobals.callLibrary(search.series, title=searchTitle, language="de")
+				response = aelGlobals.callLibrary(search.series, searchTitle, language="de")
 				if response:
 					reslist = []
 					for result in response:
@@ -2518,7 +1517,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						bestmatch = [searchTitle.lower()]
 					for result in response:
 						if result['seriesName'].lower() == bestmatch[0]:
-							aelGlobals.write_log('found ' + str(bestmatch[0]) + ' for ' + str(title.lower()) + ' on thetvdb', aelGlobals.addlog)
+							aelGlobals.write_log(f"found {bestmatch[0]} for {title.lower()} on thetvdb")
 							seriesid = result['id']
 							break
 				if seriesid:
@@ -2531,6 +1530,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					except Exception:
 						episoden = []
 					epilist = []
+					tvdburl = b64decode(b"aHR0cHM6Ly93d3cudGhldHZkYi5jb20vYmFubmVycy8=J"[:-1]).decode()
+					networks = loads(join(aelGlobals.CONFIGPATH, "networks.json"))
 					if episoden and episoden:
 						for episode in episoden:
 							epilist.append(str(episode['episodeName']).lower())
@@ -2545,18 +1546,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								if 'siteRating' in episode:
 									if episode['siteRating'] != '0' and episode['siteRating'] != 'None':
 										titleinfo['rating'] = episode['siteRating']
-								if 'contentRating' in episode:
-									if "TV-MA" in str(episode['contentRating']):
-										titleinfo['fsk'] = "18"
-									elif "TV-PG" in str(episode['contentRating']):
-										titleinfo['fsk'] = "16"
-									elif "TV-14" in str(episode['contentRating']):
-										titleinfo['fsk'] = "12"
-									elif "TV-Y7" in str(episode['contentRating']):
-										titleinfo['fsk'] = "6"
+								titleinfo['fsk'] = aelGlobals.FSKDICT.get(episode.get("contentRating", ""), "")
 								if 'filename' in episode and loadImages:
 									if str(episode['filename']).endswith('.jpg') and not titleinfo['backdrop_url'].startswith('http'):
-										titleinfo['backdrop_url'] = 'https://www.thetvdb.com/banners/' + episode['filename']
+										titleinfo['backdrop_url'] = f"{tvdburl}{episode['filename']}"
 								if 'imdbId' in episode and episode['imdbId'] is not None:
 									imdb_id = episode['imdbId']
 								if response:
@@ -2570,7 +1563,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											titleinfo['country'] = networks[response['network']]
 									if response['poster'] and loadImages:
 										if str(response['poster']).endswith('.jpg') and not titleinfo['poster_url'].startswith('http'):
-											titleinfo['poster_url'] = 'https://www.thetvdb.com/banners/' + response['poster']
+											titleinfo['poster_url'] = f"{tvdburl}{response['poster']}"
 								break
 					if response and not foundEpisode:
 						if titleinfo['year'] == "":
@@ -2584,43 +1577,32 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						imdb_id = response['imdbId']
 						if titleinfo['rating'] == "" and response['siteRating'] != "0":
 							titleinfo['rating'] = response['siteRating']
-						if titleinfo['fsk'] == "":
-							if "TV-MA" in str(response['rating']):
-								titleinfo['fsk'] = "18"
-							elif "TV-PG" in str(response['rating']):
-									titleinfo['fsk'] = "16"
-							elif "TV-14" in str(response['rating']):
-								titleinfo['fsk'] = "12"
-							elif "TV-Y7" in str(response['rating']):
-								titleinfo['fsk'] = "6"
+						titleinfo['fsk'] = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
 						if response['poster'] and loadImages:
 							if response['poster'].endswith('.jpg') and not titleinfo['poster_url'].startswith('http'):
-								titleinfo['poster_url'] = 'https://www.thetvdb.com/banners/' + response['poster']
+								titleinfo['poster_url'] = f"{tvdburl}{response['poster']}"
 						if response['fanart'] and loadImages:
 							if response['fanart'].endswith('.jpg') and not titleinfo['backdrop_url'].startswith('http'):
-								titleinfo['backdrop_url'] = 'https://www.thetvdb.com/banners/' + response['fanart']
+								titleinfo['backdrop_url'] = f"{tvdburl}{response['fanart']}"
 						if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
 							showimgs = tvdb.Series_Images(seriesid)
 							if not titleinfo['backdrop_url'].startswith('http'):
-								response = aelGlobals.callLibrary(showimgs.fanart, language=str(lang))
+								response = aelGlobals.callLibrary(showimgs.fanart, None, language=str(lang))
 								if response and str(response) != 'None':
-									titleinfo['backdrop_url'] = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
+									titleinfo['backdrop_url'] = f"{tvdburl}{response[0]['fileName']}"
 							if not titleinfo['poster_url'].startswith('http'):
-								response = aelGlobals.callLibrary(showimgs.poster, language=str(lang))
+								response = aelGlobals.callLibrary(showimgs.poster, None, language=str(lang))
 								if response and str(response) != 'None':
-									titleinfo['poster_url'] = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
+									titleinfo['poster_url'] = f"{tvdburl}{response[0]['fileName']}"
 			aelGlobals.write_log('################################################### maze.tv ##############################################')
 			if not foundAsMovie:
 				if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
-					STATUS = f"{position}/{len(titles)} : maze.tv -{title} ({posters}|{covers}|{entrys}|{blentrys})"
-					aelGlobals.write_log('looking for ' + str(title) + ' on maze.tv', aelGlobals.addlog)
-					# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-					# url = f"http://api.tvmaze.com/search/shows?q={org_name}" if org_name else f"http://api.tvmaze.com/search/shows?q={title}"
-					# unkodierte URL: http://api.tvmaze.com/search/shows
-					tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5")[:-1].decode()
-					errmsg, res = aelGlobals.getAPIdata(tvmazeurl, params={"q": f"{org_name if org_name else title}"})
+					STATUS = f"{position}/{len(titles)}: maze.tv - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+					aelGlobals.write_log(f"looking for {title} on maze.tv")
+					tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
+					errmsg, res = aelGlobals.getAPIdata(tvmazeurl, params={"q": f"{org_name or title}"})
 					if errmsg:
-						aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_titleInfo: TVMAZE call'")
+						aelGlobals.write_log("API download error in module 'get_titleInfo: TVMAZE call'")
 					if res:
 						reslist = []
 						for item in res:
@@ -2647,89 +1629,63 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								if item['show']['externals']['imdb'] and not imdb_id:
 									imdb_id = item['show']['externals']['imdb']
 								break
-			aelGlobals.write_log('################################################### omdb ##############################################')
-			if not foundAsMovie and not foundAsSeries:
-				STATUS = f"{position}/{len(titles)} : omdb -{title} ({posters}|{covers}|{entrys}|{blentrys})"
-				aelGlobals.write_log('looking for ' + str(title) + ' on omdb', aelGlobals.addlog)
-				# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-				# unkodierte URL: http://www.omdbapi.com
-				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
-				if imdb_id:
-					# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-					# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&i={imdb_id}"
-					params = {"apikey": get_keys('omdb'), "i": imdb_id}
-				else:
-					# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-					# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&s={org_name}&page=1" if org_name else f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&s={title}&page=1"
-					params = {"apikey": get_keys('omdb'), "s": org_name, "page": 1}
-					errmsg, res = aelGlobals.getAPIdata(omdburl, params=params)
-					if errmsg:
-						aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_titleInfo: OMDB call #1'")
-					# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-					# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&t={title}"
-					params = {"apikey": get_keys('omdb'), "t": title, "page": 1}
-					if res and res['Response'] == "True":
-						reslist = []
-						for result in res['Search']:
-							reslist.append(result['Title'].lower())
-						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-						if not bestmatch:
-							bestmatch = [title.lower()]
-						for result in res['Search']:
-							if result['Title'].lower() == bestmatch[0]:
-								# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-								# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&i={result['imdbID']}"
-								params = {"apikey": get_keys('omdb'), "i": result['imdbID']}
-								break
-				errmsg, res = aelGlobals.getAPIdata(omdburl, params=params)
-				if errmsg:
-					aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_searchResults: OMDB call #2'")
-				if res and res['Response'] == "True":
-					if res['Year'] and titleinfo['year'] == "":
-						titleinfo['year'] = res['Year'][:4]
-					if res['Genre'] != "N/A" and titleinfo['genre'] == "":
-						stype = "-Serie" if res['Type'] and res['Type'] == 'series' else " "
-						genres = res['Genre'].split(', ')
-						for genre in genres:
-							if genre not in titleinfo['genre']:
-								titleinfo['genre'] = titleinfo['genre'] + genre + stype
-						titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-					if res['Poster'].startswith('http') and not titleinfo['poster_url'].startswith('http') and loadImages:
-						titleinfo['poster_url'] = res['Poster']
-						omdb_image = True
-					if res['imdbRating'] != "N/A" and titleinfo['rating'] == "":
-						titleinfo['rating'] = res['imdbRating']
-					if res['Country'] != "N/A" and titleinfo['country'] == "":
-						rescountries = res['Country'].split(', ')
-						countries = ""
-						for country in rescountries:
-							countries = countries + country + ' | '
-						titleinfo['country'] = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
-					if res['imdbID'] != "N/A" and not imdb_id:
-						imdb_id = res['imdbID']
-					if titleinfo['fsk'] == "" and res['Rated'] != "N/A":
-						if "R" in str(res['Rated']):
-							titleinfo['fsk'] = "18"
-						elif "TV-MA" in str(res['Rated']):
-							titleinfo['fsk'] = "18"
-						elif "TV-PG" in str(res['Rated']):
-							titleinfo['fsk'] = "16"
-						elif "TV-14" in str(res['Rated']):
-							titleinfo['fsk'] = "12"
-						elif "TV-Y7" in str(res['Rated']):
-							titleinfo['fsk'] = "6"
-						elif "PG-13" in str(res['Rated']):
-							titleinfo['fsk'] = "12"
-						elif "PG" in str(res['Rated']):
-							titleinfo['fsk'] = "6"
-						elif "G" in str(res['Rated']):
-							titleinfo['fsk'] = "16"
+#			aelGlobals.write_log('################################################### omdb ##############################################')
+#			if not foundAsMovie and not foundAsSeries:
+#				STATUS = f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+#				aelGlobals.write_log('looking for ' + str(title) + ' on omdb', aelGlobals.addlog)
+#				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
+#				if imdb_id:
+#					params = {"apikey": get_keys('omdb'), "i": imdb_id}
+#				else:
+#					params = {"apikey": get_keys('omdb'), "s": org_name, "page": 1}
+#					errmsg, res = aelGlobals.getAPIdata(omdburl, params=params)
+#					if errmsg:
+#						aelGlobals.write_log("API download error in module 'get_titleInfo: OMDB call #1'")
+#					params = {"apikey": get_keys('omdb'), "t": title, "page": 1}
+#					if res and res['Response'] == "True":
+#						reslist = []
+#						for result in res['Search']:
+#							reslist.append(result['Title'].lower())
+#						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+#						if not bestmatch:
+#							bestmatch = [title.lower()]
+#						for result in res['Search']:
+#							if result['Title'].lower() == bestmatch[0]:
+#								params = {"apikey": get_keys('omdb'), "i": result['imdbID']}
+#								break
+#				errmsg, res = aelGlobals.getAPIdata(omdburl, params=params)
+#				if errmsg:
+#					aelGlobals.write_log("API download error in module 'get_searchResults: OMDB call #2'")
+#				if res and res['Response'] == "True":
+#					if res['Year'] and titleinfo['year'] == "":
+#						titleinfo['year'] = res['Year'][:4]
+#					if res['Genre'] != "N/A" and titleinfo['genre'] == "":
+#						stype = "-Serie" if res['Type'] and res['Type'] == 'series' else " "
+#						genres = res['Genre'].split(', ')
+#						for genre in genres:
+#							if genre not in titleinfo['genre']:
+#								titleinfo['genre'] = titleinfo['genre'] + genre + stype
+#						titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+#					if res['Poster'].startswith('http') and not titleinfo['poster_url'].startswith('http') and loadImages:
+#						titleinfo['poster_url'] = res['Poster']
+#						omdb_image = True
+#					if res['imdbRating'] != "N/A" and titleinfo['rating'] == "":
+#						titleinfo['rating'] = res['imdbRating']
+#					if res['Country'] != "N/A" and titleinfo['country'] == "":
+#						rescountries = res['Country'].split(', ')
+#						countries = ""
+#						for country in rescountries:
+#							countries = countries + country + ' | '
+#						titleinfo['country'] = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
+#					if res['imdbID'] != "N/A" and not imdb_id:
+#						imdb_id = res['imdbID']
+#					titleinfo['fsk'] = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
 			filename = convert2base64(title)
 			if db and filename and filename != '' and filename != ' ':
 				if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
 					blentrys += 1
 					db.addblackList(filename)
-					aelGlobals.write_log('nothing found for : ' + str(titleinfo['title']), aelGlobals.addlog)
+					aelGlobals.write_log(f"nothing found for {titleinfo['title']}")
 				if titleinfo['genre'] != "" or titleinfo['year'] != "" or titleinfo['rating'] != "" or titleinfo['fsk'] != "" or titleinfo['country'] != "":
 					entrys += 1
 					if research:
@@ -2739,7 +1695,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
 					else:
 						db.addTitleInfo(filename, titleinfo['title'], titleinfo['genre'], titleinfo['year'], titleinfo['rating'], titleinfo['fsk'], titleinfo['country'])
-					aelGlobals.write_log('found data for : ' + str(titleinfo['title']), aelGlobals.addlog)
+					aelGlobals.write_log(f"found data for {titleinfo['title']}")
 				if not titleinfo['poster_url'] and loadImages:
 					titleinfo['poster_url'] = get_Picture(f"{title} ({titleinfo['year']})", what='Poster', lang='de') if titleinfo['year'] != "" else get_Picture(title, what='Poster', lang='de')
 				if titleinfo['poster_url'] and loadImages:
@@ -2764,13 +1720,13 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							downloadImage(titleinfo['backdrop_url'], join(coverDir, f"{research}.jpg"))
 						else:
 							downloadImage(titleinfo['backdrop_url'], join(coverDir, f"{filename}.jpg"))
-			aelGlobals.write_log(titleinfo, aelGlobals.addlog)
+			aelGlobals.write_log(titleinfo)
 	aelGlobals.write_log(f"set {entrys} on eventInfo")
 	aelGlobals.write_log(f"set {blentrys} on Blacklist")
 	if db:
 		db.parameter(PARAMETER_SET, 'lasteventInfoCount', str(int(entrys + blentrys)))
 		db.parameter(PARAMETER_SET, 'lasteventInfoCountSuccsess', str(entrys))
-	STATUS = "entferne alte Extradaten..."
+	STATUS = _("remove old extra data...")
 	if config.plugins.AdvancedEventLibrary.DelPreviewImages.value:
 		cleanPreviewImages(db)
 	if db:
@@ -2810,23 +1766,23 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 			if itype:
 				from Plugins.Extensions.AdvancedEventLibrary.AdvancedEventLibrarySimpleMovieWall import saveList
 				saveList(itype)
-				aelGlobals.write_log("MovieWall data saved with " + str(itype))
+				aelGlobals.write_log(f"MovieWall data saved with {itype}")
 		except Exception as ex:
-			aelGlobals.write_log('save moviewall data : ' + str(ex))
-	if aelGlobals.addlog:
+			aelGlobals.write_log(f"save moviewall data {ex}")
+	if ADDLOG:
 		writeTVStatistic(db)
 	if db:
 		db.parameter(PARAMETER_SET, 'laststop', str(time()))
 	aelGlobals.write_log("Update done")
-	STATUS = None
+	STATUS = ""
 	clearMem("search: connected")
 
 
 def get_Picture(title, what='Cover', lang='de'):
 	cq = str(config.plugins.AdvancedEventLibrary.coverQuality.value) if config.plugins.AdvancedEventLibrary.coverQuality.value != "w1920" else 'original'
 	posterquality = config.plugins.AdvancedEventLibrary.posterQuality.value
-	posterDir = f"{getPictureDir()}poster/"
-	coverDir = f"{getPictureDir()}cover/"
+	posterDir = f"{aelGlobals.HDDPATH}poster/"
+	coverDir = f"{aelGlobals.HDDPATH}cover/"
 	tmdb.API_KEY = get_keys('tmdb')
 	picture = None
 	titleNyear = convertYearInTitle(title)
@@ -2835,13 +1791,11 @@ def get_Picture(title, what='Cover', lang='de'):
 	aelGlobals.write_log('################################################### themoviedb tv ##############################################')
 	search = tmdb.Search()
 	searchName = findEpisode(title)
-	#	TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-	#	unkodierte URL: http://image.tmdb.org/t/p/
 	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC8=x"[:-1]).decode()
 	if searchName:
-		res = aelGlobals.callLibrary(search.tv, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
+		res = aelGlobals.callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
 	else:
-		res = aelGlobals.callLibrary(search.tv, query=title, language=str(lang), year=jahr)
+		res = aelGlobals.callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
 	if res and res['results']:
 		reslist = []
 		for item in res['results']:
@@ -2884,7 +1838,7 @@ def get_Picture(title, what='Cover', lang='de'):
 	aelGlobals.write_log('################################################### themoviedb movie ##############################################')
 	if picture is None:
 		search = tmdb.Search()
-		res = aelGlobals.callLibrary(search.movie(query=title, language=str(lang), year=jahr))
+		res = aelGlobals.callLibrary(search.movie, None, query=title, language=str(lang), year=jahr)
 		if res and res['results']:
 			reslist = []
 			for item in res['results']:
@@ -2916,7 +1870,7 @@ def get_Picture(title, what='Cover', lang='de'):
 		seriesid = None
 		search = tvdb.Search()
 		searchTitle = convertTitle2(title)
-		response = aelGlobals.callLibrary(search.series, title=searchTitle, language=str(lang))
+		response = aelGlobals.callLibrary(search.series, searchTitle, language=str(lang))
 		if response:
 			reslist = []
 			for result in response:
@@ -2948,14 +1902,15 @@ def get_Picture(title, what='Cover', lang='de'):
 						break
 			showimgs = tvdb.Series_Images(seriesid)
 			if showimgs:
+				tvdburl = b64decode(b"aHR0cHM6Ly93d3cudGhldHZkYi5jb20vYmFubmVycy8=J"[:-1]).decode()
 				if what == 'Cover':
-					response = aelGlobals.callLibrary(showimgs.fanart, language=str(lang))
+					response = aelGlobals.callLibrary(showimgs.fanart, None, language=str(lang))
 					if response and str(response) != 'None':
-						picture = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
+						picture = f"{tvdburl}{response[0]['fileName']}"
 				if what == 'Poster':
-					response = aelGlobals.callLibrary(showimgs.poster, language=str(lang))
+					response = aelGlobals.callLibrary(showimgs.poster, None, language=str(lang))
 					if response and str(response) != 'None':
-						picture = 'https://www.thetvdb.com/banners/' + response[0]['fileName']
+						picture = f"{tvdburl}{response[0]['fileName']}"
 	if picture:
 		aelGlobals.write_log('researching picture result ' + str(picture) + ' for ' + str(title))
 	return picture
@@ -2963,8 +1918,8 @@ def get_Picture(title, what='Cover', lang='de'):
 
 def get_MissingPictures(db, poster, cover):
 	global STATUS
-	posterDir = f"{getPictureDir()}poster/"
-	coverDir = f"{getPictureDir()}cover/"
+	posterDir = f"{aelGlobals.HDDPATH}poster/"
+	coverDir = f"{aelGlobals.HDDPATH}cover/"
 	pList = db.getMissingPictures()
 	covers = 0
 	posters = 0
@@ -2981,31 +1936,31 @@ def get_MissingPictures(db, poster, cover):
 		aelGlobals.write_log('found ' + str(len(pList[0])) + ' missing covers')
 		for picture in pList[0]:
 			i += 1
-			STATUS = f"suche fehlendes Cover für {picture} ({i}/{len(pList[0])} | {covers}) "
+			STATUS = f"{_('looking for missing cover for')} {picture} ({i}/{len(pList[0])} | {covers}) "
 			url = get_Picture(title=picture, what='Cover', lang='de')
 			if url:
 				covers += 1
 				downloadImage(url, join(coverDir, convert2base64(picture) + '.jpg'))
 			else:
 				db.addblackListCover(convert2base64(picture))
-		aelGlobals.write_log('have downloaded ' + str(covers) + ' missing covers')
+		aelGlobals.write_log(f"have downloaded {covers} missing covers")
 	if pList[1]:
-		aelGlobals.write_log('found ' + str(len(pList[1])) + ' missing posters')
+		aelGlobals.write_log(f"found {len(pList[1])} missing posters")
 		i = 0
 		for picture in pList[1]:
 			i += 1
-			STATUS = f"suche fehlendes Poster für {picture} ({i}/{len(pList[1])} | {posters}) "
+			STATUS = f"{_('looking for missing poster for')} {picture} ({i}/{len(pList[1])} | {posters}) "
 			url = get_Picture(title=picture, what='Poster', lang='de')
 			if url:
 				posters += 1
 				downloadImage(url, join(posterDir, convert2base64(picture) + '.jpg'))
 			else:
 				db.addblackListPoster(convert2base64(picture))
-		aelGlobals.write_log('have downloaded ' + str(posters) + ' missing posters')
+		aelGlobals.write_log(f"have downloaded {posters} missing posters")
 	posters += poster
 	covers += cover
-	aelGlobals.write_log("found " + str(posters) + " posters")
-	aelGlobals.write_log("found " + str(covers) + " covers")
+	aelGlobals.write_log(f"found {posters} posters")
+	aelGlobals.write_log(f"found {covers} covers")
 	db.parameter(PARAMETER_SET, 'lastposterCount', str(posters))
 	db.parameter(PARAMETER_SET, 'lastcoverCount', str(covers))
 
@@ -3035,18 +1990,18 @@ def get_size(path):
 
 
 def createStatistics(db):
-	DIR = f"{getPictureDir()}poster/"
+	DIR = f"{aelGlobals.HDDPATH}poster/"
 	posterCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	posterSize = check_output(['du', '-sh', DIR]).split()[0]
-	DIR = f"{getPictureDir()}cover/"
+	posterSize = check_output(['du', '-sh', DIR]).decode().split()[0]
+	DIR = f"{aelGlobals.HDDPATH}cover/"
 	coverCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	DIR = f"{getPictureDir()}preview/"
+	DIR = f"{aelGlobals.HDDPATH}preview/"
 	previewCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	DIR = f"{getPictureDir()}cover/"
-	coverSize = check_output(['du', '-sh', DIR]).split()[0]
-	DIR = f"{getPictureDir()}preview/"
-	previewSize = check_output(['du', '-sh', DIR]).split()[0]
-	inodes = check_output(['df', '-i', dir]).split()
+	DIR = f"{aelGlobals.HDDPATH}cover/"
+	coverSize = check_output(['du', '-sh', DIR]).decode().split()[0]
+	DIR = f"{aelGlobals.HDDPATH}preview/"
+	previewSize = check_output(['du', '-sh', DIR]).decode().split()[0]
+	inodes = check_output(['df', '-i', aelGlobals.HDDPATH]).decode().split()
 	nodestr = f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}"
 	db.parameter(PARAMETER_SET, 'posterCount', str(posterCount))
 	db.parameter(PARAMETER_SET, 'coverCount', str(coverCount))
@@ -3060,17 +2015,15 @@ def createStatistics(db):
 def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bingOption=''):
 	cq = str(config.plugins.AdvancedEventLibrary.coverQuality.value) if config.plugins.AdvancedEventLibrary.coverQuality.value != "w1920" else 'original'
 	posterquality = config.plugins.AdvancedEventLibrary.posterQuality.value
-	posterDir = f"{getPictureDir()}poster/"
-	coverDir = f"{getPictureDir()}cover/"
+	posterDir = f"{aelGlobals.HDDPATH}poster/"
+	coverDir = f"{aelGlobals.HDDPATH}cover/"
 	tmdb.API_KEY = get_keys('tmdb')
-	# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-	# unkodierte URL: http://image.tmdb.org/t/p/
 	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
 	pictureList = []
 	titleNyear = convertYearInTitle(title)
 	title = convertSearchName(titleNyear[0])
 	jahr = str(titleNyear[1])
-	aelGlobals.write_log('searching ' + str(what) + ' for ' + str(title) + ' with language = ' + str(lang))
+	aelGlobals.write_log(f"searching {what} for {title} with language = {lang}")
 	if not b64title:
 		b64title = convert2base64(title)
 	tvdb.KEYS.API_KEY = get_keys('tvdb')
@@ -3078,7 +2031,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 	search = tvdb.Search()
 	searchTitle = convertTitle2(title)
 	result = {}
-	response = aelGlobals.callLibrary(search.series, title=searchTitle, language=str(lang))
+	response = aelGlobals.callLibrary(search.series, searchTitle, language=str(lang))
 	if response:
 		reslist = []
 		for result in response:
@@ -3112,24 +2065,25 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 					break
 		showimgs = tvdb.Series_Images(seriesid)
 		if showimgs:
+			tvdburl = b64decode(b"aHR0cHM6Ly93d3cudGhldHZkYi5jb20vYmFubmVycy8=J"[:-1]).decode()
 			if what == 'Cover':
-				response = aelGlobals.callLibrary(showimgs.fanart, language=str(lang))
+				response = aelGlobals.callLibrary(showimgs.fanart, None, language=str(lang))
 				if response and str(response) != 'None':
 					for img in response:
-						itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], join(coverDir, b64title + '.jpg'), convert2base64(img['fileName']) + '.jpg']
+						itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
 						pictureList.append((itm,))
 			if what == 'Poster':
-				response = aelGlobals.callLibrary(showimgs.poster, language=str(lang))
+				response = aelGlobals.callLibrary(showimgs.poster, None, language=str(lang))
 				if response and str(response) != 'None':
 					for img in response:
-						itm = [result['seriesName'] + epiname, what, str(img['resolution']) + ' gefunden auf TVDb', 'https://www.thetvdb.com/banners/' + img['fileName'], join(posterDir, b64title + '.jpg'), convert2base64(img['fileName']) + '.jpg']
+						itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(posterDir, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
 						pictureList.append((itm,))
 	search = tmdb.Search()
 	searchName = findEpisode(title)
 	if searchName:
-		res = aelGlobals.callLibrary(search.tv, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
+		res = aelGlobals.callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
 	else:
-		res = aelGlobals.callLibrary(search.tv, query=title, language=str(lang), year=jahr)
+		res = aelGlobals.callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
 	if res and res['results']:
 		reslist = []
 		for item in res['results']:
@@ -3155,35 +2109,35 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 							if imgs and 'stills' in imgs:
 								for img in imgs['stills']:
 										imgsize = str(img['width']) + 'x' + str(img['height'])
-										itm = [item['name'] + ' - ' + epi['name'], what, str(imgsize) + ' gefunden auf TMDb TV', f"{tmdburl}{cq}{img['file_path']}", join(coverDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+										itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 										pictureList.append((itm,))
 				if what == 'Cover' and not searchName:
 					imgs = idx.images(language=str(lang))['backdrops']
 					if imgs:
 						for img in imgs:
 							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['name'], what, str(imgsize) + ' gefunden auf TMDb TV', f"{tmdburl}{cq}{img['file_path']}", join(coverDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+							itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['backdrops']
 						if imgs:
 							for img in imgs:
 								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['name'], what, str(imgsize) + ' gefunden auf TMDb TV', f"{tmdburl}{cq}{img['file_path']}", join(coverDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+								itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 				if what == 'Poster':
 					imgs = idx.images(language=str(lang))['posters']
 					if imgs:
 						for img in imgs:
 							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['name'], what, str(imgsize) + ' gefunden auf TMDb TV', f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+							itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['posters']
 						if imgs:
 							for img in imgs:
 								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['name'], what, str(imgsize) + ' gefunden auf TMDb TV', f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+								itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 	search = tmdb.Search()
 	res = search.movie(query=title, language=str(lang), year=jahr) if jahr != '' else search.movie(query=title, language=str(lang))
@@ -3203,47 +2157,41 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 					if imgs:
 						for img in imgs:
 							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['title'], what, str(imgsize) + ' gefunden auf TMDb Movie', f"{tmdburl}{cq}{img['file_path']}", join(coverDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+							itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['backdrops']
 						if imgs:
 							for img in imgs:
 								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['title'], what, str(imgsize) + ' gefunden auf TMDb Movie', f"{tmdburl}{cq}{img['file_path']}", join(coverDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+								itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 				if what == 'Poster':
 					imgs = idx.images(language=str(lang))['posters']
 					if imgs:
 						for img in imgs:
 							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['title'], what, str(imgsize) + ' gefunden auf TMDb Movie', f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+							itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['posters']
 						if imgs:
 							for img in imgs:
 								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['title'], what, str(imgsize) + ' gefunden auf TMDb Movie', f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, b64title + '.jpg'), convert2base64(img['file_path']) + '.jpg']
+								itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{posterquality}{img['file_path']}", join(posterDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 	if not pictureList and what == 'Poster':
-		# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-		# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&t={title}"
-		# unkodierte URL: "http://www.omdbapi.com"
-		url = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==J"[:-1]).decode()
-		errmsg, res = aelGlobals.getAPIdata(url, params={"apikey": get_keys("omdb"), "t": title})
+		omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==J"[:-1]).decode()
+		errmsg, res = aelGlobals.getAPIdata(omdburl, params={"apikey": get_keys("omdb"), "t": title})
 		if errmsg:
-			aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_PictureList: OMDB call'")
+			aelGlobals.write_log("API download error in module 'get_PictureList: OMDB call'")
 		if res['Response'] == "True" and res['Poster'].startswith('http'):
 			itm = [res['Title'], what, 'OMDB', res['Poster'], join(posterDir, b64title + '.jpg'), convert2base64('omdbPosterFile') + '.jpg']
 			pictureList.append((itm,))
-		# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-		# tvmazeurl = f"http://api.tvmaze.com/search/shows?q={title}"
-		# unkodierte URL: "http://api.tvmaze.com/search/shows"
-		tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==F"[:-1]).decode()
+		tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
 		errmsg, res = aelGlobals.getAPIdata(tvmazeurl, params={"q": title})
 		if errmsg:
-			aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_PictureList: TVMAZE call'")
+			aelGlobals.write_log("API download error in module 'get_PictureList: TVMAZE call'")
 		if res:
 			reslist = []
 			for item in res:
@@ -3268,10 +2216,10 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			i += 1
 	if pictureList:
 		idx = 0
-		aelGlobals.write_log('found ' + str(len(pictureList)) + ' images for ' + str(title), aelGlobals.addlog)
+		aelGlobals.write_log(f"found {len(pictureList)} images for {title}")
 		failed = []
 		while idx <= int(count) and idx < len(pictureList):
-			aelGlobals.write_log('Image : ' + str(pictureList[idx]), aelGlobals.addlog)
+			aelGlobals.write_log(f"Image: {pictureList[idx]}")
 			if not downloadImage2(pictureList[idx][0][3], join('/tmp/', pictureList[idx][0][5])):
 				failed.insert(0, idx)
 			idx += 1
@@ -3294,9 +2242,9 @@ def get_searchResults(title, lang='de'):
 	searchName = findEpisode(title)
 	search = tmdb.Search()
 	if searchName:
-		res = aelGlobals.callLibrary(search.tv, query=searchName[2], language=lang, year=jahr, include_adult=True, search_type='ngram')
+		res = aelGlobals.callLibrary(search.tv, None, query=searchName[2], language=lang, year=jahr, include_adult=True, search_type='ngram')
 	else:
-		res = aelGlobals.callLibrary(search.tv, query=title, language=lang, year=jahr)
+		res = aelGlobals.callLibrary(search.tv, None, query=title, language=lang, year=jahr)
 	if res and res['results']:
 		reslist = []
 		for item in res['results']:
@@ -3409,7 +2357,7 @@ def get_searchResults(title, lang='de'):
 	search = tvdb.Search()
 	searchTitle = convertTitle2(title)
 	searchName = findEpisode(title)
-	response = aelGlobals.callLibrary(search.series, title=searchTitle, language="de")
+	response = aelGlobals.callLibrary(search.series, searchTitle, language="de")
 	if response:
 		reslist = []
 		for result in response:
@@ -3445,6 +2393,7 @@ def get_searchResults(title, lang='de'):
 						bestmatch = get_close_matches(title.lower(), epilist, 1, 0.6)
 						if not bestmatch:
 							bestmatch = [title.lower()]
+						networks = loads(join(aelGlobals.CONFIGPATH, "networks.json"))
 						for episode in episoden:
 							if episode['episodeName'].lower() == bestmatch[0]:
 								foundEpisode = True
@@ -3456,17 +2405,7 @@ def get_searchResults(title, lang='de'):
 									year = episode['firstAired'][:4]
 								if 'siteRating' in episode and episode['siteRating'] != '0' and episode['siteRating'] != 'None':
 									rating = episode['siteRating']
-								rateddict = {"R": "18", "TV-MA": "18", "TV-PG": "16", "TV-14": "12", "TV-Y7": "6", "PG-13": "12", "PG": "6", "G": "16"}
-								fsk = rateddict.get(episode.get("contentRating", ""), "")
-								if 'contentRating' in episode:
-									if "TV-MA" in str(episode['contentRating']):
-										fsk = "18"
-									elif "TV-PG" in str(episode['contentRating']):
-										fsk = "16"
-									elif "TV-14" in str(episode['contentRating']):
-										fsk = "12"
-									elif "TV-Y7" in str(episode['contentRating']):
-										fsk = "6"
+								fsk = aelGlobals.FSKDICT.get(episode.get("contentRating", ""), "")
 								if response:
 									if 'genre' in response and response['genre']:
 										for genre in response['genre']:
@@ -3485,25 +2424,13 @@ def get_searchResults(title, lang='de'):
 						for genre in response['genre']:
 							genres = genres + genre + '-Serie '
 						genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-						if response['siteRating'] != "0":
-							rating = response['siteRating']
-						if "TV-MA" in str(response['rating']):
-							fsk = "18"
-						elif "TV-PG" in str(response['rating']):
-							fsk = "16"
-						elif "TV-14" in str(response['rating']):
-							fsk = "12"
-						elif "TV-Y7" in str(response['rating']):
-							fsk = "6"
+						rating = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
 						itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
 						resultList.append((itm,))
-	# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-	# tvmazeurl = f"http://api.tvmaze.com/search/shows?q={title}"
-	# unkodierte URL: "http://api.tvmaze.com/search/shows"
-	tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==L"[:-1]).decode()
+	tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
 	errmsg, res = aelGlobals.getAPIdata(tvmazeurl, params={"q": title})
 	if errmsg:
-		aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_searchResults: TVMAZE call #1'")
+		aelGlobals.write_log("API download error in module 'get_searchResults: TVMAZE call #1'")
 	if res:
 		reslist = []
 		for item in res:
@@ -3513,12 +2440,7 @@ def get_searchResults(title, lang='de'):
 			bestmatch = [title.lower()]
 		for item in res:
 			if item['show']['name'].lower() in bestmatch:
-				countries = ""
-				year = ""
-				genres = ""
-				rating = ""
-				fsk = ""
-				desc = ""
+				countries, year, genres, rating, fsk, desc = "", "", "", "", "", ""
 				if item['show']['summary']:
 					desc = item['show']['summary']
 				if item['show']['network']['country']:
@@ -3533,14 +2455,11 @@ def get_searchResults(title, lang='de'):
 					rating = item['show']['rating']['average']
 				itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
 				resultList.append((itm,))
-	# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-	# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&s={title}&page=1"
-	# unkodierte URL: "http://www.omdbapi.com"
 	omdburl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
 	omdbapi = get_keys('omdb')
 	errmsg, res = aelGlobals.getAPIdata(omdburl, params={"apikey": omdbapi, "s": title, "page": 1})
 	if errmsg:
-		aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_searchResults: TVMAZE call #2'")
+		aelGlobals.write_log("API download error in module 'get_searchResults: TVMAZE call #2'")
 	if res and res.get("Response", False):
 		reslist = []
 		for result in res.get("Search", []):
@@ -3550,11 +2469,9 @@ def get_searchResults(title, lang='de'):
 			bestmatch = [title.lower()]
 		for result in res.get("Search", []):
 			if result['Title'].lower() in bestmatch:
-				# TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-				# url = f"http://www.omdbapi.com/?apikey={get_keys('omdb')}&i={result['imdbID']}"
 				errmsg, res = aelGlobals.getAPIdata(omdburl, params={"apikey": omdbapi, "i": result.get("imdbID", "")})
 				if errmsg:
-					aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] API download error in module 'get_searchResults: TVMAZE call #3'")
+					aelGlobals.write_log("API download error in module 'get_searchResults: TVMAZE call #3'")
 				if res:
 					countries = ""
 					year = ""
@@ -3582,8 +2499,7 @@ def get_searchResults(title, lang='de'):
 							for country in rescountries:
 								countries = countries + country + ' | '
 							countries = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
-						rateddict = {"R": "18", "TV-MA": "18", "TV-PG": "16", "TV-14": "12", "TV-Y7": "6", "PG-13": "12", "PG": "6", "G": "16"}
-						fsk = rateddict.get(res.get("Rated", ""), "")
+						fsk = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
 						itm = [res['Title'], countries, str(year), genres, str(rating), fsk, "omdb", desc]
 						resultList.append((itm,))
 	aelGlobals.write_log('search results : ' + str(resultList))
@@ -3609,9 +2525,6 @@ def downloadTVSImage(tvsImage, imgname):
 
 def downloadTVMovieImage(tvMovieImage, imgname):
 	if not fileExists(imgname):
-#		TODO: Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#		imgurl = 'http://images.tvmovie.de/' + str(coverqualityDict[config.plugins.AdvancedEventLibrary.coverQuality.value]) + '/Center/' + tvMovieImage
-#		unkodierte url: http://images.tvmovie.de
 		tvmovieurl = b64decode(b"aHR0cDovL2ltYWdlcy50dm1vdmllLmRlR"[:-1]).decode()
 		imgurl = f"{tvmovieurl}/{coverqualityDict[config.plugins.AdvancedEventLibrary.coverQuality.value]}/Center/{tvMovieImage}"
 		ir = get(imgurl, stream=True, timeout=4)
@@ -3683,12 +2596,16 @@ class AELGlobals:
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36 Edge/87.0.664.75",
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18363"
 			]
+	FSKDICT = {"R": "18", "TV-MA": "18", "TV-PG": "16", "TV-14": "12", "TV-Y7": "6", "PG-13": "12", "PG": "6", "G": "16"}
 	DESKTOPSIZE = getDesktop(0).size()
 	TEMPPATH = "/var/volatile/tmp"
 # TODO: später wieder auf TEMPPATH setzen
 #	LOGFILE = join(TEMPPATH, "AdvancedEventLibrary.log")
 	LOGPATH = "/home/root/logs/"
 	LOGFILE = join(LOGPATH, "ael_logfile.log")
+	HDDPATH = config.plugins.AdvancedEventLibrary.Location.value
+	if "AEL/" not in HDDPATH:
+		HDDPATH = f"{HDDPATH}AEL/"
 	SKINPATH = resolveFilename(SCOPE_CURRENT_SKIN)  # /usr/share/enigma2/MetrixHD/
 	SHAREPATH = resolveFilename(SCOPE_SKIN_IMAGE)  # /usr/share/enigma2/
 	CONFIGPATH = resolveFilename(SCOPE_CONFIG, "AEL/")  # /etc/enigma2/AEL/
@@ -3699,8 +2616,7 @@ class AELGlobals:
 
 	def __init__(self):
 		self.saving = False
-		self.STATUS = None
-		self.addlog = config.plugins.AdvancedEventLibrary.Log.value
+		self.STATUS = ""
 
 	def setStatus(self, text=None):
 		self.STATUS = text
@@ -3721,10 +2637,10 @@ class AELGlobals:
 			if status == 200:
 				jsondict = loads(response.content)
 			else:
-				errmsg = f"[{DEFAULT_MODULE_NAME}] API server access ERROR, response code: {status}"
+				errmsg = f"API server access ERROR, response code: {status}"
 			return "", jsondict
 		except exceptions.RequestException as errmsg:
-			aelGlobals.write_log(f"[{DEFAULT_MODULE_NAME}] ERROR in module 'getAPIdata': {errmsg}")
+			aelGlobals.write_log(f"ERROR in module 'getAPIdata': {errmsg}")
 			return errmsg, {}
 
 	def getHTMLdata(self, url, params=None):
@@ -3735,19 +2651,22 @@ class AELGlobals:
 			htmldata = response.text
 			return "", htmldata
 		except exceptions.RequestException as errmsg:
-			aelGlobals.write_log(f"[{DEFAULT_MODULE_NAME}] ERROR in module 'getHTMLdata': {errmsg}")
+			aelGlobals.write_log(f"ERROR in module 'getHTMLdata': {errmsg}")
 			return errmsg, {}
 
-	def callLibrary(self, libcall, **kwargs):
+	def callLibrary(self, libcall, title, **kwargs):
 		try:  # mandatory because called library raises an error when no result
-			if not kwargs.get("year", ""):  # in case 'year' is empty string
-				kwargs.pop("year", "x")
-			response = libcall(**kwargs)
+			if kwargs and kwargs.get("year", None) == "":  # in case 'year' is empty string
+				kwargs.pop("year", None)
+			response = libcall(title, **kwargs) if title else libcall(**kwargs)
 		except Exception:
-			try:  # 2nd try without language and/or without year
-				response = libcall(**kwargs.pop("language", None).pop("year", None))
+			try:  # fallback: try without language and/or without year
+				if kwargs:
+					kwargs.pop("language", None)
+					kwargs.pop("year", None)
+				response = libcall(title, **kwargs) if title else libcall(**kwargs)
 			except Exception as errmsg:
-				aelGlobals.write_log(f"[{DEFAULT_MODULE_NAME}] ERROR in module 'callLibrary': {errmsg}")
+				aelGlobals.write_log(f"ERROR in module 'callLibrary': {errmsg}")
 				response = ""
 		return response
 
@@ -3766,7 +2685,7 @@ class DB_Functions(object):
 		return d
 
 	def __init__(self, db_file):
-		createDirs(dir)
+		createDirs(aelGlobals.HDDPATH)
 		self.conn = connect(db_file, check_same_thread=False)
 		self.create_DB()
 
@@ -3868,25 +2787,10 @@ class DB_Functions(object):
 			query = "SELECT value FROM parameters WHERE name = ?"
 			cur.execute(query, (name,))
 			rows = cur.fetchall()
-			if rows:
-				if rows[0][0] == "False":
-					ret = False
-				elif rows[0][0] == "True":
-					ret = True
-				else:
-					ret = rows[0][0]
-				return ret
-			else:
-				return default
+			return {"False": False, "True": True}.get(rows[0][0], rows[0][0]) if rows else default
 		elif action == PARAMETER_SET and value or value is False:
-			if value is False:
-				val = "False"
-			elif value is True:
-				val = "True"
-			else:
-				val = value
 			query = "REPLACE INTO parameters (name,value) VALUES (?,?)"
-			cur.execute(query, (name, val))
+			cur.execute(query, (name, {False: "False", True: "True"}.get(value, value)))
 			self.conn.commit()
 			return value
 
@@ -3900,7 +2804,7 @@ class DB_Functions(object):
 	def addliveTV(self, records):
 		cur = self.conn.cursor()
 		cur.executemany('insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);', records)
-		aelGlobals.write_log("have inserted " + str(cur.rowcount) + " events into database")
+		aelGlobals.write_log(f"have inserted {cur.rowcount} events into database")
 		self.conn.commit()
 		# self.parameter(PARAMETER_SET, 'lastadditionalDataCount', str(cur.rowcount))
 
@@ -3969,7 +2873,7 @@ class DB_Functions(object):
 		cur = self.conn.cursor()
 		query = "update liveOnTV set id = '' where id = 'in progress';"
 		cur.execute(query)
-		aelGlobals.write_log("nothing found for " + str(cur.rowcount) + " events in liveOnTV")
+		aelGlobals.write_log(f"nothing found for {cur.rowcount} events in liveOnTV")
 		self.conn.commit()
 		self.parameter(PARAMETER_SET, 'lastadditionalDataCountSuccess', str(cur.rowcount))
 
@@ -3985,8 +2889,8 @@ class DB_Functions(object):
 		cur = self.conn.cursor()
 		if name:
 			tvname = name
-			tvname = sub(r'\\(.*?\\)', '', tvname).strip()
-			tvname = sub(r' +', ' ', tvname)
+			# tvname = tvname.replace(" +", " ")  # TODO: wird das überhaupt gebraucht?
+			# tvname = sub(r'\\(.*?\\)', '', tvname).strip() # TODO: wird der komische Regex überhaupt gebraucht?
 			query = "SELECT * FROM liveOnTV WHERE eid = ? AND title = ?"
 			cur.execute(query, (eid, tvname))
 		else:
@@ -4026,9 +2930,9 @@ class DB_Functions(object):
 		rows = cur.fetchall()
 		if rows:
 			for row in rows:
-				if getImageFile(f"{getPictureDir()}cover/", row[0]) is None:
+				if getImageFile(f"{aelGlobals.HDDPATH}cover/", row[0]) is None:
 					coverList.append(row[0])
-				if getImageFile(f"{getPictureDir()}poster/", row[0]) is None:
+				if getImageFile(f"{aelGlobals.HDDPATH}poster/", row[0]) is None:
 					posterList.append(row[0])
 		return [coverList, posterList]
 
@@ -4065,7 +2969,7 @@ class DB_Functions(object):
 		if rows:
 			for row in rows:
 				trailercount.add(row[0])
-		aelGlobals.write_log("found " + str(len(trailercount)) + ' on liveTV')
+		aelGlobals.write_log(f"found {len(trailercount)} on liveTV")
 		i = len(trailercount)
 		query = "SELECT DISTINCT trailer FROM eventInfo WHERE trailer <> ''"
 		cur.execute(query)
@@ -4074,7 +2978,7 @@ class DB_Functions(object):
 			for row in rows:
 				trailercount.add(row[0])
 		eI = len(trailercount) - i
-		aelGlobals.write_log("found " + str(eI) + ' on eventInfo')
+		aelGlobals.write_log(f"found {eI} on eventInfo")
 		return len(trailercount)
 
 	def getEventCount(self, sref):
@@ -4149,7 +3053,7 @@ class DB_Functions(object):
 		cur = self.conn.cursor()
 		query = "delete from liveOnTV where airtime < ?;"
 		cur.execute(query, (str(airtime),))
-		aelGlobals.write_log("have removed " + str(cur.rowcount) + " events from liveOnTV")
+		aelGlobals.write_log(f"have removed {cur.rowcount} events from liveOnTV")
 		self.conn.commit()
 		self.vacuumDB()
 
@@ -4173,12 +3077,12 @@ class DB_Functions(object):
 		query = 'SELECT DISTINCT image from liveOnTV where airtime < ? AND image <> "";'
 		cur.execute(query, (str(airtime),))
 		rows = cur.fetchall()
-		aelGlobals.write_log("found old preview images " + str(len(rows)))
+		aelGlobals.write_log(f"found old preview images {len(rows)}")
 		if rows:
 			for row in rows:
 				titleList.append(row[0])
 		delList = [x for x in titleList if x not in duplicates]
-		aelGlobals.write_log("not used preview images " + str(len(delList)))
+		aelGlobals.write_log(f"not used preview images {len(delList)}")
 		del duplicates
 		del titleList
 		return delList
@@ -4372,23 +3276,17 @@ class BingImageSearch:
 		self.query = query
 		self.filters = '+filterui:photo-photo+filterui:aspect-wide&form=IRFLTR' if what == 'Cover' else '+filterui:photo-photo+filterui:aspect-tall&form=IRFLTR'
 		self.limit = limit
-#		Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#		self.headers = {'User-Agent': 'Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/60.0'}
 		self.page_counter = 0
 
 	def search(self):
 		resultList = []
 		while self.download_count < self.limit:
-#			Kommentare sind nur aus Dokugründen noch da, kann später dann weg...
-#			request_url = 'https://www.bing.com/images/async?q=' + quote(self.query) + '&first=' + self.page_counter + '&count=' + str(self.limit) + '&adlt=off' + '&qft=' + self.filters
-#			html = get(request_url, timeout=5, headers=self.headers).content
-#			unkodierte URL: https://www.bing.com/images/async
 			bingurl = b64decode(b"aHR0cHM6Ly93d3cuYmluZy5jb20vaW1hZ2VzL2FzeW5j8"[:-1]).decode()
 			params = {"q": self.query, "first": self.page_counter, "count": self.limit, "adlt": "off", "qft": self.filters}
 			aelGlobals.write_log(f"Bing-requests : {bingurl}")
 			errmsg, htmldata = aelGlobals.getHTMLdata(bingurl, params=params)
 			if errmsg:
-				aelGlobals.write_log("[{DEFAULT_MODULE_NAME}] HTML download error in module 'BingImageSearch:search'")
+				aelGlobals.write_log("HTML download error in module 'BingImageSearch:search'")
 			if htmldata:
 				links = findall(r"murl&quot;:&quot;(.*?)&quot;", str(htmldata))
 				aelGlobals.write_log(f"Bing-result : {links}")
