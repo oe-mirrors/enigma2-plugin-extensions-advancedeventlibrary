@@ -2,12 +2,12 @@ from base64 import b64decode
 from datetime import datetime
 from glob import glob
 from json import dumps, loads
-from os import rename, statvfs, makedirs, system, remove, stat
+from os import rename, makedirs, system, remove, stat, statvfs
 from os.path import isfile, getsize, exists, join, basename
 from re import match, compile, IGNORECASE
 from shutil import copy
 from requests import get
-from threading import Thread
+from twisted.internet.reactor import callInThread
 from enigma import eTimer, eServiceReference, eServiceCenter
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigText, getConfigListEntry
@@ -89,42 +89,56 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		confdir = join(AEL.aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
 		if isfile(confdir):
 			posterCount = self.db.parameter(AEL.PARAMETER_GET, 'posterCount', None, 0)
-			posterSize = self.db.parameter(AEL.PARAMETER_GET, 'posterSize', None, 0)
+			posterSize = str(self.db.parameter(AEL.PARAMETER_GET, 'posterSize', None, 0))
+			posterSize = posterSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			coverCount = self.db.parameter(AEL.PARAMETER_GET, 'coverCount', None, 0)
+			coverSize = str(self.db.parameter(AEL.PARAMETER_GET, 'coverSize', None, 0))
+			coverSize = coverSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			previewCount = self.db.parameter(AEL.PARAMETER_GET, 'previewCount', None, 0)
-			coverSize = self.db.parameter(AEL.PARAMETER_GET, 'coverSize', None, 0)
-			previewSize = self.db.parameter(AEL.PARAMETER_GET, 'previewSize', None, 0)
+			previewSize = str(self.db.parameter(AEL.PARAMETER_GET, 'previewSize', None, 0))
+			previewSize = previewSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			usedInodes = self.db.parameter(AEL.PARAMETER_GET, 'usedInodes', None, 0)
 			lastposterCount = self.db.parameter(AEL.PARAMETER_GET, 'lastposterCount', None, 0)
 			lastcoverCount = self.db.parameter(AEL.PARAMETER_GET, 'lastcoverCount', None, 0)
-			lasteventInfoCount = self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCount', None, 0)
-			lasteventInfoCountSuccsess = self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCountSuccsess', None, 0)
-			lastpreviewImageCount = self.db.parameter(AEL.PARAMETER_GET, 'lastpreviewImageCount', None, 0)
-			lastadditionalDataCount = self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCount', None, 0)
-			lastadditionalDataCountBlacklist = self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0)
+			lasteventInfoCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCount', None, 0))
+			lasteventInfoCountSuccsess = str(self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCountSuccsess', None, 0))
+			lastpreviewImageCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lastpreviewImageCount', None, 0))
+			lastadditionalDataCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCount', None, 0))
+			lastadditionalDataCountBlacklist = str(self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0))
 			lastadditionalDataCountSuccess = int(lastadditionalDataCount) - int(lastadditionalDataCountBlacklist)
 			dbSize = getsize(confdir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
 			blackListCount = self.db.getblackListCount()
-			percent = f"{100 * titleCount / (titleCount + blackListCount) if (titleCount + blackListCount) > 0 else 0} %"
+			percent = f"{round(100 * titleCount / (titleCount + blackListCount)) if (titleCount + blackListCount) > 0 else 0} %"
 			liveTVtitleCount = self.db.getliveTVCount()
 			liveTVidtitleCount = self.db.getliveTVidCount()
 			percentTV = f"{100 * liveTVidtitleCount / liveTVtitleCount if (liveTVidtitleCount + liveTVtitleCount) > 0 else 0} %"
-			cpS = round(float(str(posterSize).replace('G', '')) * 1024.0, 2) if 'G' in str(posterSize) else posterSize
-			ccS = round(float(str(coverSize).replace('G', '')) * 1024.0, 2) if 'G' in str(coverSize) else coverSize
-			pcS = round(float(str(previewSize).replace('G', '')) * 1024.0, 2) if 'G' in str(previewSize) else previewSize
-			percentlIC = f"{100 * int(lasteventInfoCountSuccsess) / int(lasteventInfoCount) if int(lasteventInfoCount) > 0 else 0} %"
-			percentlaC = f"{100 * int(lastadditionalDataCountSuccess) / int(lastadditionalDataCount) if int(lastadditionalDataCount) > 0 else 0} %"
+			cpS = round(float(posterSize.replace('G', '')) * 1024.0, 2) if 'G' in posterSize else posterSize
+			ccS = round(float(coverSize.replace('G', '')) * 1024.0, 2) if 'G' in coverSize else coverSize
+			pcS = round(float(previewSize.replace('G', '')) * 1024.0, 2) if 'G' in previewSize else previewSize
+			percentlIC = f"{round(100 * int(lasteventInfoCountSuccsess) / int(lasteventInfoCount)) if int(lasteventInfoCount) > 0 else 0} %"
+			percentlaC = f"{round(100 * int(lastadditionalDataCountSuccess) / int(lastadditionalDataCount)) if int(lastadditionalDataCount) > 0 else 0} %"
 			trailers = self.db.getTrailerCount()
 			size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
-			self.statistic = 'Statistik letzter Suchlauf:\nAnzahl Poster | Cover | Vorschaubilder:\t' + str(lastposterCount) + ' | ' + str(lastcoverCount) + ' | ' + str(lastpreviewImageCount) + '\ngesuchte Event-Informationen:\t' + str(lasteventInfoCount) + '\tgefunden:\t' + str(lasteventInfoCountSuccsess) + ' | ' + str(percentlIC) + '\ngesuchte Extradaten:     \t' + str(lastadditionalDataCount) + '\tgefunden:\t' + str(lastadditionalDataCountSuccess) + ' | ' + str(percentlaC) + str(self.getlastUpdateInfo(self.db))
-			self.statistic += '\n\nStatistik gesamt:\nAnzahl Poster:\t' + str(posterCount) + '\tGröße:\t' + str(posterSize) + '\nAnzahl Cover:\t' + str(coverCount) + '\tGröße:\t' + str(coverSize) + '\nAnzahl Previews:\t' + str(previewCount) + '\tGröße:\t' + str(previewSize) + '\nAnzahl Trailer: \t' + str(trailers) + '\nDatenbankgröße: \t' + str(dbSize) + ' kB\nEinträge:\t' + str(titleCount) + ' | ' + str(blackListCount) + ' | ' + str(percent) + '\tExtradaten:\t' + str(liveTVtitleCount) + ' | ' + str(liveTVidtitleCount) + ' | ' + str(percentTV) + '\nSpeicherplatz:\t' + str(size) + ' / ' + str(int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)) + ' MB' + '\tbenutzte Inodes\t' + str(usedInodes)
-			self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))
-			self.memInfo += str(self.getMemInfo('Mem'))
-			self.memInfo += '\nMountpoints :\n' + self.getDiskInfo()
-			self["info"].setText(self.statistic + self.memInfo)
+			statistic = f"{_('Statistics last search run:')}\n"
+			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
+			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC}\n"
+			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC}{self.getlastUpdateInfo(self.db)}\n\n"
+			statistic += f"{_('Total statistics:')}\n"
+			statistic += f"{_('Number of posters:')}\t{posterCount} {_('Size:')} {posterSize}\n"
+			statistic += f"{_('Number of previews:')}\t{previewCount} {_('Size:')} {previewSize}\n"
+			statistic += f"{_('Number of trailers:')}\t{trailers}\n"
+			statistic += f"{_('Database size:')}\t{dbSize} KB\n"
+			statistic += f"{_('Entries:')}\t{titleCount} | {blackListCount} | {percent}\n"
+			statistic += f"{_('Extra data:')}\t{liveTVtitleCount} | {liveTVidtitleCount} | {percentTV}\n"
+			statistic += f"{_('Storage space:')}\t{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB\t{_('Inodes used:')}{usedInodes}\n"
+			self.statistic = statistic
+			memInfo = f"\n{_('Memory allocation:')}\n{self.getDiskInfo('/')}{self.getMemInfo('Mem')}"
+			memInfo += f"\n{_('Mountpoints:')}\n{self.getDiskInfo()}"
+			self.memInfo = memInfo
+			self["info"].setText(f"{self.statistic}{self.memInfo}")
 		else:
-			self["info"].setText('Es wurden noch keine Daten gefunden.')
+			self["info"].setText('No data has been found yet.')
 		del self.db
 
 	def getMemInfo(self, value):
@@ -144,7 +158,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 					result[3] = result[1] * 100 // result[0]  # use%
 				break
 		fd.close()
-		return f"RAM :\t{AEL.getSizeStr(result[0])}\tFrei: {AEL.getSizeStr(result[2])}\tBelegt: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
+		return f"RAM:\t{AEL.getSizeStr(result[0])}\t{_('free')}: {AEL.getSizeStr(result[2])}\t{_('Occupied')}: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
 
 	def getDiskInfo(self, path=None):
 		def getMountPoints():
@@ -171,13 +185,13 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				resultList.append(result)
 		res = ""
 		for result in resultList:
-			res += f"{result[4]} :\t{AEL.getSizeStr(result[0])}\tFrei: {AEL.getSizeStr(result[2])}\tBelegt: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
-		return res.replace('/ :', 'Flash :')
+			res += f"{result[4]} :\t{AEL.getSizeStr(result[0])}\t{_('Free')}: {AEL.getSizeStr(result[2])}\t{_('Occupied')}: {AEL.getSizeStr(result[1])} ({result[3]}%)\n"
+		return res.replace('/ :', _('Flash:'))
 
 	def getlastUpdateInfo(self, db):
 		lastUpdateStart = self.convertTimestamp(db.parameter(AEL.PARAMETER_GET, 'laststart', None, 0))
 		lastUpdateDuration = self.convertDuration(float(db.parameter(AEL.PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(AEL.PARAMETER_GET, 'laststart', None, 0)) - 3600)
-		return '\nausgeführt am:\t' + str(lastUpdateStart) + '\tDauer:\t' + str(lastUpdateDuration)
+		return f"\n{_('Executed on:')}\t{lastUpdateStart}\t{_('Duration:')}\t{lastUpdateDuration}"
 
 	def convertTimestamp(self, val):
 		value = datetime.fromtimestamp(float(val))
@@ -225,8 +239,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			self.key_blue_handler()
 
 	def key_yellow_handler(self):
-		thread = Thread(target=AEL.createBackup, args=())
-		thread.start()
+		callInThread(AEL.createBackup)
 
 	def key_blue_handler(self):
 		self.session.open(TVSmakeReferenceFile)
@@ -234,17 +247,17 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def createDirs(self, path):
 		if not exists(path):
 			makedirs(path)
-		for path in ["poster/", "cover/", "preview/"]:
-			if not exists(path):
-				makedirs(path)
+		for subpath in ["poster/", "cover/", "preview/"]:
+			if not exists(join(path, subpath)):
+				makedirs(join(path, subpath))
 
 	def getStatus(self):
 		status = AEL.STATUS if AEL.STATUS else _("No search is currently running.")
 		self["status"].setText(status)
-		self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))
+		self.memInfo = f"\nSpeicherbelegung :\n{self.getDiskInfo('/')}"
 		self.memInfo += str(self.getMemInfo('Mem'))
-		self.memInfo += '\nMountpoints :\n' + self.getDiskInfo()
-		self["info"].setText(self.statistic + self.memInfo)
+		self.memInfo += f"\nMountpoints :\n{self.getDiskInfo()}"
+		self["info"].setText(f"{self.statistic}{self.memInfo}")
 		self.refreshStatus.start(3000, True)
 
 	def do_close(self):
@@ -504,8 +517,6 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		jsonfile = join(AEL.aelGlobals.CONFIGPATH, "tvs_reflist.json")
 		if fileExists(jsonfile):
 			self.tvsref = self.load_json(jsonfile)
-			print("#####self.tvsref:", self.tvsref)
-
 		for bouquet in tvbouquets:
 			root = eServiceReference(str(bouquet[0]))
 			serviceHandler = eServiceCenter.getInstance()
@@ -778,8 +789,7 @@ class Editor(Screen, ConfigListScreen):
 				self['pList'].setList(waitList)
 				self.cSource = 1
 				self.pSource = 1
-				thread = Thread(target=self.searchPics, args=())
-				thread.start()
+				callInThread(self.searchPics)
 			elif self.activeList == 'editor':
 				if self['config'].getCurrent()[0] == 'Event Name (suche mit OK)':
 					self.session.openWithCallback(self.searchEvents, VirtualKeyBoard, title="Eventsuche...", text=self['config'].getCurrent()[1].value)
@@ -820,11 +830,11 @@ class Editor(Screen, ConfigListScreen):
 						typ = "poster/"
 					else:
 						typ = "cover/"
-					AEL.createSingleThumbnail('/tmp/' + fname, join(AEL.getPictureDir() + typ, fname))
+					AEL.createSingleThumbnail('/tmp/' + fname, join(AEL.aelGlobals.HDDPATH + typ, fname))
 					if int(getsize('/tmp/' + fname) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
-						AEL.reduceSigleImageSize('/tmp/' + fname, join(AEL.getPictureDir() + typ, fname))
+						AEL.reduceSigleImageSize('/tmp/' + fname, join(AEL.aelGlobals.HDDPATH + typ, fname))
 					else:
-						copy('/tmp/' + fname, join(AEL.getPictureDir() + typ, fname))
+						copy('/tmp/' + fname, join(AEL.aelGlobals.HDDPATH + typ, fname))
 					self.session.open(MessageBox, 'AEL - Screenshot\nNeues Bild für ' + str(self.ptr) + ' erfolgreich erstellt.', MessageBox.TYPE_INFO, timeout=3, close_on_any_key=True)
 				else:
 					self.session.open(MessageBox, 'AEL - Screenshot\nBild ' + str(self.ptr) + ' konnte nicht erstellt werden.', MessageBox.TYPE_INFO, timeout=5, close_on_any_key=True)
@@ -854,8 +864,7 @@ class Editor(Screen, ConfigListScreen):
 			self['sList'].show()
 			self.activeList = 'choiceBox'
 			self.text = text
-			thread = Thread(target=self.searchAll, args=())
-			thread.start()
+			callInThread(self.searchAll)
 
 	def searchAll(self):
 		self['sList'].setList(AEL.get_searchResults(self.text, self.language))
@@ -968,31 +977,22 @@ class Editor(Screen, ConfigListScreen):
 					for f in filelist:
 						remove(f)
 					del filelist
-			elif ret[0] == 'lade Bilder von AEL-Image-Server (nicht vorhandene)':
-				thread = Thread(target=AEL.downloadAllImagesfromAELImageServer, args=())
-				thread.start()
-			elif ret[0] == 'lade Bilder von AEL-Image-Server (ersetzen)':
-				thread = Thread(target=AEL.downloadAllImagesfromAELImageServer, args=(True,))
-				thread.start()
 			elif ret[0] == 'Bilder überprüfen':
-				thread = Thread(target=AEL.checkAllImages, args=())
-				thread.start()
+				callInThread(AEL.checkAllImages)
 			elif ret[0] == 'lade Cover':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.cSource = 1
 				self['cList'].setList(waitList)
-				thread = Thread(target=self.searchPics, args=(False, True))
-				thread.start()
+				callInThread(self.searchPics, (False, True))
 			elif ret[0] == 'lade Poster':
 				waitList = []
 				itm = ["lade Daten, bitte warten...", None, None, None, None, None, None]
 				waitList.append((itm,))
 				self.pSource = 1
 				self['pList'].setList(waitList)
-				thread = Thread(target=self.searchPics, args=(False, True))
-				thread.start()
+				callInThread(self.searchPics, (False, True))
 			elif 'Screenshot' in ret[0]:
 				if self.activeList == "cover":
 					self.activeList = 'screenshot cover'
@@ -1218,8 +1218,7 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.cSource = 1
 					self['cList'].setList(waitList)
-					thread = Thread(target=self.searchPics, args=(False, True))
-					thread.start()
+					callInThread(self.searchPics, (False, True))
 				del coverFiles
 			if refreshPoster:
 				posterFiles = glob(config.plugins.AdvancedEventLibrary.Location.value + 'poster/' + AEL.convert2base64(self.ptr.strip()) + '.jpg')
@@ -1274,8 +1273,7 @@ class Editor(Screen, ConfigListScreen):
 				else:
 					self.pSource = 1
 					self['pList'].setList(waitList)
-					thread = Thread(target=self.searchPics, args=(False, True))
-					thread.start()
+					callInThread(self.searchPics, (False, True))
 				del posterFiles
 			self['sList'].setList(waitList)
 			del self.posterList
@@ -1439,12 +1437,16 @@ class TVSmakeReferenceFile(Screen):
 		self.onShown.append(self.onShownFinished)
 
 	def onShownFinished(self):
-		if exists(join(AEL.aelGlobals.CONFIGPATH, "tvs_mapping.txt")):
-			self.getAllBouquets()
-		else:
+		if not exists(join(AEL.aelGlobals.CONFIGPATH, "tvs_mapping.txt")):
 			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{AEL.aelGlobals.MAPFILE}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % AEL.aelGlobals.MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
+		networks = join(AEL.aelGlobals.CONFIGPATH, "networks.json")
+		if not exists(networks):
+			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
+			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % networks), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
+			self.keyExit()
+		self.getAllBouquets()
 
 	def keyExit(self):
 		self.close(False)

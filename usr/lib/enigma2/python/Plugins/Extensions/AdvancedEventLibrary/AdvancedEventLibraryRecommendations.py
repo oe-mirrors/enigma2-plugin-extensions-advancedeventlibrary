@@ -24,7 +24,7 @@ import NavigationInstance
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -607,9 +607,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 								hasTrailer = dbdata[7]
 						if self.viewType != 1:  # 'Listenansicht'
 							if self.imageType == "cover" and evt and evt[0][3] != '':
-								image = getImageFile(getPictureDir() + self.imageType + '/', evt[0][3])
+								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', evt[0][3])
 							if image is None:
-								image = getImageFile(getPictureDir() + self.imageType + '/', name)
+								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', name)
 						itm = (name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
 						sList.append(itm)
 				except Exception as ex:

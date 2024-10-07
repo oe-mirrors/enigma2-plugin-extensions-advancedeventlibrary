@@ -6,9 +6,7 @@
 	<widget backgroundColor="background" font="Normal; 50" foregroundColor="foreground" halign="center" position="1540,50" render="Label" size="320,70" source="global.CurrentTime" transparent="1" valign="top" zPosition="20">
 		<convert type="ClockToText">Format: %H:%M</convert>
 	</widget>
-	<widget source="info" render="Label" position="800,180" size="1100,820" zPosition="1" valign="top" halign="left" font="Small;28" transparent="1" foregroundColor="foreground" backgroundColor="background"/>
-	<widget source="status" render="Label" position="20,900" size="1880,100" zPosition="2" valign="center" halign="left" font="Small;28" transparent="1" foregroundColor="foreground" backgroundColor="background"/>
-	<widget source="menulist" render="Listbox" position="40,180" size="700,820" zPosition="1" scrollbarMode="showOnDemand" transparent="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="foreground" enableWrapAround="1">
+	<widget source="menulist" render="Listbox" position="30,180" size="700,820" zPosition="1" scrollbarMode="showOnDemand" transparent="1" foregroundColor="foreground" backgroundColor="background" foregroundColorSelected="background" backgroundColorSelected="foreground" enableWrapAround="1">
 		<convert type="TemplatedMultiContent">
 			{"template": [
 					MultiContentEntryText(pos = (110, 1), size = (600, 39), font=0, flags = RT_HALIGN_LEFT, text = 0), # Screen
@@ -21,6 +19,8 @@
 		</convert>
 	</widget>
 	<!-- Button Bar -->
+	<widget source="info" render="Label" position="740,180" size="1150,820" zPosition="1" valign="top" halign="left" font="Small;28" transparent="1" foregroundColor="foreground" backgroundColor="background"/>
+	<widget source="status" render="Label" position="20,900" size="1880,100" zPosition="2" valign="center" halign="left" font="Small;28" transparent="1" foregroundColor="foreground" backgroundColor="background"/>
 	<widget source="key_red" render="Label" position="0,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
 	<widget source="key_green" render="Label" position="480,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>
 	<widget source="key_yellow" render="Label" position="960,1020" size="480,40" zPosition="3" valign="center" halign="center" font="Normal;30" transparent="1" foregroundColor="foreground"  backgroundColor="background"/>

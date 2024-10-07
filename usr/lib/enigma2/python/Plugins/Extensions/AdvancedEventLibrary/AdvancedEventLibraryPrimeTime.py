@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
 
 htmlParser = HTMLParser()
 
@@ -631,9 +631,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							if self.imageType == "cover":
 								if evt:
 									if evt[0][3] != '':
-										image = getImageFile(getPictureDir() + self.imageType + '/', evt[0][3])
+										image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', evt[0][3])
 							if image is None:
-								image = getImageFile(getPictureDir() + self.imageType + '/', name)
+								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, service_name, image, hasTrailer)
 						if 'Spielfilm' in eventGenre:
 							self.movielist.append((itm,))

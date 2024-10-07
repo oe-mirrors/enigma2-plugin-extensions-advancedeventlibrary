@@ -26,7 +26,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import getPictureDir, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, convert2base64, getDB, getImageFile, clearMem, PicLoader
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -125,7 +125,8 @@ class AdvancedEventLibraryMediaHub(Screen):
 		self.shaper = LoadPixmap(imgpath + "shaper.png") if fileExists(imgpath + "shaper.png") else LoadPixmap('/usr/share/enigma2/AELImages/shaper.png')
 		self.userBouquets = []
 		self.userBouquets.append(('Alle Bouquets',))
-		self.channelType = int(config.plugins.AdvancedEventLibrary.MediaHubStartType.value)
+		self.channelType = 0
+#		self.channelType = int(config.plugins.AdvancedEventLibrary.MediaHubStartType.value)
 		self.CHANSEL = InfoBar.instance.servicelist
 		ref = ServiceReference(self.session.nav.getCurrentlyPlayingServiceReference()).__str__()
 		for protocol in ("http", "rtmp", "rtsp", "mms", "rtp"):
@@ -247,7 +248,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			self.channelParameter = self["channelList"].getParameter()
 			self.channelImageType = str(self.channelParameter[3])
 			self.channelSubstituteImage = str(self.channelParameter[5])
-			self.channelListControl = eval(self.channelParameter[22])
+			self.channelListControl = eval(str(self.channelParameter[22]))
 			self.channelListCoverings = eval(str(self.channelParameter[23]))
 			self.channelListFontOrientation = self.getFontOrientation(self.channelParameter[25])
 
@@ -335,7 +336,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			else:
 				mlist.sort(key=lambda x: x[2], reverse=False)
 			for item in mlist:
-				image = getImageFile(getPictureDir() + self.movieImageType, item[2])
+				image = getImageFile(aelGlobals.LOCPATH + self.movieImageType, item[2])
 				if image is None:
 					image = self.movieSubstituteImage
 				if len(item) > 7:
@@ -393,10 +394,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
 						if evt and evt[0][3] != '':
-							image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
+							image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, evt[0][3])
 							name = evt[0][3]
 						if image is None:
-							image = getImageFile(getPictureDir() + self.channelImageType, event.getEventName())
+							image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, event.getEventName())
 					cleanname = str(event.getEventName()).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
 					if cleanname in self.timers or str(event.getEventId()) in self.timers or name in self.timers:
@@ -464,10 +465,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 								hasTrailer = evt[0][16]
 							if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
 								if evt and evt[0][3] != '':
-									image = getImageFile(getPictureDir() + self.channelImageType, evt[0][3])
+									image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, evt[0][3])
 									name = evt[0][3]
 								if image is None:
-									image = getImageFile(getPictureDir() + self.channelImageType, event.getEventName())
+									image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, event.getEventName())
 
 							cleanname = str(event.getEventName()).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 							hasTimer = False
