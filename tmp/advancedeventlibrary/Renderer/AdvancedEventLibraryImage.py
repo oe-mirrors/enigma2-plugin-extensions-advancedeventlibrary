@@ -13,12 +13,18 @@
 #################################################################################
 
 #=================================================
-# R131 by MyFriendVTI
+# R140 by MyFriendVTI
 # usr/lib/enigma2/python/Components/Renderer/AdvancedEventLibraryImage.py
 # Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
 # Aenderung (#1): ePicload Crash verhindern
 # Aenderung (#2): Fehler reRun behoben
 # Aenderung (#3): Fix-Poster (Streaming) [by schomi]
+# Hinzugefuegt (#4): preferType
+# Hinzugefuegt (#5): FrameSize
+# Hinzugefuegt (#6): Fix BlackCover at Startup
+# Hinzugefuegt (#7): Fix Image-Timing
+# Hinzugefuegt (#8): Fix Kanalliste-Sendungswechsel
+# Aenderung (#9): Fix Bildpfad-Cache
 # ==================================================
 
 import os
@@ -46,6 +52,10 @@ from ServiceReference import ServiceReference
 from Tools import AdvancedEventLibrary
 from thread import start_new_thread
 from datetime import datetime
+#==== Hinzugefugt (#4/#7) =====
+from PIL import Image
+from Tools.BoundFunction import boundFunction
+# ==========================
 
 config.plugins.AdvancedEventLibrary = ConfigSubsection()
 usePreviewImages = config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default = False)
@@ -94,6 +104,15 @@ class AdvancedEventLibraryImage(Renderer):
 		self.db = AdvancedEventLibrary.getDB()
 		self.ptr = None
 		self.ptr2 = None
+		#==== Hinzugefugt (#4/#5/#7) =====
+		self.preferType = ""
+		tempImgFolder = "/tmp/AELTemp"
+		if not os.path.exists(tempImgFolder): 
+			os.makedirs(tempImgFolder) 
+		self.preferImgPath = tempImgFolder + "/" + str(id(self)) + ".jpg"
+		self.frameSize = 10
+		self.requestNr = 0
+		# ==========================
 		return
 
 	GUI_WIDGET = eWidget
@@ -103,6 +122,12 @@ class AdvancedEventLibraryImage(Renderer):
 			self.screenName = screen.skinName
 		else:
 			self.screenName = ', '.join(screen.skinName)
+		
+		#==== Hinzugefugt (#8) =====	
+		if "ChannelSelection" in str(screen):
+			screen.onShown.append(boundFunction(self.changed,(1,)))
+		# ==========================
+		
 		if self.skinAttributes:
 			attribs = []
 			for attrib, value in self.skinAttributes:
@@ -138,21 +163,58 @@ class AdvancedEventLibraryImage(Renderer):
 						self.noImage = params[2]
 					if len(params) > 3:
 						self.rotate = params[3]
+						
+					#==== Hinzugefugt (#4/#5) =====
+					if len(params) > 4 and params[4]:
+						self.preferType = params[4]
+						if self.preferType.startswith("PI"):
+							self.imageType = self.PREFER_POSTER
+						elif self.preferType.startswith("IP"):
+							self.imageType = self.PREFER_IMAGE
+						if self.preferType.endswith("_Thumb"):
+							self.coverPath = AdvancedEventLibrary.getPictureDir()+'cover/thumbnails/'
+							self.posterPath = AdvancedEventLibrary.getPictureDir()+'poster/thumbnails/'
+							self.preferType.replace("_Thumb","")
+						else:
+							self.coverPath = AdvancedEventLibrary.getPictureDir()+'cover/'
+							self.posterPath = AdvancedEventLibrary.getPictureDir()+'poster/'
+							
+					if len(params) > 5 and params[5]:
+						self.frameImage = params[5]
+						if os.path.isfile(self.frameImage):
+							self.imageframe.setPixmap(loadPNG(self.frameImage))
+						else:
+							self.frameImage = None
+					if len(params) > 6 and params[6]:
+						self.frameSize = int(params[6])
+					# ==========================
 				else:
 					attribs.append((attrib, value))
 
 			self.skinAttributes = attribs
 
 		if self.frameImage:
-			self.image.resize(eSize(self.WCover-20, self.HCover-20))
+			#==== geaendert (#5) =====
+			#self.image.resize(eSize(self.WCover-20, self.HCover-20))
+			self.image.resize(eSize(self.WCover-(2*self.frameSize), self.HCover-(2*self.frameSize)))
+			# ==========================
 			self.imageframe.resize(eSize(self.WCover, self.HCover))
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
-			self.image.move(ePoint(10, 10))
+			#==== geaendert (#5) =====
+			#self.image.move(ePoint(10, 10))
+			self.image.move(ePoint(self.frameSize, self.frameSize))
+			# ==========================
 		else:
 			self.image.resize(eSize(self.WCover, self.HCover))
+			#==== hinzugefuegt (#5) =====
+			self.frameSize = 0
+			# ==========================
 
 		self.image.setScale(self.scalertype)
+		#=========== hinzugefuegt (#6) =========
+		self.hideimage()
+		# ==========================
 		ret = Renderer.applySkin(self, desktop, screen)
 		return ret
 
@@ -255,7 +317,13 @@ class AdvancedEventLibraryImage(Renderer):
 
 	def GUIcreate(self, parent):
 		self.instance = eWidget(parent)
+		#==== hinzugefuegt (#6) ====
+		self.instance.setTransparent(1)
+		# ==========================
 		self.imageframe = ePixmap(self.instance)
+		#====== hinzugefuegt (#5) ========
+		self.imageframe.hide()
+		# ================================
 		self.image = ePixmap(self.instance)
 		if self.imageframe:
 			self.imageframe.setPixmap(loadPNG(self.frameImage))
@@ -274,11 +342,18 @@ class AdvancedEventLibraryImage(Renderer):
 		self.image.show()
 		self.ishide = False
 
-	def hideimage(self):
+	#======= geaendert (#4) =======
+	#def hideimage(self):
+	def hideimage(self, isSizeSwitch = False):
+	# ==============================
 		self.image.hide()
 		if self.imageframe:
 			self.imageframe.hide()
-		self.instance.hide()
+		#======= geaendert (#4) =======
+		#self.instance.hide()
+		if not isSizeSwitch:
+			self.instance.hide()
+		# ============================
 		self.ishide = True
 
 	def onShow(self):
@@ -289,17 +364,29 @@ class AdvancedEventLibraryImage(Renderer):
 
 	def setthePixmap(self, eventNames,run=0):
 		self.lastName = eventNames
-		self.foundPoster = False
-		self.foundImage = False
-		self.pfilename = None
-		self.ifilename = None
-
+		
+		#======= hinzugefuegt (#7) =======
+		self.requestNr = self.requestNr + 1
+		# ==============================
+		
+		#======= hinzugefuegt (#4) =======
+		if run == 0:
+		# ==============================
+			self.foundPoster = False
+			self.foundImage = False
+			self.pfilename = None
+			self.ifilename = None
+		
 		if run == 0:
 			eventName = str(eventNames[0])
 		else:
 			eventName = str(eventNames[1])
+		
 		inCache = self.nameCache.get(eventName + str(self.imageType), "")
-		if str(self.IMAGE) in inCache or str(self.IMAGE_THUMBNAIL) in inCache or str(self.PREFER_IMAGE) in inCache or str(self.PREFER_POSTER) in inCache:
+		#======= geaendert (#9) Alter Code unplausibel =======
+		#if str(self.IMAGE) in inCache or str(self.IMAGE_THUMBNAIL) in inCache or str(self.PREFER_IMAGE) in inCache or str(self.PREFER_POSTER) in inCache:
+		if inCache and not self.foundImage and self.imageType != self.PREFER_POSTER and self.imageType != self.PREFER_IMAGE:
+		# ==============================
 			if os.path.isfile(inCache):
 				self.ifilename = inCache
 				self.foundImage = True
@@ -308,15 +395,19 @@ class AdvancedEventLibraryImage(Renderer):
 				self.ifilename = AdvancedEventLibrary.getImageFile(self.coverPath, eventName)
 				if self.ifilename:
 					self.foundImage = True
-
-		if str(self.POSTER) in inCache or str(self.POSTER_THUMBNAIL) in inCache or str(self.PREFER_POSTER) in inCache or str(self.PREFER_IMAGE) in inCache:
+		
+		#======= geaendert (#9) Alter Code unplausibel =======
+		#if str(self.POSTER) in inCache or str(self.POSTER_THUMBNAIL) in inCache or str(self.PREFER_POSTER) in inCache or str(self.PREFER_IMAGE) in inCache:
+		if inCache and not self.foundPoster and self.imageType != self.PREFER_POSTER and self.imageType != self.PREFER_IMAGE:
+		# ==============================
 			if os.path.isfile(inCache):
 				self.pfilename = inCache
 				self.foundPoster = True
 		elif (self.imageType == self.PREFER_POSTER or self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL or self.imageType == self.PREFER_IMAGE):
-			self.pfilename = AdvancedEventLibrary.getImageFile(self.posterPath, eventName)
-			if self.pfilename:
-				self.foundPoster = True
+			if not self.foundPoster:
+				self.pfilename = AdvancedEventLibrary.getImageFile(self.posterPath, eventName)
+				if self.pfilename:
+					self.foundPoster = True
 
 		#======== hinzugefuegt (#2) =======
 		isLastRun = self.checkIsLastRun(run, str(eventNames[0]), str(eventNames[1]))
@@ -334,35 +425,81 @@ class AdvancedEventLibraryImage(Renderer):
 				self.pfilename = self.noImage
 		# ==============================
 
-		if self.ifilename:
+		#======= geaendert (#9) =======
+		#if self.ifilename:
+		if self.ifilename and self.ifilename != self.noImage:
+		# ==============================
 			self.nameCache[eventName + str(self.imageType)] = str(self.ifilename)
-		if self.pfilename:
+		#======= geaendert (#9) =======
+		#if self.pfilename:
+		if self.pfilename and self.pfilename != self.noImage:
+		# ==============================	
 			self.nameCache[eventName + str(self.imageType)] = str(self.pfilename)
-
+		
 		if (self.imageType == self.IMAGE or self.imageType == self.IMAGE_THUMBNAIL) and self.foundImage:
 			self.loadPic(self.ifilename)
 		elif (self.imageType == self.POSTER or self.imageType == self.POSTER_THUMBNAIL) and self.foundPoster:
 			self.loadPic(self.pfilename)
-		elif self.imageType == self.PREFER_IMAGE and self.foundImage:
-			if self.sizetype != 'Image':
-				self.calcSize('Image')
-			self.sizetype = 'Image'
-			self.loadPic(self.ifilename)
-		elif self.imageType == self.PREFER_IMAGE and self.foundPoster:
-			if self.sizetype != 'Poster':
-				self.calcSize('Poster')
-			self.sizetype = 'Poster'
-			self.loadPic(self.pfilename)
-		elif self.imageType == self.PREFER_POSTER and self.foundPoster:
-			if self.sizetype != 'Poster':
-				self.calcSize('Poster')
-			self.sizetype = 'Poster'
-			self.loadPic(self.pfilename)
-		elif self.imageType == self.PREFER_POSTER and self.foundImage:
-			if self.sizetype != 'Image':
-				self.calcSize('Image')
-			self.sizetype = 'Image'
-			self.loadPic(self.ifilename)
+		#======= geaendert (#2/#4) =======
+		#elif self.imageType == self.PREFER_IMAGE and self.foundImage:
+		elif self.imageType == self.PREFER_IMAGE and self.foundImage and not (self.ifilename == self.noImage and self.foundPoster and self.pfilename != self.noImage):
+		# =================================	
+			#======= hinzugefuegt (#4) =======
+			if not self.preferType:
+			# =================================
+				if self.sizetype != 'Image':
+					self.calcSize('Image')
+				self.sizetype = 'Image'
+				self.loadPic(self.ifilename)
+			#======= hinzugefuegt (#4) =======
+			else:
+				self.prepareImg("II",self.ifilename)
+			# =================================
+		#======= geaendert (#2/#4) =======
+		#elif self.imageType == self.PREFER_IMAGE and self.foundPoster:
+		elif self.imageType == self.PREFER_IMAGE and self.foundPoster and isLastRun:
+		# =================================
+			#======= hinzugefuegt (#4) =======
+			if not self.preferType:
+			# =================================
+				if self.sizetype != 'Poster':
+					self.calcSize('Poster')
+				self.sizetype = 'Poster'
+				self.loadPic(self.pfilename)
+			#======= hinzugefuegt (#4) =======
+			else:
+				self.prepareImg("IP",self.pfilename)
+			# =================================
+		#======= geaendert (#2/#4) =======
+		#elif self.imageType == self.PREFER_POSTER and self.foundPoster:
+		elif self.imageType == self.PREFER_POSTER and self.foundPoster and not (self.pfilename == self.noImage and self.foundImage and self.ifilename != self.noImage):
+		# =================================	
+			#======= hinzugefuegt (#4) =======
+			if not self.preferType:
+			# =================================
+				if self.sizetype != 'Poster':
+					self.calcSize('Poster')
+				self.sizetype = 'Poster'
+				self.loadPic(self.pfilename)
+			#======= hinzugefuegt (#4) =======
+			else:
+				self.prepareImg("PP",self.pfilename)
+			# =================================
+		#======= geaendert (#2/#4) =======
+		#elif self.imageType == self.PREFER_POSTER and self.foundImage:
+		elif self.imageType == self.PREFER_POSTER and self.foundImage and isLastRun:
+		# =================================
+			#======= hinzugefuegt (#4) =======
+			if not self.preferType:
+			# =================================
+				if self.sizetype != 'Image':
+					self.calcSize('Image')
+				self.sizetype = 'Image'
+				self.loadPic(self.ifilename)
+			#======= hinzugefuegt (#4) =======
+			else:
+				self.prepareImg("PI",self.ifilename)
+			# =================================
 		else:
 			#======== geaendert (#2) =======
 			#if run == 0 and (str(eventNames[1]) != str(eventNames[0])) and (str(eventNames[1]) != "None"):
@@ -380,11 +517,17 @@ class AdvancedEventLibraryImage(Renderer):
 	# =====================================
 
 	def calcSize(self, how):
+		#======= hinzugefuegt (#4) =======
+		self.hideimage()
+		# ==============================
 		if how == 'Poster':
 			self.instance.move(ePoint(self.x, self.y))
 			self.instance.resize(eSize(self.WCover, self.HCover))
 			if self.imageframe:
-				self.image.resize(eSize(self.WCover-20, self.HCover-20))
+				#======= geaendert (#5) =======
+				#self.image.resize(eSize(self.WCover-20, self.HCover-20))
+				self.image.resize(eSize(self.WCover-(2*self.frameSize), self.HCover-(2*self.frameSize)))
+				# ==============================
 				self.imageframe.resize(eSize(self.WCover, self.HCover))
 			else:
 				self.image.resize(eSize(self.WCover, self.HCover))
@@ -393,7 +536,10 @@ class AdvancedEventLibraryImage(Renderer):
 				self.instance.move(ePoint(self.x-self.HCover+self.WCover, self.y-self.WCover+self.HCover))
 			self.instance.resize(eSize(self.HCover, self.WCover))
 			if self.imageframe:
-				self.image.resize(eSize(self.HCover-20, self.WCover-20))
+				#======= geaendert (#5) =======
+				#self.image.resize(eSize(self.HCover-20, self.WCover-20))
+				self.image.resize(eSize(self.HCover-(2*self.frameSize), self.WCover-(2*self.frameSize)))
+				# ==============================
 				self.imageframe.resize(eSize(self.HCover, self.WCover))
 			else:
 				self.image.resize(eSize(self.HCover, self.WCover))
@@ -402,8 +548,228 @@ class AdvancedEventLibraryImage(Renderer):
 		if self.imageframe:
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
-			self.image.move(ePoint(10, 10))
+			#======= geaendert (#5) =======
+			#self.image.move(ePoint(10, 10))
+			self.image.move(ePoint(self.frameSize, self.frameSize))
+			# ==============================
 		return
+		
+	#======= hinzugefuegt (#4) =======
+	def prepareImg(self, peparetype, fileName):
+		if self.preferType.startswith(peparetype) and fileName and os.path.exists(fileName):
+			try:
+				if self.preferType == "PI_Top":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgW / (w * 1.0)
+					newH = int(imgH / scale)
+					self.image.resize(eSize(w,newH))
+					if self.frameImage:
+						self.imageframe.resize(eSize(self.WCover, newH+(2*self.frameSize)))
+					self.instance.resize(eSize(self.WCover, newH + (2*self.frameSize)))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "PI_Center":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgW / (w * 1.0)
+					newH = int(imgH / scale)
+					self.image.resize(eSize(w,newH))
+					if self.frameImage:
+						self.imageframe.resize(eSize(self.WCover, newH+(2*self.frameSize)))
+					self.instance.resize(eSize(self.WCover, newH + (2*self.frameSize)))
+					self.instance.move(ePoint(self.x, self.y + int((self.HCover - newH - (2*self.frameSize))/2)))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "PI_Bottom":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgW / (w * 1.0)
+					newH = int(imgH / scale)
+					self.image.resize(eSize(w,newH))
+					if self.frameImage:
+						self.imageframe.resize(eSize(self.WCover, newH+(2*self.frameSize)))
+					self.instance.resize(eSize(self.WCover, newH + (2*self.frameSize)))
+					self.instance.move(ePoint(self.x, self.y + self.HCover - newH - (2*self.frameSize)))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "PI_Stacked":
+					margin = 2
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					newH = int((h/2) - margin)
+					img = Image.new(mode="RGBA", size=(w,h))
+					img1 = Image.open(fileName)
+					img1 = img1.resize((w,newH))
+					img2 = img1.copy()
+					img.paste(img1,(0,0))
+					img.paste(img2,(0,h-newH))
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+				elif self.preferType == "PI_90L":
+					img = Image.open(fileName)
+					img = img.rotate(90)
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+				elif self.preferType == "PI_90R":
+					img = Image.open(fileName)
+					img = img.rotate(270)
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+				elif self.preferType == "PI_FreeCover_LB":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					#WCover=neue Hoehe
+					newH = self.WCover - (2*self.frameSize)
+					scale = imgH / (newH * 1.0)
+					newW = int(imgW / scale)
+					if (newW+(2*self.frameSize)) > self.HCover:
+						#HCover=neue Breite
+						newW = self.HCover - (2*self.frameSize)
+						scale = imgW / (newW * 1.0)
+						newH = int(imgH / scale)
+					self.image.resize(eSize(newW,newH))
+					if self.frameImage:
+						self.imageframe.resize(eSize(newW+(2*self.frameSize), newH+(2*self.frameSize)))
+					self.instance.resize(eSize(newW + (2*self.frameSize), newH + (2*self.frameSize)))
+					self.instance.move(ePoint(self.x, self.y + self.HCover - newH - (2*self.frameSize)))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "PI_FreeCover_RB":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					#WCover=neue Hoehe
+					newH = self.WCover - (2*self.frameSize)
+					scale = imgH / (newH * 1.0)
+					newW = int(imgW / scale)
+					if (newW+(2*self.frameSize)) > self.HCover:
+						#HCover=neue Breite
+						newW = self.HCover - (2*self.frameSize)
+						scale = imgW / (newW * 1.0)
+						newH = int(imgH / scale)
+					self.image.resize(eSize(newW,newH))
+					if self.frameImage:
+						self.imageframe.resize(eSize(newW+(2*self.frameSize), newH+(2*self.frameSize)))
+					self.instance.resize(eSize(newW + (2*self.frameSize), newH + (2*self.frameSize)))
+					self.instance.move(ePoint(self.x - (newW + (2*self.frameSize) - self.WCover), self.y + self.HCover - newH - (2*self.frameSize)))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "IP_Left":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgH / (h * 1.0)
+					newW = int(imgW / scale)
+					self.image.resize(eSize(newW,h))
+					if self.frameImage:
+						self.imageframe.resize(eSize(newW+(2*self.frameSize), self.HCover))
+					self.instance.resize(eSize(newW + (2*self.frameSize),self.HCover))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "IP_Center":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgH / (h * 1.0)
+					newW = int(imgW / scale)
+					self.image.resize(eSize(newW,h))
+					if self.frameImage:
+						self.imageframe.resize(eSize(newW+(2*self.frameSize), self.HCover))
+					self.instance.resize(eSize(newW + (2*self.frameSize),self.HCover))
+					self.instance.move(ePoint(self.x + int((self.WCover - newW - (2*self.frameSize))/2),self.y))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "IP_Right":
+					self.hideimage(True)
+					img = Image.open(fileName)
+					imgW = int(img.size[0])
+					imgH = int(img.size[1])
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					scale = imgH / (h * 1.0)
+					newW = int(imgW / scale)
+					self.image.resize(eSize(newW,h))
+					if self.frameImage:
+						self.imageframe.resize(eSize(newW+(2*self.frameSize), self.HCover))
+					self.instance.resize(eSize(newW + (2*self.frameSize),self.HCover))
+					self.instance.move(ePoint(self.x + self.WCover - newW - (2*self.frameSize),self.y))
+					self.loadPic(fileName)
+					
+				elif self.preferType == "IP_Stacked":
+					margin = 2
+					w = self.WCover - (2*self.frameSize)
+					h = self.HCover - (2*self.frameSize)
+					newW = int((w/2) - margin)
+					img = Image.new(mode="RGBA", size=(w,h))
+					img1 = Image.open(fileName)
+					img1 = img1.resize((newW,h))
+					img2 = img1.copy()
+					img.paste(img1,(0,0))
+					img.paste(img2,(w-newW,0))
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+				elif self.preferType == "IP_90L":
+					img = Image.open(fileName)
+					img = img.rotate(90)
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+				elif self.preferType == "IP_90R":
+					img = Image.open(fileName)
+					img = img.rotate(270)
+					img.save(self.preferImgPath)
+					self.loadPic(self.preferImgPath)
+					
+			except Exception as e:
+				write_log("========= AdvancedEventLibraryImage - Error - prepareImg: " + str(e))
+		#II,PP
+		elif self.frameImage:
+			if self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover:
+				self.hideimage(True)
+				self.image.resize(eSize(self.WCover-(2*self.frameSize), self.HCover-(2*self.frameSize)))
+				self.image.move(ePoint(self.frameSize, self.frameSize))
+				self.imageframe.resize(eSize(self.WCover, self.HCover))
+				self.imageframe.move(ePoint(0, 0))
+				self.instance.resize(eSize(self.WCover, self.HCover))
+				self.instance.move(ePoint(self.x, self.y))
+			if fileName and os.path.exists(fileName):
+					self.loadPic(fileName)
+		else:
+			if self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover:
+				self.hideimage(True)
+				self.image.resize(eSize(self.WCover, self.HCover))
+				self.image.move(ePoint(0, 0))
+				self.instance.resize(eSize(self.WCover, self.HCover))
+				self.instance.move(ePoint(self.x, self.y))
+			if fileName and os.path.exists(fileName):
+				self.loadPic(fileName)
+		# ==============================================
 
 	def removeExtension(self, ext):
 		ext = ext.replace('.wmv','').replace('.mpeg2','').replace('.ts','').replace('.m2ts','').replace('.mkv','').replace('.avi','').replace('.mpeg','').replace('.mpg','').replace('.iso','').replace('.mp4','')
@@ -414,17 +780,20 @@ class AdvancedEventLibraryImage(Renderer):
 			if picname != "":
 				size = self.image.size()
 				self.picload = ePicLoad()
-				self.picload.PictureData.get().append(self.showCallback)
+				#======= geaendert (#7) =======
+				#self.picload.PictureData.get().append(self.showCallback)
+				self.picload.PictureData.get().append(boundFunction(self.showCallback, requestNr = self.requestNr))
+				# =============================
 				if self.picload:
-						self.picload.setPara((size.width(), size.height(), 0, 0, False, 1, "#00000000"))
-						if self.picload.startDecode(picname) != 0:
-							del self.picload
+					self.picload.setPara((size.width(), size.height(), 0, 0, False, 1, "#00000000"))
+					if self.picload.startDecode(picname) != 0:
+						del self.picload
 			else:
 				self.hideimage()
 		except:
 			self.hideimage()
 
-	def showCallback(self, picInfo = None):
+	def showCallback(self, picInfo = None, requestNr = 0):
 		try:
 			if self.picload:
 				#======== geaendert (#1) =======
@@ -437,12 +806,19 @@ class AdvancedEventLibraryImage(Renderer):
 				
 				picload = self.picload
 				ptr = picload.getData()
-				if ptr != None:
+				#======= geaendert (#7) =======
+				#if ptr != None:
+				if ptr != None and requestNr >= self.requestNr:
+				# =**=*========*=========*=====
 					self.image.setPixmap(ptr)
 					if self.ishide:
 						self.showimage()
 				del picload
 				# ==============================
 				
+				#======= hinzugefuegt (#4) =======
+				if self.preferType and os.path.exists(self.preferImgPath):
+					os.remove(self.preferImgPath)
+				# ==============================
 		except:
 			self.hideimage()

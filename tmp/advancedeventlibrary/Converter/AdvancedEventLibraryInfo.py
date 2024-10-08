@@ -13,10 +13,11 @@
 #################################################################################
 
 #=================================================
-# R132 by MyFriendVTI
+# R140 by MyFriendVTI
 # usr/lib/enigma2/python/Tools/AdvancedEventLibrary.py
 # Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
 # Aenderung (#1): Fix FindEpisode s0e0
+# Hinzugtuegt (#2): Fix FindEpisode aus Description
 # ==================================================
 
 from Components.Converter.Converter import Converter
@@ -126,7 +127,11 @@ class AdvancedEventLibraryInfo(Converter, object):
 	seriesNumParserList = [('(\d+)[.]\sStaffel[,]\sFolge\s(\d+)'), 
 							_('(\d+)[.]\sStaffel[,]\sEpisode\s(\d+)'),
 							_('(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
-							_('[(](\d+)[.](\d+)[)]')]
+							_('[(](\d+)[.](\d+)[)]'),
+							#========== hinzugefuegt (#2) ===========
+							('Staffel\s(\d+)[,]\sFolge\s(\d+)')
+							# =======================================
+							]
 
 	htmlParser = HTMLParser.HTMLParser()
 
