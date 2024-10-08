@@ -80,7 +80,8 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 	seriesNumParserList = [(r'(\d+)[.]\sStaffel[,]\sFolge\s(\d+)'),
 							(r'(\d+)[.]\sStaffel[,]\sEpisode\s(\d+)'),
 							(r'(\d+)[.]\sEpisode\sder\s(\d+)[.]\sStaffel'),
-							(r'[(](\d+)[.](\d+)[)]')
+							(r'[(](\d+)[.](\d+)[)]'),
+							(r'Staffel\s(\d+)[,]\sFolge\s(\d+)')
 							]  # Parser fuer Serien- und Episodennummer
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_SUBTITLE = 0
 	SPECIAL_FORMAT_PARSED_DESCRIPTION_GENRE = 1

@@ -1,3 +1,18 @@
+#=================================================
+# R140 by MyFriendVTI
+# usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/AdvancedEventLibrarySystem.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#0): Versionsnummer]
+# Aenderung (#1): Option Update Moviewall after RecordStart [Einst. fuer plugin.py]
+# Aenderung (#2): Option Serienerk. bei der Sortierung ignoriern [Einst. fuer AdvancedEventLibrarySimpleMovieWall.py]
+# Enfernt AELImageServer
+# Aenderung (#3): Fix: Uebernahme Däfen im Editor mit Exit
+# Aenderung (#4): Rating von LiveOnTV entfernt
+# Hinzugefuegt (#5): Default-Werte einstellbar fuer neue Bouquests/Bookmarks (Suche)
+# Hinzugefuegt (#6): Search-Options bereingen mit KeyBlue
+# Aenderung (#7): Fix: Such-Einstellungen (True/False bei Lesezeichen in Unterordner)
+# ==================================================
+
 from base64 import b64decode
 from datetime import datetime
 from glob import glob
@@ -55,6 +70,13 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self["key_green"] = StaticText(_("Start scan..."))
 		self["key_yellow"] = StaticText(_("Create backup..."))
 		self["key_blue"] = StaticText(_("Create TVS reference"))
+
+
+		#=============== geaendert (#6) ================
+		#self["key_blue"] = StaticText("")
+		#self["key_blue"] = StaticText(_("Bereinigen"))
+		# ==*=========================================
+
 		self["info"] = StaticText("")
 		self["status"] = StaticText("")
 		imgpath = join(AEL.aelGlobals.SHAREPATH, "AELImages/")
@@ -365,6 +387,13 @@ class AdvancedEventLibrarySetup(Setup):
 
 	def __init__(self, session):
 		self.searchOptions = {}
+		#=============== hinzugefuegt (#5/#6) ================
+		#self.searchOptionsInUse = []
+		#self.searchOptionsInUse.append("VTiDB")
+		#self.searchOptionsInUse.append("Pictures")
+		#self.newBouquetsSearchDefault = config.plugins.AdvancedEventLibrary.newBouquetsSearchDefault = ConfigYesNo(default = False)
+		#self.newBookmarksSearchDefault = config.plugins.AdvancedEventLibrary.newBookmarksSearchDefault = ConfigYesNo(default = False)
+		# ==*=========================================
 		if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 			self.searchOptions = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
 		Setup.__init__(self, session, "Advanced-Event-Library-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
@@ -394,6 +423,50 @@ class AdvancedEventLibrarySetup(Setup):
 				makedirs(currpath)
 
 
+	def key_blue_handler(self):
+		if self.myFileListActive:
+			#====== geaendert (#6) =========
+			#self["key_blue"].setText("")
+			self["key_blue"].setText(_("Bereinigen"))
+			# ==============================
+			self["myFileList"].hide()
+			self.myFileListActive = False
+			self.updatePath(True)
+			self.buildConfigList()
+		#=============== hinzugefuegt (#6) ================
+		else:
+			bouquetCount = 0
+			movieFolderCount = 0
+			movieFolderList = []
+			for k,v in self.searchOptions.items():
+				if str(k) and str(k) not in self.searchOptionsInUse and (str(k) + "/") not in self.searchOptionsInUse:
+					key = str(k)
+					if key.startswith("/"):
+						if key.endswith("/"):
+							key = key[:-1]
+						if key not in movieFolderList:
+							movieFolderList.append(key)
+							movieFolderCount = movieFolderCount + 1
+					elif not key.startswith("subpaths_") and not key.startswith("Einstellungen"):
+						bouquetCount = bouquetCount + 1
+						
+			if bouquetCount > 0 or movieFolderCount > 0:
+				msg = str(bouquetCount) + _(" Bouquets und ") + str(movieFolderCount) + _(" Movie-Ordner, die nicht mehr vorhanden oder aktuell nicht erreichbar sind, aus den AEL-Search-Options entfernen?") + "\n\n" + _("Im Anschluss muss ein GUI-Neustart durchgeführt werden!") + "\n\n" + _("Info: Die Search-Options werden am Anfang im Log aufgelistet")
+				MsgBox = self.session.openWithCallback(self.cleanUpSearchOptions, MessageBox, msg, MessageBox.TYPE_YESNO)
+			else:
+				msg = _("Aktuell keine Bereinigung erforderlich!") + "\n\n"+ _("Keine Bouquets oder Movie-Ordner, die nicht mehr vorhanden oder aktuell nicht erreichbar sind, in den AEL-Search-Options gefunden") + "\n\n"
+				MsgBox = self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=10)
+			MsgBox.setTitle(_("Bereinigen"))
+		# ====================================================
+
+	#=============== hinzugefuegt (#6) ================
+	def cleanUpSearchOptions(self,answer=False):
+		if answer:
+			for k,v in self.searchOptions.items():
+				if str(k) and str(k) not in self.searchOptionsInUse and (str(k) + "/") not in self.searchOptionsInUse:
+					del self.searchOptions[k]
+			self.do_close()
+	# ====================================================
 #	def buildConfigList(self):
 #		try:
 #			if self.configlist:
@@ -438,6 +511,10 @@ class AdvancedEventLibrarySetup(Setup):
 #			self.configlist.append(getConfigListEntry("Einstellungen Suche"))
 #			self.configlist.append(getConfigListEntry("erstelle nicht vorhandene Metadaten", self.createMetaData))
 #			self.configlist.append(getConfigListEntry("suche vorhandene Bilder in Aufnahmeverzeichnissen", self.usePictures))
+			#================== hinzugefuegt (#5) ============
+#			self.configlist.append(getConfigListEntry("neue Bouquets in der Suchliste anwählen", self.newBouquetsSearchDefault))
+#			self.configlist.append(getConfigListEntry("neue Lesezeichen-Ordner in der Suchliste anwählen", self.newBookmarksSearchDefault))
+			# ===============================*=*===*==========
 #			self.configlist.append(getConfigListEntry("suche in VTiDB", self.vtidb))
 
 #			mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
@@ -446,14 +523,28 @@ class AdvancedEventLibrarySetup(Setup):
 #			tvbouquets = serviceHandler.list(root).getContent("SN", True)
 #			for bouquet in tvbouquets:
 #				bpath = ConfigYesNo(default=self.searchOptions.get(bouquet[1], True))
+#				bpath = ConfigYesNo(default = self.searchOptions.get(bouquet[1], self.newBouquetsSearchDefault.value))
+#				self.searchOptionsInUse.append(str(bouquet[1]))
 #				self.configlist.append(getConfigListEntry("suche in Bouquet " + str(bouquet[1]), bpath))
 #
 #			recordPaths = config.movielist.videodirs.value
 #			if recordPaths:
 #				for recdir in recordPaths:
 #					if isdir(recdir):
-#						rpath = ConfigYesNo(default=self.searchOptions.get(recdir, False))
-#						subpaths = ConfigYesNo(default=self.searchOptions.get('subpaths_' + recdir, False))
+						#=============== geaendert (#5) ================
+						#rpath = ConfigYesNo(default = self.searchOptions.get(dir, False))
+						#subpaths = ConfigYesNo(default = self.searchOptions.get('subpaths_' + dir, False))
+#						rpath = ConfigYesNo(default = self.searchOptions.get(dir, self.newBookmarksSearchDefault.value))
+#						subpaths = ConfigYesNo(default = self.searchOptions.get('subpaths_' + dir, self.newBookmarksSearchDefault.value))
+						# ===============================================
+						
+						#=========== hinzugefuegt (#6) =======================
+#						self.searchOptionsInUse.append(str(dir))
+#						self.searchOptionsInUse.append("subpaths_" + str(dir))
+#						for root, directories, files in os.walk(str(dir)):
+#							if str(dir) != str(root):
+#								self.searchOptionsInUse.append(str(root))
+						# =====================================================
 #
 #						self.configlist.append(getConfigListEntry("suche in " + str(recdir), rpath))
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(recdir), subpaths))
@@ -479,8 +570,18 @@ class AdvancedEventLibrarySetup(Setup):
 #								if str(x[0]).replace('suche in Unterverzeichnissen von ', '') != str(root):
 #									self.searchOptions[str(root)] = x[1].value
 #							self.searchOptions[x[0].replace("suche in Unterverzeichnissen von ", "subpaths_")] = x[1].value
-#						else:
-#							self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen", "Pictures").replace("suche in Bouquet ", "").replace("suche in ", "")] = x[1].value
+						#============== geaendert (#7) ==============*
+						#else:
+						#	self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen","Pictures").replace("suche in Bouquet ","").replace("suche in ","")] = x[1].value
+#						elif x[0] and not x[0].startswith("Einstellungen"):
+#							if "suche in " in x[0] and not "VTiDB" in x[0] and not "suche in Bouquet" in x[0]:
+#								folder = x[0].replace("suche in ","")
+#								self.searchOptions[folder] = x[1].value
+#								if folder.endswith("/"):
+#									self.searchOptions[folder[:-1]] = x[1].value
+#							else:
+#								self.searchOptions[x[0].replace("suche vorhandene Bilder in Aufnahmeverzeichnissen","Pictures").replace("suche in Bouquet ","").replace("suche in VTiDB","VTiDB")] = x[1].value
+						# =========================================================
 #			config.plugins.AdvancedEventLibrary.searchPlaces.value = str(self.searchOptions)
 #			config.plugins.AdvancedEventLibrary.searchPlaces.save()
 #			self.session.open(TryQuitMainloop, 3)

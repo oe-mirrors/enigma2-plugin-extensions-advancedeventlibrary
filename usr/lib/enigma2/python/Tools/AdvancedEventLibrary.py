@@ -1,3 +1,20 @@
+#=================================================
+# R140 by MyFriendVTI
+# usr/lib/enigma2/python/Tools/AdvancedEventLibrary.py
+# Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
+# Aenderung (#1): Fix mp4
+# Hinzugefuegt (#2): Check ReadOnly at CreateMetaInfo
+# Aenderung (#3): Fix FindEpisode s0e0
+# Aenderung (#4): Improvement Extradaten-Preview-Search
+# Enfernt AELImageServer
+# Enfernt Altersfreigaben.de
+# Aenderung (#5): Rating von LiveOnTv entfernt
+# Aenderung (#6): TMDB-Episoden-Cover Fix (Editor)
+# Hinzugefuegt (#7): TMDB-Top-Treffer immer mit anzeigen (Editor)
+# Aenderung (#8): Suche auch bei IPTV
+# Aenderung (#9): Fix Key not in resultDict
+# Aenderung (#10): Serienkennezeichnung 1-4 stellig
+# ==================================================
 from base64 import b64decode, b64encode
 from datetime import datetime
 from difflib import get_close_matches
@@ -325,7 +342,10 @@ def createMovieInfo(db):
 														titleinfo['overview'] = item['overview']
 													if 'release_date' in item:
 														titleinfo['year'] = item['release_date'][:4]
-													if item['genre_ids']:
+													#===== geaendert (#9) ========
+													#if item['genre_ids']:
+													if item.get('genre_ids',""):
+													# =============================
 														for genre in item['genre_ids']:
 															if tmdb_genres[genre] not in titleinfo['genre']:
 																titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + ' '
@@ -372,11 +392,17 @@ def createMovieInfo(db):
 																	titleinfo['year'] = epi['air_date'][:4]
 																if 'overview' in epi:
 																	titleinfo['overview'] = epi['overview']
-																if item['origin_country']:
+																	#===== geaendert (#9) ========
+																	#if item['origin_country']:
+																	if item.get('origin_country',""):
+																	# =============================
 																	for country in item['origin_country']:
 																		titleinfo['country'] = titleinfo['country'] + country + ' | '
 																	titleinfo['country'] = titleinfo['country'][:-3]
-																if item['genre_ids']:
+																	#===== geaendert (#9) ========
+																	#if item['genre_ids']:
+																	if item.get('genre_ids',""):
+																	# =============================
 																	for genre in item['genre_ids']:
 																		if tmdb_genres[genre] not in titleinfo['genre']:
 																			titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + '-Serie '
@@ -388,13 +414,19 @@ def createMovieInfo(db):
 																titleinfo['title'] = item['name']
 																if 'overview' in item:
 																	titleinfo['overview'] = item['overview']
-																if item['origin_country']:
+																#===== geaendert (#9) ========
+																#if item['origin_country']:
+																if item.get('origin_country',""):
+																# =============================
 																	for country in item['origin_country']:
 																		titleinfo['country'] = titleinfo['country'] + country + ' | '
 																	titleinfo['country'] = titleinfo['country'][:-3]
 																if 'first_air_date' in item:
 																	titleinfo['year'] = item['first_air_date'][:4]
-																if item['genre_ids']:
+																#===== geaendert (#9) ========
+																#if item['genre_ids']:
+																if item.get('genre_ids',""):
+																# =============================
 																	for genre in item['genre_ids']:
 																		if tmdb_genres[genre] not in titleinfo['genre']:
 																			titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + '-Serie '
@@ -690,8 +722,12 @@ def getallEventsfromEPG():
 		if not isInsPDict or (isInsPDict and sPDict[bouquet[1]]):
 			for (serviceref, servicename) in ret:
 				playable = not (eServiceReference(serviceref).flags & mask)
-				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
-					if serviceref not in tvsref:
+				# =========== geaendert (#8) =====================
+				if playable and "<n/a>" not in servicename and servicename != "." and serviceref:
+					if serviceref not in tvsref and not "%3a" in serviceref:
+#				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
+#					if serviceref not in tvsref:
+				# ===============================================
 						aelGlobals.write_log(f"'{servicename}' with reference '{serviceref}' could not be found in the TVS reference list!'")
 					line = [serviceref, servicename]
 					if line not in lines:
@@ -706,6 +742,11 @@ def getallEventsfromEPG():
 	evt = 0
 	liveTVRecords = []
 	for serviceref, eid, name, begin in allevents:
+		#==== hinzugefuegt (#8) =====
+		if not serviceref:
+			continue
+		serviceref = serviceref.split("?",1)[0].decode('utf-8','ignore')
+		# =========================
 		evt += 1
 		STATUS = f"{_('search current EPG...')} ({evt}/{len(allevents)})"
 		tvname = name
@@ -1098,14 +1139,21 @@ def convertTitle2(name):
 
 
 def findEpisode(title):
-	regexfinder = compile(r'[Ss]\d{2}[Ee]\d{2}', MULTILINE | DOTALL)
+	#======= geaendert (#10) ==================
+	#regexfinder = re.compile('[Ss]\d{2}[Ee]\d{2}', re.MULTILINE|re.DOTALL)
+	# regexfinder = re.compile('[Ss]\d{1,4}[Ee]\d{1,4}', re.MULTILINE|re.DOTALL)
+	# ===========================================
+	regexfinder = compile(r'[Ss]\d{1,4}[Ee]\d{1,4}', MULTILINE|DOTALL)
 	ex = regexfinder.findall(str(title))
 	if ex:
 		removedEpisode = title
 		if removedEpisode.find(str(ex[0])) > 0:
 				removedEpisode = removedEpisode[:removedEpisode.find(str(ex[0]))]
 		removedEpisode = convertTitle2(removedEpisode)
-		SE = ex[0].lower().replace('s', '').split('e')
+		#======= geandert (#3) ===============
+		#SE = ex[0].replace('S','').replace('s','').split('E')
+		SE = ex[0].lower().replace('s','').split('e')
+		# =======================================
 		return (SE[0], SE[1], removedEpisode.strip())
 
 
@@ -1367,7 +1415,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 			aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb movie')
 			search = tmdb.Search()
 			res = search.movie(query=title, language='de', year=jahr) if jahr != '' else search.movie(query=title, language='de')
-			if res and res['results']:
+			#===== geaendert (#9) ========
+			#if res['results']:
+			if res and res.get('results',""):
+			# =============================
 				reslist = []
 				for item in res['results']:
 					if 'love blows' not in str(item['title'].lower()):
@@ -1379,17 +1430,29 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if item['title'].lower() == bestmatch[0]:
 						foundAsMovie = True
 						aelGlobals.write_log(f"found {bestmatch[0]} for {title.lower()} on themoviedb movie")
-						if item['original_title']:
+						#===== geaendert (#9) ========
+						#if item['original_title']:
+						if item.get('original_title',""):
+						# =============================
 							org_name = item['original_title']
-						if item['poster_path'] and loadImages:
+						#===== geaendert (#9) ========
+						#if item['poster_path'] and loadImages:
+						if item.get('poster_path',"") and loadImages:
+						# =============================
 							if item['poster_path'].endswith('.jpg'):
 								titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
-						if item['backdrop_path'] and loadImages:
+						#===== geaendert (#9) ========
+						#if item['backdrop_path'] and loadImages:
+						if item.get('backdrop_path',"") and loadImages:
+						# =============================
 							if item['backdrop_path'].endswith('.jpg'):
 								titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
 						if 'release_date' in item:
 							titleinfo['year'] = item['release_date'][:4]
-						if item['genre_ids']:
+						#===== geaendert (#9) ========
+						#if item['genre_ids']
+						if item.get('genre_ids',""):
+						# =============================
 							for genre in item['genre_ids']:
 								if tmdb_genres[genre] not in titleinfo['genre']:
 									titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + ' '
@@ -1397,14 +1460,19 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							titleinfo['rating'] = str(item['vote_average'])
 						if 'id' in item:
 							details = tmdb.Movies(item['id'])
-							for country in details.releases(language='de')['countries']:
-								if str(country['iso_3166_1']) == "DE":
-									titleinfo['fsk'] = str(country['certification'])
-									break
-							for country in details.info(language='de')['production_countries']:
-								titleinfo['country'] = titleinfo['country'] + country['iso_3166_1'] + " | "
-							titleinfo['country'] = titleinfo['country'][:-3]
-							imdb_id = details.info(language='de')['imdb_id']
+							#===== hinzugefuegt try (#9) ========
+							try:
+								for country in details.releases(language='de')['countries']:
+									if str(country['iso_3166_1']) == "DE":
+										titleinfo['fsk'] = str(country['certification'])
+										break
+								for country in details.info(language='de')['production_countries']:
+									titleinfo['country'] = titleinfo['country'] + country['iso_3166_1'] + " | "
+								titleinfo['country'] = titleinfo['country'][:-3]
+								imdb_id = details.info(language='de')['imdb_id']
+							except Exception as ex:
+								pass
+							# =====================
 							if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
 								if not titleinfo['backdrop_url'].startswith('http'):
 									showimgs = details.images(language='de')['backdrops']
@@ -1454,30 +1522,51 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									if epi['still_path'] and loadImages:
 										if epi['still_path'].endswith('.jpg'):
 											titleinfo['backdrop_url'] = f"{tmdburl}{epi['still_path']}"
-									if item['origin_country']:
+									#===== geaendert (#9) ========
+									#if item['origin_country']
+									if item.get('origin_country',""):
+									# =============================
 										for country in item['origin_country']:
 											titleinfo['country'] = titleinfo['country'] + country + ' | '
 										titleinfo['country'] = titleinfo['country'][:-3]
-									if item['genre_ids']:
+									#===== geaendert (#9) ========
+									#if item['genre_ids']
+									if item.get('genre_ids',""):
+									# =============================
 										for genre in item['genre_ids']:
 											if tmdb_genres[genre] not in titleinfo['genre']:
 												titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + '-Serie '
 							else:
-								if item['original_name']:
+								#===== geaendert (#9) ========
+								#if item['original_name']
+								if item.get('original_name',""):
+								# =============================
 									org_name = item['original_name']
-								if item['origin_country']:
+								#===== geaendert (#9) ========
+								#if item['origin_country']
+								if item.get('origin_country',""):
+								# =============================
 									for country in item['origin_country']:
 										titleinfo['country'] = titleinfo['country'] + country + ' | '
 									titleinfo['country'] = titleinfo['country'][:-3]
-								if item['poster_path'] and loadImages:
+								#===== geaendert (#9) ========
+								#if item['poster_path'] and loadImages:
+								if item.get('poster_path',"") and loadImages:
+								# =============================
 									if item['poster_path'].endswith('.jpg'):
 										titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
-								if item['backdrop_path'] and loadImages:
+								#===== geaendert (#9) ========
+								#if item['backdrop_path'] and loadImages:
+								if item.get('backdrop_path',"") and loadImages:
+								# =============================
 									if item['backdrop_path'].endswith('.jpg'):
 										titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
 								if 'first_air_date' in item:
 									titleinfo['year'] = item['first_air_date'][:4]
-								if item['genre_ids']:
+								#===== geaendert (#9) ========
+								#if item['genre_ids']
+								if item.get('genre_ids',""):
+								# =============================
 									for genre in item['genre_ids']:
 										if tmdb_genres[genre] not in titleinfo['genre']:
 											titleinfo['genre'] = titleinfo['genre'] + tmdb_genres[genre] + '-Serie '
@@ -1485,10 +1574,15 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									titleinfo['rating'] = str(item['vote_average'])
 								if 'id' in item:
 									details = tmdb.TV(item['id'])
-									for country in details.content_ratings(language='de')['results']:
-										if str(country['iso_3166_1']) == "DE":
-											titleinfo['fsk'] = str(country['rating'])
-											break
+									#===== hinzugefuegt try (#9) ========
+									try:
+										for country in details.content_ratings(language='de')['results']:
+											if str(country['iso_3166_1']) == "DE":
+												titleinfo['fsk'] = str(country['rating'])
+												break
+									except Exception as ex:
+											pass
+									# ==================================
 									if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
 										if not titleinfo['backdrop_url'].startswith('http'):
 											showimgs = details.images(language='de')['backdrops']
@@ -1561,7 +1655,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									if titleinfo['country'] == "" and response['network'] is not None:
 										if response['network'] in networks:
 											titleinfo['country'] = networks[response['network']]
-									if response['poster'] and loadImages:
+									#===== geaendert (#9) ========
+									#if response['poster'] and loadImages:
+									if response.get('poster',"") and loadImages:
+									# =============================
 										if str(response['poster']).endswith('.jpg') and not titleinfo['poster_url'].startswith('http'):
 											titleinfo['poster_url'] = f"{tvdburl}{response['poster']}"
 								break
@@ -1578,10 +1675,16 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						if titleinfo['rating'] == "" and response['siteRating'] != "0":
 							titleinfo['rating'] = response['siteRating']
 						titleinfo['fsk'] = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
-						if response['poster'] and loadImages:
+						#===== geaendert (#9) ========
+						#if response['poster'] and loadImages:
+						if response.get('poster',"") and loadImages:
+						# =============================
 							if response['poster'].endswith('.jpg') and not titleinfo['poster_url'].startswith('http'):
 								titleinfo['poster_url'] = f"{tvdburl}{response['poster']}"
-						if response['fanart'] and loadImages:
+						#===== geaendert (#9) ========
+						#if response['fanart'] and loadImages:
+						if response.get('fanart',"") and loadImages:
+						# =============================
 							if response['fanart'].endswith('.jpg') and not titleinfo['backdrop_url'].startswith('http'):
 								titleinfo['backdrop_url'] = f"{tvdburl}{response['fanart']}"
 						if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
@@ -1606,27 +1709,51 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if res:
 						reslist = []
 						for item in res:
-							if 'love blows' not in str(item['show']['name'].lower()):
+							#===== geaendert (#9) ========
+							#if not 'love blows' in str(item['show']['name'].lower()):
+							if item.get('show',"") and item['show'].get('name',"") and not 'love blows' in str(item['show']['name'].lower()):
+							# =============================
 								reslist.append(item['show']['name'].lower())
 						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
 						if not bestmatch:
 							bestmatch = [title.lower()]
 						for item in res:
-							if item['show']['name'].lower() == bestmatch[0]:
-								if item['show']['network']['country'] and titleinfo['country'] == "":
+							#===== geaendert (#9) ========
+							#if item['show']['name']:
+							if item.get('show',"") and item['show'].get('name',"") and item['show']['name'].lower() == bestmatch[0]:
+							# =============================
+								#===== geaendert (#9) ========
+								#if item['show']['network']['country'] and titleinfo['country'] == "":
+								if item['show'].get('network',"") and item['show']['network'].get('country',"") and item['show']['network']['country'].get('code',"") and titleinfo['country'] == "":
+								# =============================
 									titleinfo['country'] = item['show']['network']['country']['code']
-								if item['show']['premiered'] and titleinfo['year'] == "":
+								#===== geaendert (#9) ========
+								#if item['show']['premiered'] and titleinfo['year'] == "":
+								if item['show'].get('premiered',"") and titleinfo['year'] == "":
 									titleinfo['year'] = item['show']['premiered'][:4]
-								if item['show']['genres'] and titleinfo['genre'] == "":
+								# =============================
+								#===== geaendert (#9) ========
+								#if item['show']['genres'] and titleinfo['genre'] == "":
+								if item['show'].get('genres',"") and titleinfo['genre'] == "":
+								# =============================
 									for genre in item['show']['genres']:
 										if genre not in titleinfo['genre']:
 											titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
 									titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-								if item['show']['image'] and not titleinfo['poster_url'].startswith('http') and loadImages:
+								#===== geaendert (#9) ========
+								#if item['show']['image'] and not titleinfo['poster_url'].startswith('http') and loadImages:
+								if item['show'].get('image',"") and not titleinfo['poster_url'].startswith('http') and loadImages:
+								# =============================
 									titleinfo['poster_url'] = item['show']['image']['original']
-								if item['show']['rating']['average'] and titleinfo['rating'] == "":
+								#===== geaendert (#9) ========
+								#if item['show']['rating']['average'] and titleinfo['rating'] == "":
+								if item['show'].get('rating',"") and item['show']['rating'].get('average',"") and titleinfo['rating'] == "":
+								# =============================
 									titleinfo['rating'] = item['show']['rating']['average']
-								if item['show']['externals']['imdb'] and not imdb_id:
+								#===== geaendert (#9) ========
+								#if item['show']['externals']['imdb'] and not imdb_id:
+								if item['show'].get('externals',"") and item['show']['externals'].get('imdb',"") and not imdb_id:
+								# =============================
 									imdb_id = item['show']['externals']['imdb']
 								break
 #			aelGlobals.write_log('################################################### omdb ##############################################')
@@ -1976,6 +2103,11 @@ def writeTVStatistic(db):
 		isInsPDict = bouquet[1] in sPDict
 		if not isInsPDict or (isInsPDict and sPDict[bouquet[1]]):
 			for (serviceref, servicename) in ret:
+				#==== hinzugefuegt (#8) =====
+				if not serviceref:
+					continue
+				serviceref = serviceref.split("?",1)[0].decode('utf-8','ignore')
+				# =========================
 				count = db.getEventCount(serviceref)
 				aelGlobals.write_log('There are ' + str(count) + ' events for ' + str(servicename) + ' in database')
 
@@ -2096,9 +2228,26 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
 			if not bestmatch:
 				bestmatch = [title.lower()]
-		for item in res['results']:
-			aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
-			if item['name'].lower() in bestmatch and 'id' in item:
+		#========== geaendert (#7) ===============
+		#for item in res['results']:
+		#	write_log('found on TMDb TV ' + str(item['name']))
+		#	if item['name'].lower() in bestmatch:
+		appendTopHit = True
+		itemList = []
+		for index,item in enumerate(res['results']):
+			if item['name'].lower() in bestmatch:
+				itemList.append(item)
+				if index == 0:
+					appendTopHit = False
+		if appendTopHit:
+			itemList.append(res['results'][0])
+		for item in itemList:
+			if item and 'id' in item:
+				aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
+		# ==================================================
+#		for item in res['results']:
+#			aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
+#			if item['name'].lower() in bestmatch and 'id' in item:
 				idx = tmdb.TV(item['id'])
 				if searchName and what == 'Cover':
 					details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
@@ -2111,7 +2260,15 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 										imgsize = str(img['width']) + 'x' + str(img['height'])
 										itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(coverDir, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 										pictureList.append((itm,))
-				if what == 'Cover' and not searchName:
+							#======== hinzugeugt (#6) =========
+							if epi.get("still_path","") and epi['still_path'].endswith('.jpg'):
+								itm = [item['name'] + ' - ' + epi['name'], what, 'gefunden auf TMDb TV', 'http://image.tmdb.org/t/p/' + cq + epi['still_path'], os.path.join(coverDir, b64title +'.jpg'), convert2base64(epi['still_path']) +'.jpg']
+								pictureList.append((itm,))
+							# ================================
+				#==== geaendert (#6) =====
+				#if what == 'Cover' and not searchName:
+				if what == 'Cover':
+				# ========================
 					imgs = idx.images(language=str(lang))['backdrops']
 					if imgs:
 						for img in imgs:
@@ -2148,9 +2305,27 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 		bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
 		if not bestmatch:
 			bestmatch = [title.lower()]
-		for item in res['results']:
-			aelGlobals.write_log('found on TMDb Movie ' + str(item['title']))
-			if item['title'].lower() in bestmatch and 'id' in item:
+		#========== geaendert (#7) ===============
+		#for item in res['results']:
+		#	write_log('found on TMDb Movie ' + str(item['title']))
+		#	if item['title'].lower() in bestmatch:
+		appendTopHit = True
+		itemList = []
+		for index,item in enumerate(res['results']):
+			if item['title'].lower() in bestmatch:
+				itemList.append(item)
+				if index == 0:
+					appendTopHit = False
+		if appendTopHit:
+			itemList.append(res['results'][0])
+		for item in itemList:
+			if item and 'id' in item:
+				aelGlobals('found on TMDb Movie ' + str(item['title']))
+		# ==================================================
+
+#		for item in res['results']:
+#			aelGlobals.write_log('found on TMDb Movie ' + str(item['title']))
+#			if item['title'].lower() in bestmatch and 'id' in item:
 				idx = tmdb.Movies(item['id'])
 				if what == 'Cover':
 					imgs = idx.images(language=str(lang))['backdrops']
@@ -2195,14 +2370,25 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 		if res:
 			reslist = []
 			for item in res:
-				reslist.append(item['show']['name'].lower())
+				#===== geaendert (#9) ========
+				#reslist.append(item['show']['name'].lower())
+				if item.get('show',"") and item['show'].get('name',""):
+					reslist.append(item['show']['name'].lower())
+				# =============================
 			bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
 			if not bestmatch:
 				bestmatch = [title.lower()]
 			for item in res:
-				if item['show']['name'].lower() == bestmatch[0] and item['show']['image']:
-					itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(posterDir, b64title + '.jpg'), convert2base64('mazetvPosterFile') + '.jpg']
-					pictureList.append((itm,))
+				#===== geaendert (#9) ========
+				#if item['show']['name'].lower() == bestmatch[0]:
+				if item.get('show',"") and item['show'].get('name',"") and item['show']['name'].lower() == bestmatch[0]:
+				# =============================
+					#===== geaendert (#9) ========
+					#if item['show']['image']:
+					if item['show'].get('image',"") and item['show']['image'].get('original',""):
+					# =============================
+						itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(posterDir, b64title + '.jpg'), convert2base64('mazetvPosterFile') + '.jpg']
+						pictureList.append((itm,))
 	if not pictureList:
 		BingSearch = BingImageSearch(f"{title}{bingOption}", count, what)
 		res = BingSearch.search()
@@ -2278,11 +2464,17 @@ def get_searchResults(title, lang='de'):
 							rating = epi['vote_average']
 						if 'overview' in epi:
 							desc = epi['overview']
-						if item['origin_country']:
+							#===== geaendert (#9) ========
+							#if item['origin_country']
+							if item.get('origin_country',""):
+							# =============================
 							for country in item['origin_country']:
 								countries = countries + country + ' | '
 							countries = countries[:-3]
-						if item['genre_ids']:
+							#===== geaendert (#9) ========
+							#if item['genre_ids']
+							if item.get('genre_ids',""):
+							# =============================
 							for genre in item['genre_ids']:
 								genres = genres + tmdb_genres[genre] + '-Serie '
 							maxGenres = genres.split()
@@ -2290,30 +2482,46 @@ def get_searchResults(title, lang='de'):
 								genres = maxGenres[0]
 						if 'id' in item:
 							details = tmdb.TV(item['id'])
-							for country in details.content_ratings(language='de')['results']:
-								if str(country['iso_3166_1']) == "DE":
-									fsk = str(country['rating'])
-									break
+							#===== hinzugefuegt try (#9) ========
+							try:
+								for country in details.content_ratings(language='de')['results']:
+									if str(country['iso_3166_1']) == "DE":
+										fsk = str(country['rating'])
+										break
+							except:
+								pass
+							# =================================
 				else:
 					if 'overview' in item:
 						desc = item['overview']
-					if item['origin_country']:
+						#===== geaendert (#9) ========
+						#if item['origin_country']
+						if item.get('origin_country',""):
+						# =============================
 						for country in item['origin_country']:
 							countries = countries + country + ' | '
 						countries = countries[:-3]
 					if 'first_air_date' in item:
 						year = item['first_air_date'][:4]
-					if item['genre_ids']:
+						#===== geaendert (#9) ========
+						#if item['genre_ids']
+						if item.get('genre_ids',""):
+						# =============================
 						for genre in item['genre_ids']:
 							genres = genres + tmdb_genres[genre] + '-Serie '
 					if 'vote_average' in item and item['vote_average'] != "0":
 						rating = str(item['vote_average'])
 					if 'id' in item:
 						details = tmdb.TV(item['id'])
-						for country in details.content_ratings(language='de')['results']:
-							if str(country['iso_3166_1']) == "DE":
-								fsk = str(country['rating'])
-								break
+						#===== hinzugefuegt try (#9) ========
+						try:
+							for country in details.content_ratings(language='de')['results']:
+								if str(country['iso_3166_1']) == "DE":
+									fsk = str(country['rating'])
+									break
+						except:
+							pass
+						# ====================================
 				itm = [str(item['name']) + epiname, str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb TV", desc]
 				resultList.append((itm,))
 		search = tmdb.Search()
@@ -2337,13 +2545,18 @@ def get_searchResults(title, lang='de'):
 					desc = item['overview']
 				if 'release_date' in item:
 					year = item['release_date'][:4]
-				if item['genre_ids']:
+				#===== geaendert (#9) ========
+				#if item['genre_ids']
+				if item.get('genre_ids',""):
+				# =============================
 					for genre in item['genre_ids']:
 						genres = genres + tmdb_genres[genre] + ' '
 				if 'vote_average' in item and item['vote_average'] != "0":
 					rating = str(item['vote_average'])
 				if 'id' in item:
 					details = tmdb.Movies(item['id'])
+				#===== hinzugefuegt try (#9) ========
+				try:
 					for country in details.releases(language='de')['countries']:
 						if str(country['iso_3166_1']) == "DE":
 							fsk = str(country['certification'])
@@ -2351,6 +2564,9 @@ def get_searchResults(title, lang='de'):
 					for country in details.info(language='de')['production_countries']:
 						countries = countries + country['iso_3166_1'] + " | "
 					countries = countries[:-3]
+				except:
+					pass
+				# ===================================*=
 				itm = [str(item['title']), str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb Movie", desc]
 				resultList.append((itm,))
 	tvdb.KEYS.API_KEY = get_keys('tvdb')
@@ -2434,24 +2650,46 @@ def get_searchResults(title, lang='de'):
 	if res:
 		reslist = []
 		for item in res:
-			reslist.append(item['show']['name'].lower())
+			#===== geaendert (#9) ========
+			#reslist.append(item['show']['name'].lower())
+			if item.get('show',"") and item['show'].get('name',""):
+				reslist.append(item['show']['name'].lower())
+			# =============================
 		bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
 		if not bestmatch:
 			bestmatch = [title.lower()]
 		for item in res:
-			if item['show']['name'].lower() in bestmatch:
+			#===== geaendert (#9) ========
+			#if item['show']['name'].lower() in bestmatch:
+			if item.get('show',"") and item['show'].get('name',"") and item['show']['name'].lower() in bestmatch:
+
 				countries, year, genres, rating, fsk, desc = "", "", "", "", "", ""
-				if item['show']['summary']:
+				#===== geaendert (#9) ========
+				#if item['show']['summary']:
+				if item['show'].get('summary',""):
+				# =============================
 					desc = item['show']['summary']
-				if item['show']['network']['country']:
+				#===== geaendert (#9) ========
+				#if item['show']['network']['country']:
+				if item['show'].get('network',"") and item['show']['network'].get('country',"") and item['show']['network']['country'].get('code',""):
+				# =============================
 					countries = item['show']['network']['country']['code']
-				if item['show']['premiered']:
+				#===== geaendert (#9) ========
+				#if item['show']['premiered']:
+				if item['show'].get('premiered',""):
+				# =============================
 					year = item['show']['premiered'][:4]
-				if item['show']['genres']:
+				#===== geaendert (#9) ========
+				#if item['show']['genres']:
+				if item['show'].get('genres',""):
+				# =============================
 					for genre in item['show']['genres']:
 						genres = genres + genre + '-Serie '
 					genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-				if item['show']['rating']['average']:
+				#===== geaendert (#9) ========
+				#if item['show']['rating']['average'] and str(item['show']['rating']['average']) != None:
+				if item['show'].get('rating',"") and item['show']['rating'].get('average',"") and str(item['show']['rating']['average']) != None:
+				# =============================
 					rating = item['show']['rating']['average']
 				itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
 				resultList.append((itm,))
@@ -3188,10 +3426,24 @@ class DB_Functions(object):
 
 	def getMaxAirtime(self, title):
 		cur = self.conn.cursor()
-		query = "SELECT Max(airtime) FROM liveOnTV WHERE title = ?"
+		#========== geaendert (#8) =============
+		#query = "SELECT Max(airtime) FROM liveOnTV WHERE title = ?"
+		query = "SELECT Max(airtime),sRef FROM liveOnTV WHERE title = ?"
+		# =======================================
 		cur.execute(query, (str(title),))
 		row = cur.fetchall()
-		return row[0][0] if row else 4000000000
+		if row:
+			#========== geaendert (#8) =============
+			#return row[0][0]
+			if "http" in row[0][1]:
+				return 4000000000
+			else:
+				return row[0][0]
+			# ===================================
+			return row[0][0]
+		else:
+			return 4000000000
+#		return row[0][0] if row else 4000000000
 
 	def getSeriesStarts(self):
 		now = time()
