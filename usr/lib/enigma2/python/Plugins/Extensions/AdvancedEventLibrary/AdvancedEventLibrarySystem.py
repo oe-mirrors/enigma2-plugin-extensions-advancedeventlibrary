@@ -14,7 +14,7 @@
 #################################################################################
 
 #=================================================
-# R140 by MyFriendVTI
+# R141 by MyFriendVTI
 # usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/AdvancedEventLibrarySystem.py
 # Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
 # Aenderung (#0): Versionsnummer]
@@ -26,6 +26,7 @@
 # Hinzugefuegt (#5): Default-Werte einstellbar fuer neue Bouquests/Bookmarks (Suche)
 # Hinzugefuegt (#6): Search-Options bereingen mit KeyBlue
 # Aenderung (#7): Fix: Such-Einstellungen (True/False bei Lesezeichen in Unterordner)
+# Aenderung (#8): Fix: IPTV-Sender in TVSSetup
 # ==================================================
 
 from Screens.Screen import Screen
@@ -78,7 +79,7 @@ import AdvancedEventLibraryRecommendations
 from AdvancedEventLibrarySimpleMovieWall import saving
 
 #=========== (#0) ================
-currentVersion = 140
+currentVersion = 141
 # ================================
 PARAMETER_SET = 0
 PARAMETER_GET = 1
@@ -891,7 +892,10 @@ class TVSSetup(Screen, ConfigListScreen):
 			if doIt:
 				for (serviceref, servicename) in ret:
 					playable = not (eServiceReference(serviceref).flags & mask)
-					if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
+					#============ geaendert (#8) ==============
+					#if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
+					if playable and "p%3a" not in serviceref and "ps%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097') and not serviceref.startswith('5001') and not serviceref.startswith('5002'):
+					# ========================================
 						if servicename not in self.senderlist:
 							self.senderlist.append(servicename)
 						self.senderdict[serviceref] = servicename
