@@ -16,6 +16,7 @@ def localeInit():
 def _(txt):
 	t = dgettext("AdvancedEventLibrary", txt)
 	t = gettext(txt) if t == txt else t
+	return t
 
 
 localeInit()
