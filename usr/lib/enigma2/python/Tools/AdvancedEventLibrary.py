@@ -27,7 +27,7 @@ from linecache import getline
 from os import makedirs, system, remove, walk, access, stat, listdir, W_OK
 from os.path import join, exists, basename, getmtime, isdir, getsize
 from PIL import Image
-from random import randrange, choice
+from random import choice
 from re import compile, findall, IGNORECASE, MULTILINE, DOTALL
 from requests import get, exceptions
 from shutil import copy2, copyfileobj, move
@@ -116,8 +116,7 @@ def get_keys(forwhat):
 	elif forwhat == 'omdb' and omdbKey != _("internal"):
 		return omdbKey
 	else:
-		apikeys = aelGlobals.APIKEYS[forwhat]
-		return b64decode(apikeys[randrange(len(apikeys))]).decode()
+		return b64decode(choice(aelGlobals.APIKEYS[forwhat])).decode()
 
 
 def get_TVDb():
