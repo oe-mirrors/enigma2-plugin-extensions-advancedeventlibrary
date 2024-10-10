@@ -2,7 +2,7 @@
 # R141 by MyFriendVTI
 # usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/AdvancedEventLibrarySystem.py
 # Aenderungen kommentiert mit hinzugefuegt, geaendert oder geloescht
-# Aenderung (#0): Versionsnummer]
+# Aenderung (#0): Versionsnummer
 # Aenderung (#1): Option Update Moviewall after RecordStart [Einst. fuer plugin.py]
 # Aenderung (#2): Option Serienerk. bei der Sortierung ignoriern [Einst. fuer AdvancedEventLibrarySimpleMovieWall.py]
 # Enfernt AELImageServer
@@ -68,10 +68,9 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.memInfo = ""
 		self.statistic = ""
 		self["key_red"] = StaticText(_("Close"))
-		self["key_green"] = StaticText(_("Start scan..."))
-		self["key_yellow"] = StaticText(_("Create backup..."))
+		self["key_green"] = StaticText(_("Start scan"))
+		self["key_yellow"] = StaticText(_("Create backup"))
 		self["key_blue"] = StaticText(_("Create TVS reference"))
-
 
 		#=============== geaendert (#6) ================
 		#self["key_blue"] = StaticText("")
@@ -111,24 +110,25 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.db = AEL.getDB()
 		confdir = join(AEL.aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
 		if isfile(confdir):
-			posterCount = self.db.parameter(AEL.PARAMETER_GET, 'posterCount', None, 0)
-			posterSize = str(self.db.parameter(AEL.PARAMETER_GET, 'posterSize', None, 0))
+			posterCount = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'posterCount', None, 0)
+			posterSize = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'posterSize', None, 0))
 			posterSize = posterSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
-			coverCount = self.db.parameter(AEL.PARAMETER_GET, 'coverCount', None, 0)
-			coverSize = str(self.db.parameter(AEL.PARAMETER_GET, 'coverSize', None, 0))
+			coverCount = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'coverCount', None, 0)
+			coverSize = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'coverSize', None, 0))
 			coverSize = coverSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
-			previewCount = self.db.parameter(AEL.PARAMETER_GET, 'previewCount', None, 0)
-			previewSize = str(self.db.parameter(AEL.PARAMETER_GET, 'previewSize', None, 0))
+			previewCount = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'previewCount', None, 0)
+			previewSize = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'previewSize', None, 0))
 			previewSize = previewSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
-			usedInodes = self.db.parameter(AEL.PARAMETER_GET, 'usedInodes', None, 0)
-			lastposterCount = self.db.parameter(AEL.PARAMETER_GET, 'lastposterCount', None, 0)
-			lastcoverCount = self.db.parameter(AEL.PARAMETER_GET, 'lastcoverCount', None, 0)
-			lasteventInfoCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCount', None, 0))
-			lasteventInfoCountSuccsess = str(self.db.parameter(AEL.PARAMETER_GET, 'lasteventInfoCountSuccsess', None, 0))
-			lastpreviewImageCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lastpreviewImageCount', None, 0))
-			lastadditionalDataCount = str(self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCount', None, 0))
-			lastadditionalDataCountBlacklist = str(self.db.parameter(AEL.PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0))
+			usedInodes = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'usedInodes', None, 0)
+			lastposterCount = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lastposterCount', None, 0)
+			lastcoverCount = self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lastcoverCount', None, 0)
+			lasteventInfoCount = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lasteventInfoCount', None, 0))
+			lasteventInfoCountSuccsess = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lasteventInfoCountSuccsess', None, 0))
+			lastpreviewImageCount = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lastpreviewImageCount', None, 0))
+			lastadditionalDataCount = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lastadditionalDataCount', None, 0))
+			lastadditionalDataCountBlacklist = str(self.db.parameter(AEL.aelGlobals.PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0))
 			lastadditionalDataCountSuccess = int(lastadditionalDataCount) - int(lastadditionalDataCountBlacklist)
+			lastUpdateStart, lastUpdateDuration = self.getlastUpdateInfo(self.db)
 			dbSize = getsize(confdir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
 			blackListCount = self.db.getblackListCount()
@@ -146,7 +146,8 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			statistic = f"{_('Statistics last search run:')}\n"
 			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
 			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC}\n"
-			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC}{self.getlastUpdateInfo(self.db)}\n\n"
+			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC}\n"
+			statistic += f"{_('Executed on:')}\t{lastUpdateStart}\t{_('Duration:')}\t{lastUpdateDuration} h"
 			statistic += f"{_('Total statistics:')}\n"
 			statistic += f"{_('Number of posters:')}\t{posterCount} {_('Size:')} {posterSize}\n"
 			statistic += f"{_('Number of previews:')}\t{previewCount} {_('Size:')} {previewSize}\n"
@@ -154,7 +155,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			statistic += f"{_('Database size:')}\t{dbSize} KB\n"
 			statistic += f"{_('Entries:')}\t{titleCount} | {blackListCount} | {percent}\n"
 			statistic += f"{_('Extra data:')}\t{liveTVtitleCount} | {liveTVidtitleCount} | {percentTV}\n"
-			statistic += f"{_('Storage space:')}\t{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB\t{_('Inodes used:')}{usedInodes}\n"
+			statistic += f"{_('Storage space:')}\t{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB\t{_('Inodes used:')}\t{usedInodes}\n"
 			self.statistic = statistic
 			memInfo = f"\n{_('Memory allocation:')}\n{self.getDiskInfo('/')}{self.getMemInfo('Mem')}"
 			memInfo += f"\n{_('Mountpoints:')}\n{self.getDiskInfo()}"
@@ -212,9 +213,9 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		return res.replace('/ :', _('Flash:'))
 
 	def getlastUpdateInfo(self, db):
-		lastUpdateStart = self.convertTimestamp(db.parameter(AEL.PARAMETER_GET, 'laststart', None, 0))
-		lastUpdateDuration = self.convertDuration(float(db.parameter(AEL.PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(AEL.PARAMETER_GET, 'laststart', None, 0)) - 3600)
-		return f"\n{_('Executed on:')}\t{lastUpdateStart}\t{_('Duration:')}\t{lastUpdateDuration}"
+		lastUpdateStart = self.convertTimestamp(db.parameter(AEL.aelGlobals.PARAMETER_GET, 'laststart', None, 0))
+		lastUpdateDuration = self.convertDuration(float(db.parameter(AEL.aelGlobals.PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(AEL.aelGlobals.PARAMETER_GET, 'laststart', None, 0)) - 3600)
+		return lastUpdateStart, lastUpdateDuration
 
 	def convertTimestamp(self, val):
 		value = datetime.fromtimestamp(float(val))
@@ -275,8 +276,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				makedirs(join(path, subpath))
 
 	def getStatus(self):
-		status = AEL.STATUS if AEL.STATUS else _("No search is currently running.")
-		self["status"].setText(status)
+		self["status"].setText(AEL.STATUS if AEL.STATUS else _("No search is currently running."))
 		self.memInfo = f"\nSpeicherbelegung :\n{self.getDiskInfo('/')}"
 		self.memInfo += str(self.getMemInfo('Mem'))
 		self.memInfo += f"\nMountpoints :\n{self.getDiskInfo()}"
@@ -423,7 +423,6 @@ class AdvancedEventLibrarySetup(Setup):
 			if not exists(currpath):
 				makedirs(currpath)
 
-
 	def key_blue_handler(self):
 		if self.myFileListActive:
 			#====== geaendert (#6) =========
@@ -439,7 +438,7 @@ class AdvancedEventLibrarySetup(Setup):
 			bouquetCount = 0
 			movieFolderCount = 0
 			movieFolderList = []
-			for k,v in self.searchOptions.items():
+			for k, v in self.searchOptions.items():
 				if str(k) and str(k) not in self.searchOptionsInUse and (str(k) + "/") not in self.searchOptionsInUse:
 					key = str(k)
 					if key.startswith("/"):
@@ -450,20 +449,20 @@ class AdvancedEventLibrarySetup(Setup):
 							movieFolderCount = movieFolderCount + 1
 					elif not key.startswith("subpaths_") and not key.startswith("Einstellungen"):
 						bouquetCount = bouquetCount + 1
-						
+
 			if bouquetCount > 0 or movieFolderCount > 0:
 				msg = str(bouquetCount) + _(" Bouquets und ") + str(movieFolderCount) + _(" Movie-Ordner, die nicht mehr vorhanden oder aktuell nicht erreichbar sind, aus den AEL-Search-Options entfernen?") + "\n\n" + _("Im Anschluss muss ein GUI-Neustart durchgeführt werden!") + "\n\n" + _("Info: Die Search-Options werden am Anfang im Log aufgelistet")
 				MsgBox = self.session.openWithCallback(self.cleanUpSearchOptions, MessageBox, msg, MessageBox.TYPE_YESNO)
 			else:
-				msg = _("Aktuell keine Bereinigung erforderlich!") + "\n\n"+ _("Keine Bouquets oder Movie-Ordner, die nicht mehr vorhanden oder aktuell nicht erreichbar sind, in den AEL-Search-Options gefunden") + "\n\n"
+				msg = _("Aktuell keine Bereinigung erforderlich!") + "\n\n" + _("Keine Bouquets oder Movie-Ordner, die nicht mehr vorhanden oder aktuell nicht erreichbar sind, in den AEL-Search-Options gefunden") + "\n\n"
 				MsgBox = self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=10)
 			MsgBox.setTitle(_("Bereinigen"))
 		# ====================================================
 
 	#=============== hinzugefuegt (#6) ================
-	def cleanUpSearchOptions(self,answer=False):
+	def cleanUpSearchOptions(self, answer=False):
 		if answer:
-			for k,v in self.searchOptions.items():
+			for k, v in self.searchOptions.items():
 				if str(k) and str(k) not in self.searchOptionsInUse and (str(k) + "/") not in self.searchOptionsInUse:
 					del self.searchOptions[k]
 			self.do_close()
@@ -538,7 +537,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						rpath = ConfigYesNo(default = self.searchOptions.get(dir, self.newBookmarksSearchDefault.value))
 #						subpaths = ConfigYesNo(default = self.searchOptions.get('subpaths_' + dir, self.newBookmarksSearchDefault.value))
 						# ===============================================
-						
+
 						#=========== hinzugefuegt (#6) =======================
 #						self.searchOptionsInUse.append(str(dir))
 #						self.searchOptionsInUse.append("subpaths_" + str(dir))
@@ -615,10 +614,6 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 		serviceHandler = eServiceCenter.getInstance()
 		tvbouquets = serviceHandler.list(root).getContent("SN", True)
-		tvsref = {}  # Holger
-		jsonfile = join(AEL.aelGlobals.CONFIGPATH, "tvs_reflist.json")
-		if fileExists(jsonfile):
-			self.tvsref = self.load_json(jsonfile)
 		for bouquet in tvbouquets:
 			root = eServiceReference(str(bouquet[0]))
 			serviceHandler = eServiceCenter.getInstance()
@@ -651,15 +646,15 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 	def key_ok_handler(self):
 		self.cur = self['config'].getCurrent()
 		if self.cur:
-			list = []
+			tvslist = []
 			for sender in self.tvsKeys:
 				for k, v in self.tvsRefList.items():
 					if str(sender) == str(k):
 						itm = (k, v)
-						list.append(itm)
+						tvslist.append(itm)
 						break
-			list.insert(0, (_("unused"), ""))
-			choices, idx = (list, 0)
+			tvslist.insert(0, (_("unused"), ""))
+			choices, idx = (tvslist, 0)
 			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title='Referenz auswählen', keys=keys, list=choices, selection=idx)
 
@@ -695,10 +690,12 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		if self.configlist:
 			del self.configlist[:]
 		if self.tvsRefList:
+			jsonfile = join(AEL.aelGlobals.CONFIGPATH, "tvs_reflist.json")
+			tvsref = self.load_json(jsonfile) if fileExists(jsonfile) else {}
 			for sender in sorted(self.senderlist):
 				for k, v in self.senderdict.items():
 					if str(v) == str(sender):
-						entry = ConfigText(default=self.tvsref.get(k, ""))
+						entry = ConfigText(default=tvsref.get(k, ""))
 						self.configlist.append(getConfigListEntry(sender, entry))
 						break
 
