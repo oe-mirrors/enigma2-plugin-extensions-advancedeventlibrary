@@ -23,7 +23,7 @@ from Tools.Directories import fileExists
 from glob import glob
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import aelGlobals, getImageFile, clearMem, getDB, convert2base64, aelGlobals, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getImageFile, clearMem, getDB, convert2base64, PicLoader
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime
