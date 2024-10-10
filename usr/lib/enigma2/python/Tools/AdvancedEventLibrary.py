@@ -88,7 +88,6 @@ config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20
 config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
-STATUS = ""
 #not used
 #vtidb_loc = config.misc.db_path.value + '/vtidb.db'
 # convNames = ['Polizeiruf', 'Tatort', 'Die Bergpolizei', 'Axte X', 'ANIXE auf Reisen', 'Close Up', 'Der Zürich-Krimi', 'Buffy', 'Das Traumschiff', 'Die Land', 'Faszination Berge', 'Hyperraum', 'Kreuzfahrt ins Gl', 'Lost Places', 'Mit offenen Karten', 'Newton', 'Planet Schule', 'Punkt 12', 'Regular Show', 'News Reportage', 'News Spezial', 'S.W.A.T', 'Xenius', 'Der Barcelona-Krimi', 'Die ganze Wahrheit', 'Firmen am Abgrund', 'GEO Reportage', 'Kommissar Wallander', 'Rockpalast', 'SR Memories', 'Wildes Deutschland', 'Wilder Planet', 'Die rbb Reporter', 'Flugzeug-Katastrophen', 'Heute im Osten', 'Kalkofes Mattscheibe', 'Neue Nationalparks', 'Auf Entdeckungsreise']
@@ -190,9 +189,8 @@ def clearMem(screenName=""):
 
 
 def createBackup():
-	global STATUS
 	backuppath = config.plugins.AdvancedEventLibrary.Backup.value
-	STATUS = f"{_('create backup in')} {backuppath}"
+	aelGlobals.setStatus(f"{_('create backup in')} {backuppath}")
 	aelGlobals.write_log(f"create backup in {backuppath}")
 	for currpath in [backuppath, f"{backuppath}poster/", f"{backuppath}cover/"]:
 		if not exists(currpath):
@@ -209,7 +207,7 @@ def createBackup():
 		target = join(f"{backuppath}poster/", basename(filename))
 		if not fileExists(target) or getmtime(filename) > (getmtime(target) + 7200):
 			copy2(filename, target)
-			STATUS = f"({progress}/{pics} {_('save poster:')} {filename}"
+			aelGlobals.setStatus(f"({progress}/{pics} {_('save poster:')} {filename}")
 			copied += 1
 	aelGlobals.write_log(f"have copied {copied} poster to {backuppath} poster/")
 	del files
@@ -222,11 +220,11 @@ def createBackup():
 		target = join(f"{backuppath}cover/", basename(filename))
 		if not fileExists(target) or getmtime(filename) > getmtime(target):
 			copy2(filename, target)
-			STATUS = f"({progress}/{pics}) {_('save cover')}: {filename}"
+			aelGlobals.setStatus(f"({progress}/{pics}) {_('save cover')}: {filename}")
 			copied += 1
 	aelGlobals.write_log(f"have copied {copied} cover to {backuppath}cover/")
 	del files
-	STATUS = ""
+	aelGlobals.setStatus()
 	clearMem("createBackup")
 	aelGlobals.write_log(_("backup finished"))
 
@@ -281,8 +279,7 @@ def startUpdate():
 
 
 def createMovieInfo(db):
-	global STATUS
-	STATUS = _("search for missing meta files...")
+	aelGlobals.setStatus(_("search for missing meta files..."))
 	recordPaths = config.movielist.videodirs.value
 	for recordPath in recordPaths:
 		if isdir(recordPath):
@@ -305,8 +302,8 @@ def createMovieInfo(db):
 									if title and title != '' and title != ' ':
 										tmdb.API_KEY = get_keys('tmdb')
 										titleinfo = {"title": mtitle, "genre": "", "year": "", "country": "", "overview": ""}
-										STATUS = f"{_("search meta information for")} {title}"
-										aelGlobals.write_log(STATUS)
+										aelGlobals.setStatus(f"{_("search meta information for")} {title}")
+										aelGlobals.write_log(aelGlobals.STATUS)
 										search = tmdb.Search()
 										res = aelGlobals.callLibrary(search.movie, "", query=title, language='de', year=jahr) if jahr != '' else aelGlobals.callLibrary(search.movie, "", query=title, language='de')
 										if res and res['results']:
@@ -509,9 +506,8 @@ def createMovieInfo(db):
 
 
 def getAllRecords(db):
-	global STATUS
 	names = set()
-	STATUS = _("search recording directories...")
+	aelGlobals.setStatus(_("search recording directories..."))
 	PDIR = f"{aelGlobals.HDDPATH}poster/"
 	CDIR = f"{aelGlobals.HDDPATH}cover/"
 	recordPaths = config.movielist.videodirs.value
@@ -589,7 +585,7 @@ def getAllRecords(db):
 		#else:
 		#	doIt = True
 		#if (fileExists(vtidb_loc) and doIt):
-		#	STATUS = 'durchsuche VTI-DB...'
+		#	aelGlobals.setStatus('durchsuche VTI-DB...')
 		#	vtidb_conn = connect(vtidb_loc, check_same_thread=False)
 		#	cur = vtidb_conn.cursor()
 		#	query = "SELECT title FROM moviedb_v0001"
@@ -668,10 +664,9 @@ def cleanPreviewImages(db):
 
 
 def getallEventsfromEPG():
-	global STATUS
-	STATUS = _("verify directories...")
+	aelGlobals.setStatus(_("verify directories..."))
 	createDirs(aelGlobals.HDDPATH)
-	STATUS = _("remove logfile...")
+	aelGlobals.setStatus(_("remove logfile..."))
 	removeLogs()
 	aelGlobals.write_log(_("Update start..."))
 	aelGlobals.write_log(f"default image path is {aelGlobals.HDDPATH[:-1]}")
@@ -683,12 +678,10 @@ def getallEventsfromEPG():
 	if cversion and int(cversion) < 113:
 		db.parameter(aelGlobals.PARAMETER_SET, 'currentVersion', '115')
 		db.cleanliveTV(int(time() + (14 * 86400)))
-	STATUS = _("check reserved disk space...")
+	aelGlobals.setStatus(_("check reserved disk space..."))
 	checkUsedSpace(db)
 	names = getAllRecords(db)
-	STATUS = _("searching current EPG...")  # TODO: Warum ist die Übersetzung hier String 'None'
-	# print("#####STATUS1:", STATUS)
-	STATUS = "searching current EPG..."
+	aelGlobals.setStatus(_("searching current EPG..."))
 	lines = []
 	mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
@@ -731,9 +724,7 @@ def getallEventsfromEPG():
 		serviceref = serviceref.split("?", 1)[0]
 		# =========================
 		evt += 1
-		STATUS = f"{_('search current EPG...')} ({evt}/{len(allevents)})"  # TODO: Warum ist die Übersetzung hier String 'None'
-		# print("#####STATUS2:", STATUS)
-		STATUS = f"search current EPG... ({evt}/{len(allevents)})"
+		aelGlobals.setStatus(f"{_('search current EPG...')} ({evt}/{len(allevents)})")
 		tvname = name
 		# tvname = sub(r'\\(.*?\\)', '', tvname).strip()  # TODO: Ist dieser komische Regex wirklich nötig?
 		# tvname = tvname.replace(" +", " ") # TODO: Ist replace wirklich nötig?
@@ -763,7 +754,6 @@ def getallEventsfromEPG():
 
 
 def getTVSpielfilm(db, tvsref):
-	global STATUS
 	evt = 0
 	founded = 0
 	imgcount = 0
@@ -778,7 +768,7 @@ def getTVSpielfilm(db, tvsref):
 				curDate = db.getMinAirtimeforUpdate(sref)
 				while (int(curDate) - 86400) <= int(maxDate) + 86400:  # while int(curDate) <= int(maxDate) + 86400:
 					curDatefmt = datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")
-					STATUS = f"({evt}/{len(refs)}) {_('search')} {tvsref[sref]} {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({founded}/{tcount} | {imgcount})"
+					aelGlobals.setStatus(f"({evt}/{len(refs)}) {_('search')} {tvsref[sref]} {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({founded}/{tcount} | {imgcount})")
 					tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
 					errmsg, res = aelGlobals.getAPIdata(f"{tvsurl}{tvsref[sref][1].upper()}/{curDatefmt}")
 					if errmsg:
@@ -857,7 +847,6 @@ def getTVSpielfilm(db, tvsref):
 
 
 def getTVMovie(db, secondRun=False):
-	global STATUS
 	evt = 0
 	founded = 0
 	imgcount = 0
@@ -875,7 +864,7 @@ def getTVMovie(db, secondRun=False):
 		evt += 1
 		tvname = title[0] if not secondRun else convertTitle2(title[0])
 		results = None
-		STATUS = f"({evt}/{len(tvnames)}) {_('search on TV-Movie for')} {tvname} ({founded}/{tcount} | {imgcount})"
+		aelGlobals.setStatus(f"({evt}/{len(tvnames)}) {_('search on TV-Movie for')} {tvname} ({founded}/{tcount} | {imgcount})")
 		tvmovieurl = b64decode(b"aHR0cDovL2NhcGkudHZtb3ZpZS5kZS92MS9icm9hZGNhc3RzL3NlYXJjaA==2"[:-1]).decode()
 		errmsg, res = aelGlobals.getAPIdata(tvmovieurl, params={"q": tvname, "page": 1, "rows": 400})
 		if errmsg:
@@ -1196,7 +1185,6 @@ def downloadImage2(url, filename, timeout=5):
 
 
 def checkAllImages():
-	global STATUS
 	removeList = []
 	dirs = [f"{aelGlobals.HDDPATH}cover/", f"{aelGlobals.HDDPATH}cover/thumbnails/", f"{aelGlobals.HDDPATH}poster/", f"{aelGlobals.HDDPATH}poster/thumbnails/"]
 	for aelGlobals.HDDPATH in dirs:
@@ -1205,7 +1193,7 @@ def checkAllImages():
 		ln = len(filelist)
 		for f in filelist:
 			c += 1
-			STATUS = f"{c}/{ln} {_('verify')} {f}"
+			aelGlobals.setStatus(f"{c}/{ln} {_('verify')} {f}")
 			img = Image.open(f)
 			if img.format != 'JPEG':
 				aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
@@ -1217,12 +1205,11 @@ def checkAllImages():
 			aelGlobals.write_log('remove image : ' + str(f))
 			remove(f)
 		del removeList
-	STATUS = ""
+	aelGlobals.setStatus()
 	clearMem("checkAllImages")
 
 
 def reduceImageSize(path, db):
-	global STATUS
 	imgsize = aelGlobals.COVERQUALITYDICT[config.plugins.AdvancedEventLibrary.coverQuality.value] if 'cover' in str(path) else aelGlobals.POSTERQUALITYDICT[config.plugins.AdvancedEventLibrary.posterQuality.value]
 	sizex, sizey = imgsize.split("x", 1)
 	filelist = glob(join(path, "*.jpg"))
@@ -1244,7 +1231,7 @@ def reduceImageSize(path, db):
 						continue
 					w = int(img.size[0])
 					h = int(img.size[1])
-					STATUS = f"{_('edit')} {filename}.jpg {_('with')} {bytes2human(getsize(f), 1)} {_('and')} {w})x{h}px"
+					aelGlobals.setStatus(f"{_('edit')} {filename}.jpg {_('with')} {bytes2human(getsize(f), 1)} {_('and')} {w})x{h}px")
 					img_bytes = StringIO()
 					img1 = img.convert('RGB', colors=256)
 					img1.save(str(img_bytes), format='jpeg')
@@ -1326,7 +1313,6 @@ def reduceSigleImageSize(src, dest):
 
 
 def createThumbnails(path):
-	global STATUS
 	wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
 	wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
 	filelist = glob(join(path, "*.jpg"))
@@ -1338,7 +1324,7 @@ def createThumbnails(path):
 				else:
 					destfile = filename .replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails').replace('preview', 'preview/thumbnails')
 					if not fileExists(destfile):
-						STATUS = f"{_('create thumbnail for')} {filename}"
+						aelGlobals.setStatus(f"{_('create thumbnail for')} {filename}")
 						img = Image.open(filename)
 						imgnew = img.convert('RGBA', colors=256)
 						imgnew = img.resize((wc, hc), Image.LANCZOS) if 'cover' in str(filename) or 'preview' in str(filename) else img.resize((wp, hp), Image.LANCZOS)
@@ -1365,7 +1351,6 @@ def createSingleThumbnail(src, dest):
 
 
 def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[], tvsref=None, lang="de"):
-	global STATUS
 	tvdbV4 = get_TVDb()
 	if not tvdbV4:
 		aelGlobals.write_log('TVDb API-V4 is not in use!')
@@ -1390,7 +1375,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 			omdb_image = None
 			foundAsMovie = False
 			foundAsSeries = False
-			STATUS = f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+			aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 			aelGlobals.write_log('looking for ' + str(title) + ' on themoviedb movie')
 			search = tmdb.Search()
 			res = aelGlobals.callLibrary(search.movie, "", query=title, language='de', year=jahr) if jahr != '' else aelGlobals.callLibrary(search.movie, "", query=title, language='de')
@@ -1463,7 +1448,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 										titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
 						break
 			if not foundAsMovie:
-				STATUS = f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+				aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 				aelGlobals.write_log(f"looking for {str(title)} on themoviedb tv")
 				search = tmdb.Search()
 				searchName = findEpisode(title)
@@ -1572,7 +1557,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 												titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
 							break
 			if not foundAsMovie and not foundAsSeries:
-				STATUS = f"{position}/{len(titles)}: thetvdb - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+				aelGlobals.setStatus(f"{position}/{len(titles)}: thetvdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 				aelGlobals.write_log(f"looking for {title} on thetvdb")
 				seriesid = None
 				search = tvdb.Search()
@@ -1675,7 +1660,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									titleinfo['poster_url'] = f"{tvdburl}{response[0]['fileName']}"
 			if not foundAsMovie:
 				if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
-					STATUS = f"{position}/{len(titles)}: maze.tv - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+					aelGlobals.setStatus(f"{position}/{len(titles)}: maze.tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 					aelGlobals.write_log(f"looking for {title} on maze.tv")
 					tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
 					errmsg, res = aelGlobals.getAPIdata(tvmazeurl, params={"q": f"{org_name or title}"})
@@ -1732,7 +1717,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 									imdb_id = item['show']['externals']['imdb']
 								break
 #			if not foundAsMovie and not foundAsSeries:
-#				STATUS = f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})"
+#				aelGlobals.setStatus(f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 #				aelGlobals.write_log('looking for ' + str(title) + ' on omdb', aelGlobals.addlog)
 #				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
 #				if imdb_id:
@@ -1827,7 +1812,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	if db:
 		db.parameter(aelGlobals.PARAMETER_SET, 'lasteventInfoCount', str(int(entrys + blentrys)))
 		db.parameter(aelGlobals.PARAMETER_SET, 'lasteventInfoCountSuccsess', str(entrys))
-	STATUS = _("remove old extra data...")
+	aelGlobals.setStatus(_("remove old extra data..."))
 	if config.plugins.AdvancedEventLibrary.DelPreviewImages.value:
 		cleanPreviewImages(db)
 	if db:
@@ -1876,7 +1861,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	if db:
 		db.parameter(aelGlobals.PARAMETER_SET, 'laststop', str(time()))
 	aelGlobals.write_log("Update done")
-	STATUS = ""
+	aelGlobals.setStatus()
 	clearMem("search: connected")
 
 
@@ -2015,7 +2000,6 @@ def get_Picture(title, what='Cover', lang='de'):
 
 
 def get_MissingPictures(db, poster, cover):
-	global STATUS
 	pList = db.getMissingPictures()
 	covers = 0
 	posters = 0
@@ -2032,7 +2016,7 @@ def get_MissingPictures(db, poster, cover):
 		aelGlobals.write_log('found ' + str(len(pList[0])) + ' missing covers')
 		for picture in pList[0]:
 			i += 1
-			STATUS = f"{_('looking for missing cover for')} {picture} ({i}/{len(pList[0])} | {covers}) "
+			aelGlobals.setStatus(f"{_('looking for missing cover for')} {picture} ({i}/{len(pList[0])} | {covers}) ")
 			url = get_Picture(title=picture, what='Cover', lang='de')
 			if url:
 				covers += 1
@@ -2045,7 +2029,7 @@ def get_MissingPictures(db, poster, cover):
 		i = 0
 		for picture in pList[1]:
 			i += 1
-			STATUS = f"{_('looking for missing poster for')} {picture} ({i}/{len(pList[1])} | {posters}) "
+			aelGlobals.setStatus(f"{_('looking for missing poster for')} {picture} ({i}/{len(pList[1])} | {posters}) ")
 			url = get_Picture(title=picture, what='Poster', lang='de')
 			if url:
 				posters += 1
@@ -2841,9 +2825,10 @@ class AELGlobals:
 
 	def __init__(self):
 		self.saving = False
+		self.STATUS = ""
 
 	def setStatus(self, text=None):
-		STATUS = text
+		self.STATUS = text or ""
 
 	def write_log(self, svalue, module=DEFAULT_MODULE_NAME):
 		logtime = datetime.now().strftime("%T")

@@ -227,8 +227,8 @@ class AELMenu(Screen):
 			makedirs(path + 'preview/')
 
 	def getStatus(self):
-		if AEL.STATUS:
-			self["status"].setText(AEL.STATUS)
+		if AEL.aelGlobals.STATUS:
+			self["status"].setText(AEL.aelGlobals.STATUS)
 		else:
 			self["status"].setText(_("No search is currently running."))
 		self.memInfo = '\n\nSpeicherbelegung :\n' + str(self.getDiskInfo('/'))

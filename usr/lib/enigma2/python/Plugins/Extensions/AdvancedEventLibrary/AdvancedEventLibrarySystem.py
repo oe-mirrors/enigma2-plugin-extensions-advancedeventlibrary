@@ -276,7 +276,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				makedirs(join(path, subpath))
 
 	def getStatus(self):
-		self["status"].setText(AEL.STATUS if AEL.STATUS else _("No search is currently running."))
+		self["status"].setText(AEL.aelGlobals.STATUS if AEL.aelGlobals.STATUS else _("No search is currently running."))
 		self.memInfo = f"\nSpeicherbelegung :\n{self.getDiskInfo('/')}"
 		self.memInfo += str(self.getMemInfo('Mem'))
 		self.memInfo += f"\nMountpoints :\n{self.getDiskInfo()}"
