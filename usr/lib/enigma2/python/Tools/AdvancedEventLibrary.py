@@ -2801,18 +2801,12 @@ class AELGlobals:
 	# LOGFILE = join(TEMPPATH, "AdvancedEventLibrary.log")
 	LOGPATH = "/home/root/logs/"
 	LOGFILE = join(LOGPATH, "ael_logfile.log")
-	HDDPATH = config.plugins.AdvancedEventLibrary.Location.value
-	if "AEL/" not in HDDPATH:
-		HDDPATH = f"{HDDPATH}AEL/"
 	SKINPATH = resolveFilename(SCOPE_CURRENT_SKIN)  # /usr/share/enigma2/MetrixHD/
 	SHAREPATH = resolveFilename(SCOPE_SKIN_IMAGE)  # /usr/share/enigma2/
 	CONFIGPATH = resolveFilename(SCOPE_CONFIG, "AEL/")  # /etc/enigma2/AEL/
 	PYTHONPATH = eEnv.resolve("${libdir}/enigma2/python/")  # /usr/lib/enigma2/python/
 	PLUGINPATH = resolveFilename(SCOPE_CURRENT_PLUGIN, "Extensions/AdvancedEventLibrary/")  # /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/
 	SKINPATH = f"{PLUGINPATH}skin/1080/" if DESKTOPSIZE.width() == 1920 else f"{PLUGINPATH}skin/720/"
-	POSTERPATH = f"{HDDPATH}poster/"
-	COVERPATH = f"{HDDPATH}cover/"
-	PREVIEWPATH = f"{HDDPATH}preview/"
 	MAPFILE = join(CONFIGPATH, "tvs_mapping.txt")
 	# =========== ergänzt (#11) ======================
 	jsonfile = join(CONFIGPATH, "networks.json")
@@ -2826,6 +2820,17 @@ class AELGlobals:
 	def __init__(self):
 		self.saving = False
 		self.STATUS = ""
+		self.setPaths()
+		config.plugins.AdvancedEventLibrary.Location.addNotifier(self.setPaths)
+
+	def setPaths(self, configItem=None):
+		self.HDDPATH = config.plugins.AdvancedEventLibrary.Location.value
+		if "AEL/" not in self.HDDPATH:
+			self.HDDPATH = f"{self.HDDPATH}AEL/"
+
+		self.POSTERPATH = f"{self.HDDPATH}poster/"
+		self.COVERPATH = f"{self.HDDPATH}cover/"
+		self.PREVIEWPATH = f"{self.HDDPATH}preview/"
 
 	def setStatus(self, text=None):
 		self.STATUS = text or ""
