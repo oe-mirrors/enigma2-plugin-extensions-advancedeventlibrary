@@ -20,11 +20,13 @@ from glob import glob
 from json import dumps
 from os import rename, makedirs, system, remove, stat, statvfs
 from os.path import isfile, getsize, exists, join, basename
+from PIL import Image
 from re import match, compile, IGNORECASE
 from shutil import copy
-from requests import get
 from twisted.internet.reactor import callInThread
 from enigma import eTimer, eServiceReference, eServiceCenter
+
+
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
@@ -45,6 +47,7 @@ from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
 from Tools import AdvancedEventLibrary as AEL
+
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -901,40 +904,42 @@ class Editor(Screen, ConfigListScreen):
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.pSource == 1:
 							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
-							AEL.createSingleThumbnail(f"/tmp/{selection[5]}", selection[4])
-							if int(getsize(f"/tmp/{selection[5]}") / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
-								AEL.reduceSigleImageSize(f"/tmp/{selection[5]}", selection[4])
+							fileName = f"/tmp/{selection[5]}"  # NOSONAR
+							AEL.createSingleThumbnail(fileName, selection[4])
+							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
+								AEL.reduceSigleImageSize(fileName, selection[4])
 							else:
-								copy(f"/tmp/{selection[5]}", selection[4])
+								copy(fileName, selection[4])
 			elif self.activeList == 'cover':
 				selection = self['cList'].l.getCurrentSelection()[0]
 				if selection:
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.cSource == 1:
+							fileName = f"/tmp/{selection[5]}"  # NOSONAR
 							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
-							AEL.createSingleThumbnail(f"/tmp/{selection[5]}", selection[4])
-							if int(getsize(f"/tmp/{selection[5]}") / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
-								AEL.reduceSigleImageSize(f"/tmp/{selection[5]}", selection[4])
+							AEL.createSingleThumbnail(fileName, selection[4])
+							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
+								AEL.reduceSigleImageSize(fileName, selection[4])
 							else:
-								copy(f"/tmp/{selection[5]}", selection[4])
+								copy(fileName, selection[4])
 			elif "screenshot" in self.activeList.lower():
 				fname = f"{AEL.convertSearchName(AEL.convert2base64(self.removeExtension(self.ptr)))}.jpg"
 				cmd = f"grab -v -j 100 /tmp/{fname}"
 				ret = system(cmd)
 				if ret == 0:
+					fileName = f"/tmp/{fname}"  # NOSONAR
 					if "poster" in self.activeList:
-						from PIL import Image
-						im = Image.open(f"/tmp/{fname}")
+						im = Image.open(fileName)
 						region = im.crop((640, 0, 1280, 1080))
-						region.save(f"/tmp/{fname}")
+						region.save(fileName)
 						typ = "poster/"
 					else:
 						typ = "cover/"
-					AEL.createSingleThumbnail(f"/tmp/{fname}", join(AEL.aelGlobals.HDDPATH + typ, fname))
-					if int(getsize(f"/tmp/{fname}") / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
-						AEL.reduceSigleImageSize(f"/tmp/{fname}", join(AEL.aelGlobals.HDDPATH + typ, fname))
+					AEL.createSingleThumbnail(fileName, join(AEL.aelGlobals.HDDPATH + typ, fname))
+					if int(getsize(fileName) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
+						AEL.reduceSigleImageSize(fileName, join(AEL.aelGlobals.HDDPATH + typ, fname))
 					else:
-						copy(f"/tmp/{fname}", join(AEL.aelGlobals.HDDPATH + typ, fname))
+						copy(fileName, join(AEL.aelGlobals.HDDPATH + typ, fname))
 					self.session.open(MessageBox, f"AEL - Screenshot\nNew image for {self.ptr} successfully created.", MessageBox.TYPE_INFO, timeout=3, close_on_any_key=True)
 				else:
 					self.session.open(MessageBox, f"AEL - Screenshot\nImage {self.ptr} could not be created.", MessageBox.TYPE_INFO, timeout=5, close_on_any_key=True)

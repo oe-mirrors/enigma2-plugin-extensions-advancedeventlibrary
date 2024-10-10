@@ -2615,7 +2615,7 @@ def get_searchResults(title, lang='de'):
 					genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
 				#===== geaendert (#9) ========
 				#if item['show']['rating']['average'] and str(item['show']['rating']['average']) != None:
-				if item['show'].get('rating', "") and item['show']['rating'].get('average', "") and str(item['show']['rating']['average']) != None:
+				if item['show'].get('rating', "") and item['show']['rating'].get('average', ""):  # and str(item['show']['rating']['average']) is not None:
 				# =============================
 					rating = item['show']['rating']['average']
 				itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
