@@ -27,9 +27,9 @@ from linecache import getline
 from os import makedirs, system, remove, walk, access, stat, listdir, W_OK
 from os.path import join, exists, basename, getmtime, isdir, getsize
 from PIL import Image
-from random import choice
 from re import compile, findall, IGNORECASE, MULTILINE, DOTALL
 from requests import get, exceptions
+from secrets import choice
 from shutil import copy2, copyfileobj, move
 from sqlite3 import connect
 from subprocess import check_output
@@ -476,7 +476,7 @@ def createMovieInfo(db):
 											txt = open(join(root, removeExtension(filename) + ".txt"), "w")
 											txt.write(titleinfo['overview'])
 											txt.close()
-											aelGlobals.write_log('createMovieInfo for : ' + str(filename))
+											aelGlobals.write_log(f"createMovieInfo for : {filename}")
 										if foundAsMovie or foundOnTMDbTV or foundOnTVDb:
 											if titleinfo['year'] != "" or titleinfo['genre'] != "" or titleinfo['country'] != "":
 												filedt = int(stat(join(root, filename)).st_mtime)
@@ -495,7 +495,7 @@ def createMovieInfo(db):
 												minfo += f"\n{filedt}\nAdvanced-Event-Library\n"
 												txt.write(minfo)
 												txt.close()
-												aelGlobals.write_log(f"'create meta-Info for {join(root, filename)}")
+												aelGlobals.write_log(f"create meta-Info for {join(root, filename)}")
 											else:
 												db.addimageBlackList(removeExtension(str(filename)))
 										else:
@@ -851,12 +851,12 @@ def getTVMovie(db, secondRun=False):
 	tcount = db.getUpdateCount()
 	if not secondRun:
 		tvnames = db.getTitlesforUpdate()
-		aelGlobals.write_log('check ' + str(len(tvnames)) + ' titles on TV-Movie')
+		aelGlobals.write_log(f"check {len(tvnames)} titles on TV-Movie")
 	else:
 		tvnames = db.getTitlesforUpdate2()
 		for name in failedNames:
 			tvnames.append(name)
-		aelGlobals.write_log('recheck ' + str(len(tvnames)) + ' titles on TV-Movie')
+		aelGlobals.write_log(f"recheck {len(tvnames)} titles on TV-Movie")
 	for title in tvnames:
 		evt += 1
 		tvname = title[0] if not secondRun else convertTitle2(title[0])
@@ -887,20 +887,7 @@ def getTVMovie(db, secondRun=False):
 						airtime = int(mktime(datetime.strptime(str(event['airTime']), '%Y-%m-%d %H:%M:%S').timetuple()))
 					if airtime <= db.getMaxAirtime(title[0]):
 						nothingfound = False
-						tid = ""
-						subtitle = ""
-						image = ""
-						year = ""
-						fsk = ""
-						rating = ""
-						leadText = ""
-						conclusion = ""
-						categoryName = ""
-						season = ""
-						episode = ""
-						genre = ""
-						country = ""
-						imdb = ""
+						tid, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb = "", "", "", "", "", "", "", "", "", "", "", "", "", ""
 						if 'id' in event:
 							tid = str(event['id'])
 						if 'previewImage' in event:
@@ -1193,13 +1180,13 @@ def checkAllImages():
 			aelGlobals.setStatus(f"{c}/{ln} {_('verify')} {f}")
 			img = Image.open(f)
 			if img.format != 'JPEG':
-				aelGlobals.write_log('invalid image : ' + str(f) + ' ' + str(img.format))
+				aelGlobals.write_log(f"invalid image : {f} {img.format}")
 				removeList.append(f)
 			img = None
 		del filelist
 	if removeList:
 		for f in removeList:
-			aelGlobals.write_log('remove image : ' + str(f))
+			aelGlobals.write_log(f"remove image : {f}")
 			remove(f)
 		del removeList
 	aelGlobals.setStatus()
@@ -1253,7 +1240,7 @@ def reduceImageSize(path, db):
 					img1.save(f, format='jpeg', quality=q)
 					aelGlobals.write_log(f"file {filename}.jpg reduced from {bytes2human(int(oldSize * 1024), 1)} to {bytes2human(getsize(f), 1)} and {w}x{h}px")
 					if getsize(f) / 1024.0 > maxSize:
-						aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
+						aelGlobals.write_log("Image size cannot be further reduced with the current settings!")
 						db.addimageBlackList(str(f))
 		except Exception as errmsg:
 			aelGlobals.write_log(f"Error in module 'reduceImageSize': {errmsg}")
@@ -1277,7 +1264,7 @@ def reduceSigleImageSize(src, dest):
 			img = Image.open(src)
 			w = int(img.size[0])
 			h = int(img.size[1])
-			aelGlobals.write_log('convert image ' + str(filename) + '.jpg with ' + str(bytes2human(getsize(src), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+			aelGlobals.write_log(f"convert image {filename}.jpg with {bytes2human(getsize(src), 1)} and {w}x{h}px")
 			img_bytes = StringIO()
 			img1 = img.convert('RGB', colors=256)
 			img1.save(str(img_bytes), format='jpeg')
@@ -1300,9 +1287,9 @@ def reduceSigleImageSize(src, dest):
 					if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
 						break
 			img1.save(dest, format='jpeg', quality=q)
-			aelGlobals.write_log('file ' + str(filename) + '.jpg reduced from ' + str(bytes2human(int(oldSize * 1024), 1)) + ' to ' + str(bytes2human(getsize(dest), 1)) + ' and ' + str(w) + 'x' + str(h) + 'px')
+			aelGlobals.write_log(f"file {filename}.jpg reduced from {bytes2human(int(oldSize * 1024), 1)} to {bytes2human(getsize(dest), 1)} and {w}x{h}px")
 			if getsize(dest) / 1024.0 > maxSize:
-				aelGlobals.write_log('Image size cannot be further reduced with the current settings!')
+				aelGlobals.write_log("Image size cannot be further reduced with the current settings!")
 			img_bytes = None
 			img = None
 		except Exception as errmsg:
@@ -1337,20 +1324,20 @@ def createSingleThumbnail(src, dest):
 	wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
 	wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
 	destfile = dest.replace('cover', 'cover/thumbnails').replace('poster', 'poster/thumbnails')
-	aelGlobals.write_log('create single thumbnail from source ' + str(src) + ' to ' + str(destfile) + ' with ' + str(wc) + 'x' + str(hc) + 'px')
+	aelGlobals.write_log(f"create single thumbnail from source {src} to {destfile} with {wc}x{hc}px")
 	img = Image.open(src)
 #	imgnew = img.convert('RGBA', colors=256)
 	imgnew = img.resize((wc, hc), Image.LANCZOS) if 'cover' in str(dest) or 'preview' in str(dest) else img.resize((wp, hp), Image.LANCZOS)
 	imgnew.save(destfile)
 	if fileExists(destfile):
-		aelGlobals.write_log('thumbnail created')
+		aelGlobals.write_log("thumbnail created")
 	img = None
 
 
 def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[], tvsref=None, lang="de"):
 	tvdbV4 = get_TVDb()
 	if not tvdbV4:
-		aelGlobals.write_log('TVDb API-V4 is not in use!')
+		aelGlobals.write_log("TVDb API-V4 is not in use!")
 	posters = 0
 	covers = 0
 	entrys = 0
@@ -1815,7 +1802,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	if db:
 		db.cleanliveTV(int(time() - 28800))
 	if db and len(liveTVRecords) > 0:
-		aelGlobals.write_log('try to insert ' + str(len(liveTVRecords)) + ' events into database')
+		aelGlobals.write_log(f"try to insert {len(liveTVRecords)} events into database")
 		db.addliveTV(liveTVRecords)
 		db.parameter(aelGlobals.PARAMETER_SET, 'lastadditionalDataCount', str(db.getUpdateCount()))
 		getTVSpielfilm(db, tvsref)
@@ -1992,7 +1979,7 @@ def get_Picture(title, what='Cover', lang='de'):
 					if response and str(response) != 'None':
 						picture = f"{tvdburl}{response[0]['fileName']}"
 	if picture:
-		aelGlobals.write_log('researching picture result ' + str(picture) + ' for ' + str(title))
+		aelGlobals.write_log(f"researching picture result {picture} for {title}")
 	return picture
 
 
@@ -2010,7 +1997,7 @@ def get_MissingPictures(db, poster, cover):
 			if db.getblackListPoster(convert2base64(picture)):
 				pList[1].remove(picture)
 	if pList[0]:
-		aelGlobals.write_log('found ' + str(len(pList[0])) + ' missing covers')
+		aelGlobals.write_log(f"found {len(pList[0])} missing covers")
 		for picture in pList[0]:
 			i += 1
 			aelGlobals.setStatus(f"{_('looking for missing cover for')} {picture} ({i}/{len(pList[0])} | {covers}) ")
@@ -2059,7 +2046,7 @@ def writeTVStatistic(db):
 				serviceref = serviceref.split("?", 1)[0].decode('utf-8', 'ignore')
 				# =========================
 				count = db.getEventCount(serviceref)
-				aelGlobals.write_log('There are ' + str(count) + ' events for ' + str(servicename) + ' in database')
+				aelGlobals.write_log(f"There are {count} events for {servicename} in database'")
 
 
 def get_size(path):
@@ -2189,7 +2176,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			itemList.append(res['results'][0])
 		for item in itemList:
 			if item and 'id' in item:
-				aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
+				aelGlobals.write_log(f"found on TMDb TV {item['name']}")
 		# ==================================================
 #		for item in res['results']:
 #			aelGlobals.write_log('found on TMDb TV ' + str(item['name']))
@@ -2203,12 +2190,13 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 							imgs = details.images(language=str(lang))
 							if imgs and 'stills' in imgs:
 								for img in imgs['stills']:
-										imgsize = str(img['width']) + 'x' + str(img['height'])
-										itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+										imgsize = f"{img['width']}x{img['height']}"
+										itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 										pictureList.append((itm,))
 							#======== hinzugeugt (#6) =========
 							if epi.get("still_path", "") and epi['still_path'].endswith('.jpg'):
-								itm = [item['name'] + ' - ' + epi['name'], what, 'gefunden auf TMDb TV', 'http://image.tmdb.org/t/p/' + cq + epi['still_path'], join(aelGlobals.COVERPATH, b64title + '.jpg'), convert2base64(epi['still_path']) + '.jpg']
+								tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
+								itm = [f"{item['name']} - {epi['name']}", what, _("found on TMDb TV"), f"{tmdburl}{cq}{epi['still_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(epi['still_path'])}.jpg"]
 								pictureList.append((itm,))
 							# ================================
 				#==== geaendert (#6) =====
@@ -2218,29 +2206,29 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 					imgs = idx.images(language=str(lang))['backdrops']
 					if imgs:
 						for img in imgs:
-							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+							imgsize = f"{img['width']}x{img['height']}"
+							itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['backdrops']
 						if imgs:
 							for img in imgs:
-								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+								imgsize = f"{img['width']}x{img['height']}"
+								itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 				if what == 'Poster':
 					imgs = idx.images(language=str(lang))['posters']
 					if imgs:
 						for img in imgs:
-							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+							imgsize = f"{img['width']}x{img['height']}"
+							itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['posters']
 						if imgs:
 							for img in imgs:
-								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['name'], what, f"{imgsize} gefunden auf TMDb TV", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+								imgsize = f"{img['width']}x{img['height']}"
+								itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 	search = tmdb.Search()
 	res = search.movie(query=title, language=str(lang), year=jahr) if jahr != '' else search.movie(query=title, language=str(lang))
@@ -2266,7 +2254,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			itemList.append(res['results'][0])
 		for item in itemList:
 			if item and 'id' in item:
-				aelGlobals.write_log('found on TMDb Movie ' + str(item['title']))
+				aelGlobals.write_log(f"found on TMDb Movie {item['title']}")
 		# ==================================================
 
 #		for item in res['results']:
@@ -2277,29 +2265,29 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 					imgs = idx.images(language=str(lang))['backdrops']
 					if imgs:
 						for img in imgs:
-							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+							imgsize = f"{img['width']}x{img['height']}"
+							itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['backdrops']
 						if imgs:
 							for img in imgs:
-								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+								imgsize = f"{img['width']}x{img['height']}"
+								itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 				if what == 'Poster':
 					imgs = idx.images(language=str(lang))['posters']
 					if imgs:
 						for img in imgs:
-							imgsize = str(img['width']) + 'x' + str(img['height'])
-							itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+							imgsize = f"{img['width']}x{img['height']}"
+							itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 							pictureList.append((itm,))
 					if len(imgs) < 2:
 						imgs = idx.images()['posters']
 						if imgs:
 							for img in imgs:
-								imgsize = str(img['width']) + 'x' + str(img['height'])
-								itm = [item['title'], what, f"{imgsize} gefunden auf TMDb Movie", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+								imgsize = f"{img['width']}x{img['height']}"
+								itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
 	if not pictureList and what == 'Poster':
 		omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==J"[:-1]).decode()
@@ -2333,7 +2321,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 					#if item['show']['image']:
 					if item['show'].get('image', "") and item['show']['image'].get('original', ""):
 					# =============================
-						itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(aelGlobals.POSTERPATH, b64title + '.jpg'), convert2base64('mazetvPosterFile') + '.jpg']
+						itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64('mazetvPosterFile')}.jpg"]
 						pictureList.append((itm,))
 	if not pictureList:
 		BingSearch = BingImageSearch(f"{title}{bingOption}", count, what)
@@ -2341,9 +2329,9 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 		i = 0
 		for image in res:
 			if what == 'Poster':
-				itm = [title, what, 'gefunden auf bing.com', image, join(aelGlobals.POSTERPATH, b64title + '.jpg'), convert2base64('bingPoster_' + str(i)) + '.jpg']
+				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f'{convert2base64(f"bingPoster_{i}")}.jpg']
 			else:
-				itm = [title, what, 'gefunden auf bing.com', image, join(aelGlobals.COVERPATH, b64title + '.jpg'), convert2base64('bingCover_' + str(i)) + '.jpg']
+				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.COVERPATH, b64title + '.jpg'), f'{convert2base64(f"bingCover_{i}")}.jpg']
 			pictureList.append((itm,))
 			i += 1
 	if pictureList:
@@ -2359,7 +2347,7 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 			del pictureList[erroridx]
 		return pictureList[:count]
 	else:
-		itm = ["Keine Ergebnisse gefunden", "Bildname '" + str(b64title) + ".jpg'", None, None, None, None]
+		itm = [_("No results found"), f"_('Picture name'): '{b64title}.jpg'", None, None, None, None]
 		pictureList.append((itm,))
 		return pictureList
 
@@ -2650,11 +2638,7 @@ def get_searchResults(title, lang='de'):
 				if errmsg:
 					aelGlobals.write_log("API download error in module 'get_searchResults: TVMAZE call #3'")
 				if res:
-					countries = ""
-					year = ""
-					genres = ""
-					rating = ""
-					fsk = ""
+					countries, year, genres, rating, fsk = "", "", "", "", ""
 					desc = ""
 					if res['Response'] == "True":
 						if res['Plot']:
@@ -2679,11 +2663,11 @@ def get_searchResults(title, lang='de'):
 						fsk = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
 						itm = [res['Title'], countries, str(year), genres, str(rating), fsk, "omdb", desc]
 						resultList.append((itm,))
-	aelGlobals.write_log('search results : ' + str(resultList))
+	aelGlobals.write_log(f"search results : {resultList}")
 	if resultList:
 		return (sorted(resultList, key=lambda x: x[0]))
 	else:
-		itm = ["Keine Ergebnisse gefunden", None, None, None, None, None, None, None]
+		itm = [_("No results found"), None, None, None, None, None, None, None]
 		resultList.append((itm,))
 		return resultList
 
