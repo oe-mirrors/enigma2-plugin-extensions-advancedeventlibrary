@@ -147,7 +147,7 @@ def createDirs(path):
 
 
 def setStatus(text=None):
-	STATUS = text or ""
+	aelGlobals.STATUS = text or ""
 
 
 def write_log(svalue, module=DEFAULT_MODULE_NAME):
