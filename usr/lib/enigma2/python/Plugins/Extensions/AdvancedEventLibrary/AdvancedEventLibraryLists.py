@@ -1,7 +1,5 @@
 ﻿from datetime import datetime
-#from glob import glob
 from html import unescape
-#from os import remove
 from os.path import getsize, getmtime, isfile, join
 from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiContent, ePoint, RT_HALIGN_LEFT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_WRAP, BT_SCALE, BT_FIXRATIO
 from skin import skin, fonts, parameters, variables, parseFont, parseColor
@@ -10,7 +8,7 @@ from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import aelGlobals, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, write_log
 
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -936,7 +934,7 @@ class AELBaseWall(GUIComponent, object):
 			for fnc in self.onselectionchanged:
 				fnc()
 		except Exception as ex:
-			aelGlobals.write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex), DEFAULT_MODULE_NAME)
+			write_log('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def itemupdated(self, index=0):
 		self.l.invalidateEntry(index)
@@ -975,7 +973,7 @@ class AELBaseWall(GUIComponent, object):
 			self.l.setList(lst)
 			self.list = lst
 		except Exception as ex:
-			aelGlobals.write_log('set list : ' + str(ex), DEFAULT_MODULE_NAME)
+			write_log('set list : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def getlist(self):
 		return self.list

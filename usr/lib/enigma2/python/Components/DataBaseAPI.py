@@ -34,11 +34,11 @@ class LOGLEVEL:
 
 	def createLogFile(self):
 		db_path = config.misc.db_path.value
-		if not db_path.endswith('/'):
-			db_path += '/'
+		if not db_path.endswith("/"):
+			db_path += "/"
 		if not exists(db_path):
-			db_path = '/media/hdd/'
-		return db_path + "db_error.log"
+			db_path = "/media/hdd/"
+		return f"{db_path}db_error.log"
 
 
 loglevel = LOGLEVEL()
@@ -55,18 +55,18 @@ def debugPrint(str, level=0):
 def encodeDVBTXT(txt):
 	return txt
 # TODO
-	for r in ('\xc2\x8a', '\xc2\x85', '\xc2\x86', '\xc2\x87'):
-		txt = txt.replace(r, '\n')
-	txt = txt.decode('utf-8')
+	for r in ("\xc2\x8a", "\xc2\x85", "\xc2\x86", "\xc2\x87"):
+		txt = txt.replace(r, "\n")
+	txt = txt.decode("utf-8")
 	return txt
 
 
 def prepareStringIN(txt):
-#	ret = ''
+#	ret = ""
 #	try:
-#		ret = txt.decode('utf-8')
+#		ret = txt.decode("utf-8")
 #	except UnicodeDecodeError:
-#		ret = unicode(txt, 'ISO-8859-1')
+#		ret = unicode(txt, "ISO-8859-1")
 	return txt
 
 
@@ -120,8 +120,8 @@ class databaseJob(Job):
 
 
 class databaseTask(Task):
-	def __init__(self, job, fnc, args, title=''):
-		Task.__init__(self, job, '')
+	def __init__(self, job, fnc, args, title=""):
+		Task.__init__(self, job, "")
 		self.dbthread = Thread(target=fnc, args=args[1])
 		self.stop_fnc = args[0]
 		self.end = 100
@@ -151,7 +151,7 @@ class databaseTask(Task):
 
 class DatabaseState(object):
 	def __init__(self, dbfile, boxid):
-		self.lockfile = dbfile + '.lock'
+		self.lockfile = dbfile + ".lock"
 		self.boxid = boxid
 		self.lockFileCleanUp()
 		self.check_remote_lock = False
@@ -164,7 +164,7 @@ class DatabaseState(object):
 	def lockFileCleanUp(self):
 		if exists(self.lockfile):
 			try:
-				with open(self.lockfile, 'r') as f:
+				with open(self.lockfile, "r") as f:
 					content = f.readlines()
 			except OSError as e:
 				pass
@@ -182,11 +182,11 @@ class DatabaseState(object):
 			return ret
 		max_recursion = 5
 		for i in range(0, max_recursion):
-			lockid = ''
+			lockid = ""
 			ret = False
 			if exists(self.lockfile):
 				try:
-					with open(self.lockfile, 'r') as f:
+					with open(self.lockfile, "r") as f:
 						content = f.readlines()
 				except OSError as e:
 					break
@@ -222,7 +222,7 @@ class DatabaseState(object):
 		if not self.check_remote_lock:
 			return
 		try:
-			with open(self.lockfile, 'w') as f:
+			with open(self.lockfile, "w") as f:
 				f.write(self.boxid)
 		except OSError as e:
 			pass
@@ -238,15 +238,12 @@ class DatabaseState(object):
 class CommonDataBase():
 	def __init__(self, db_file=None):
 		db_path = config.misc.db_path.value
-		if not db_path.endswith('/'):
-			db_path += '/'
+		if not db_path.endswith("/"):
+			db_path += "/"
 		if not exists(db_path):
-			db_path = '/media/hdd/'
-		if not db_file:
-			self.db_file = db_path + 'vtidb.db'
-		else:
-			self.db_file = db_path + db_file
-		self.boxid = getUniqueID('e' + 't' + 'h' + '0')
+			db_path = "/media/hdd/"
+		self.db_file = db_path + "vtidb.db" if not db_file else db_path + db_file
+		self.boxid = getUniqueID("e" + "t" + "h" + "0")
 		self.dbstate = DatabaseState(self.db_file, self.boxid)
 		debugPrint(f"init database: {self.db_file}", LOGLEVEL.INFO)
 		self.c = None
@@ -291,7 +288,7 @@ class CommonDataBase():
 			chk_same_thread = not self.ignore_thread_check and True or False
 			self.db = connect(self.db_file, check_same_thread=chk_same_thread)
 			self.c = self.db.cursor()
-			sqlcmd = 'PRAGMA case_sensitive_like=ON;'
+			sqlcmd = "PRAGMA case_sensitive_like=ON;"
 			self.executeSQL(sqlcmd, readonly=True)
 		if self.c and self.table is not None:
 			return True
@@ -299,7 +296,7 @@ class CommonDataBase():
 
 	def commitDB(self):
 		txt = ""
-		if not hasattr(self, 'db'):
+		if not hasattr(self, "db"):
 			txt = "not opened --> skip committing"
 			debugPrint(txt, LOGLEVEL.ERROR)
 		has_error = True
@@ -315,16 +312,16 @@ class CommonDataBase():
 		finally:
 			lock.release()
 		if has_error:
-			txt += '\n'
+			txt += "\n"
 			txt += str(er.message)
 			debugPrint(txt, LOGLEVEL.ERROR)
 			txt = _("Error during committing changes")
-			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id='db_error')
+			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id="db_error")
 		return not has_error
 
 	def closeDB(self):
 		txt = ""
-		if not hasattr(self, 'db'):
+		if not hasattr(self, "db"):
 			txt = "not opened --> skip  closing"
 			debugPrint(txt, LOGLEVEL.ERROR)
 		has_error = True
@@ -341,20 +338,20 @@ class CommonDataBase():
 		finally:
 			lock.release()
 		if has_error:
-			txt += '\n'
+			txt += "\n"
 			txt += str(er.message)
 			debugPrint(txt, LOGLEVEL.ERROR)
 			txt = _("Error at closing database")
-			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id='db_error')
+			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id="db_error")
 		return not has_error
 
 	def executeSQL(self, sqlcmd, args=[], readonly=False):
 		if self.connectDataBase(readonly):
 			ret = []
-			debugPrint("SQL cmd: " + sqlcmd.encode('utf-8'), LOGLEVEL.ALL)
-			txt = '\n'
+			debugPrint("SQL cmd: " + sqlcmd.encode("utf-8"), LOGLEVEL.ALL)
+			txt = "\n"
 			for i in args:
-					txt += i.encode('utf-8') + '\n'
+					txt += i.encode("utf-8") + "\n"
 			debugPrint("SQL arguments: " + txt, LOGLEVEL.ALL)
 			if not readonly:
 				self.locked = True
@@ -368,20 +365,20 @@ class CommonDataBase():
 			except ProgrammingError as er:
 				txt = f"Programming ERROR at SQL command: {sqlcmd}"
 				if len(args):
-					txt += '\n'
+					txt += "\n"
 					for arg in args:
-						txt += arg + '\n'
+						txt += arg + "\n"
 			except DatabaseError as er:
 				txt = f"Database ERROR at SQL command: {sqlcmd}"
 				if len(args):
-					txt += '\n'
+					txt += "\n"
 					for arg in args:
-						txt += arg + '\n'
+						txt += arg + "\n"
 				try:
 					self.closeDB()
 				except OSError:
 					pass
-				if er.message.find('malformed') != -1:
+				if er.message.find("malformed") != -1:
 					txt += "\n---> try to delete malformed database"
 					try:
 						remove(self.db_file)
@@ -394,12 +391,12 @@ class CommonDataBase():
 				lock.release()
 			if has_error:
 				success = False
-				txt += '\n'
+				txt += "\n"
 				txt += str(er.message)
 				debugPrint(txt, LOGLEVEL.ERROR)
 				self.disconnectDataBase()
 				txt = _("Error during database transaction")
-			if not readonly:  # AddPopup(text = txt, type = MessageBox.TYPE_ERROR, timeout = 0, id = 'db_error')
+			if not readonly:  # AddPopup(text = txt, type = MessageBox.TYPE_ERROR, timeout = 0, id = "db_error")
 				self.locked = False
 			return (not has_error, ret)
 
@@ -423,23 +420,23 @@ class CommonDataBase():
 			self.executeSQL(sqlcmd)
 
 	def createTable(self, fields):
-		if self.connectDataBase():
-			field_str = '('
+		if self.table and self.connectDataBase():
+			field_str = "("
 			for name in fields:
-				field_str += name + ' ' + fields[name] + ','
-			if field_str.endswith(','):
-				field_str = field_str[:-1] + ')'
+				field_str += name + " " + fields[name] + ","
+			if field_str.endswith(","):
+				field_str = field_str[:-1] + ")"
 			self.executeSQL("CREATE TABLE if not exists " + self.table + " " + field_str)
 			self.commitDB()
 
 	def checkTableColumns(self, fields, force_remove=False):
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			struc = self.getTableStructure()
 			for column in fields:
 				if column not in struc:
 					sqlcmd = 'ALTER TABLE ' + self.table + ' ADD COLUMN ' + column + ' ' + fields[column] + ';'
 					self.executeSQL(sqlcmd)
-			if force_remove and self.table:
+			if force_remove:
 				columns_str = ''
 				for column in fields:
 					columns_str += column + ' ' + fields[column] + ','
@@ -462,7 +459,7 @@ class CommonDataBase():
 		self.table_structure = None
 
 	def createTableIndex(self, idx_name, fields, unique=True):
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			unique_txt = 'UNIQUE'
 			if not unique:
 				unique_txt = ''
@@ -478,7 +475,7 @@ class CommonDataBase():
 			self.executeSQL(sqlcmd)
 
 	def dropTable(self):
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			self.table_structure = None
 			self.executeSQL("drop table if exists " + self.table)
 
@@ -498,7 +495,7 @@ class CommonDataBase():
 	def getTableStructure(self):
 		if self.table_structure is None or not len(self.table_structure):
 			structure = {}
-			if self.connectDataBase():
+			if self.table and self.connectDataBase():
 				sqlret = self.executeSQL("PRAGMA table_info('" + self.table + "');")
 				if sqlret and sqlret[0]:
 					rows = sqlret[1]
@@ -519,7 +516,7 @@ class CommonDataBase():
 	def addColumn(self, column, c_type="TEXT"):
 		if self.connectDataBase():
 			struc = self.getTableStructure()
-			if column not in struc:
+			if self.table and column not in struc:
 				sqlcmd = 'ALTER TABLE ' + self.table + ' ADD COLUMN ' + column + ' ' + c_type + ';'
 				self.executeSQL(sqlcmd)
 				self.table_structure = None
@@ -527,7 +524,7 @@ class CommonDataBase():
 	def getTableContent(self):
 		rows = []
 		content = []
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			sqlret = self.executeSQL("SELECT * FROM " + self.table + ";")
 			if sqlret and sqlret[0]:
 				rows = sqlret[1]
@@ -551,10 +548,7 @@ class CommonDataBase():
 		content = []
 		if exactmatch or compareoperator in ('<', '<=', '>', '>='):
 			wildcard = ''
-			if compareoperator in ('<', '<=', '>', '>='):
-				compare = compareoperator + ' '
-			else:
-				compare = '='
+			compare = compareoperator + ' ' if compareoperator in ('<', '<=', '>', '>=') else '='
 		else:
 			compare = 'LIKE '
 			wildcard = '%'
@@ -579,7 +573,7 @@ class CommonDataBase():
 			return_fields = '*'
 		if return_fields.endswith(', '):
 			return_fields = return_fields[:-2]
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			sqlcmd = 'SELECT ' + return_fields + ' FROM ' + self.table + ' WHERE '
 			args = []
 			for key in data:
@@ -621,7 +615,7 @@ class CommonDataBase():
 				if field not in struc:
 					is_valid = False
 					break
-			if is_valid:
+			if self.table and is_valid:
 				args = []
 				sqlcmd = 'INSERT INTO ' + self.table + '('
 				for key in data:
@@ -655,7 +649,7 @@ class CommonDataBase():
 				self.executeSQL(sqlcmd, args)
 
 	def insertUniqueRow(self, data, replace=False):
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			struc = self.getTableStructure()
 			for field in data:
 				if field not in struc:
@@ -693,23 +687,24 @@ class CommonDataBase():
 		if self.c.rowcount > 0:
 			return
 		args = []
-		sqlcmd = 'UPDATE ' + self.table + ' SET '
-		for key in data:
-			sqlcmd += key + ' = ?, '
-			args.append(prepareStringIN(data[key]))
-		if sqlcmd.endswith(', '):
-			sqlcmd = sqlcmd[:-2]
-		sqlcmd += ' WHERE '
-		for key in idx_fields:
-			sqlcmd += key + ' = ? AND '
-			args.append(prepareStringIN(data[key]))
-		if sqlcmd.endswith('AND '):
-			sqlcmd = sqlcmd[:-4]
-		sqlcmd += ';'
-		self.executeSQL(sqlcmd, args)
+		if self.table:
+			sqlcmd = 'UPDATE ' + self.table + ' SET '
+			for key in data:
+				sqlcmd += key + ' = ?, '
+				args.append(prepareStringIN(data[key]))
+			if sqlcmd.endswith(', '):
+				sqlcmd = sqlcmd[:-2]
+			sqlcmd += ' WHERE '
+			for key in idx_fields:
+				sqlcmd += key + ' = ? AND '
+				args.append(prepareStringIN(data[key]))
+			if sqlcmd.endswith('AND '):
+				sqlcmd = sqlcmd[:-4]
+			sqlcmd += ';'
+			self.executeSQL(sqlcmd, args)
 
 	def updateData(self, data, unique_fields):
-		if self.connectDataBase():
+		if self.table and self.connectDataBase():
 			self.insertRow(data, unique_fields)
 			if not self.c:
 				return
@@ -952,10 +947,7 @@ class MovieDataBase(CommonDataBase):
 			if extDesc is None:
 				extDesc = ''
 			if shortDesc == '' and extDesc == '':
-				if mytitle in self.titlelist:
-					return 1
-				else:
-					return None
+				return 1 if mytitle in self.titlelist else None
 			else:
 				if mytitle in self.titlelist:
 					short_descs = self.titlelist[mytitle][0]
@@ -986,10 +978,7 @@ class MovieDataBase(CommonDataBase):
 		elif int(config.misc.timer_show_movie_available.value) == 1:
 			pos = bisect_left(self.titlelist_list, mytitle)
 			try:
-				if self.titlelist_list[pos] == mytitle:
-					return pos
-				else:
-					return None
+				return pos if self.titlelist_list[pos] == mytitle else None
 			except IndexError:
 				return None
 		else:
@@ -1165,10 +1154,7 @@ class MovieDataBase(CommonDataBase):
 		return checked_res
 
 	def getTrashEntries(self, as_ref=False):
-		if as_ref:
-			fields = ['ref', 'fsize']
-		else:
-			fields = [self.box_path, 'fsize']
+		fields = ['ref', 'fsize'] if as_ref else [self.box_path, 'fsize']
 		entries = self.searchContent({'IsTrash': '1'}, fields=fields)
 		ret = []
 		fsize = 0.0
@@ -1185,10 +1171,7 @@ class MovieDataBase(CommonDataBase):
 		now = time()
 		diff_rec = config.usage.movielist_use_autodel_trash.value * 60.0 * 60.0 * 24.0
 		diff_trash = config.usage.movielist_use_autodel_in_trash.value * 60.0 * 60.0 * 24.0
-		if as_ref:
-			fields = ['ref', 'begin', 'TrashTime']
-		else:
-			fields = [self.box_path, 'begin', 'TrashTime']
+		fields = ['ref', 'begin', 'TrashTime'] if as_ref else [self.box_path, 'begin', 'TrashTime']
 		entries = self.searchContent({'IsTrash': '1'}, fields=fields)
 		ret = []
 		rec_t = 0.0
@@ -1292,31 +1275,23 @@ class MovieDataBase(CommonDataBase):
 			if not serviceref.valid():
 				break
 			filepath = realpath(serviceref.getPath())
-			if hidden_items:
-				if filepath in hidden_items:
-					continue
+			if hidden_items and filepath in hidden_items:
+				continue
 			self.updateSingleEntry(serviceref, is_thread, video_dirs)
 
 	def updateSingleEntry(self, serviceref, is_thread=False, video_dirs=[], with_box_path=False, isTrash=(False, 0)):
 		if not video_dirs:
 			video_dirs = self.getVideoDirs()
-
 		if isinstance(serviceref, str):
 			if not exists(serviceref):
 				return
 			filepath = realpath(serviceref)
-			if filepath.endswith('.ts'):
-				serviceref = eServiceReference(1, 0, filepath)
-			else:
-				serviceref = eServiceReference(4097, 0, filepath)
-
+			serviceref = eServiceReference(1, 0, filepath) if filepath.endswith('.ts') else eServiceReference(4097, 0, filepath)
 		serviceHandler = eServiceCenter.getInstance()
 		filepath = realpath(serviceref.getPath())
 		trashfile = filepath + '.del'
-
 		if filepath.endswith('_pvrdesc.ts'):
 			return
-
 		if isTrash[0]:
 			if isTrash[1] == 1 and not exists(trashfile):
 				try:
@@ -1393,7 +1368,7 @@ class MovieDataBase(CommonDataBase):
 				rec_file_c = f.readlines()
 			if len(rec_file_c) >= 1:
 				ret = str(rec_file_c[0])
-			ret.strip()
+			ret = ret.strip()
 			m_db_f_size = int(ret)
 		else:
 			m_db_f_size = self.getFileSize(m_db_fullpath)
@@ -1503,13 +1478,11 @@ class MovieDataBase(CommonDataBase):
 		except ValueError:
 			play_progress = 0
 			movie_len = -1
-
 		if movie_len > 0 and last_end_point is not None:
 			play_progress = (last_end_point * 100) / movie_len
 		else:
 			play_progress = 0
 			last_end_point = 0
-
 		if play_progress > 100:
 			play_progress = 100
 		return (last_end_point, play_progress)
@@ -1566,10 +1539,7 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 				break
 	if movie_found:
 		real_path = realpath(eServiceReference(movie[0]).getPath()) if movie else ""
-		if real_path not in trash_movies or exists(real_path + '.del'):
-			movie_found = True
-		else:
-			movie_found = False
+		movie_found = True if real_path not in trash_movies or exists(real_path + '.del') else False
 	return movie_found
 
 
