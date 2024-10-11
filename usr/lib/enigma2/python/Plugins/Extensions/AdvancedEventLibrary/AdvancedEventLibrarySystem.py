@@ -45,6 +45,7 @@ from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
 from Tools import AdvancedEventLibrary as AEL
+
 from . import _  # for localized messages
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -1530,12 +1531,12 @@ class TVSmakeReferenceFile(Screen):
 
 	def onShownFinished(self):
 		if not exists(join(AEL.aelGlobals.CONFIGPATH, "tvs_mapping.txt")):
-			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{AEL.aelGlobals.MAPFILE}' not found.")
+			AEL.write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{AEL.aelGlobals.MAPFILE}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % AEL.aelGlobals.MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		networks = join(AEL.aelGlobals.CONFIGPATH, "networks.json")
 		if not exists(networks):
-			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
+			AEL.write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % networks), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		self.getAllBouquets()
@@ -1649,7 +1650,7 @@ class TVSmakeReferenceFile(Screen):
 						if items:
 							maplist.append((items[0], items[1]))
 			except Exception as error:
-				print(f"[{DEFAULT_MODULE_NAME}] Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
+				AEL.write_log(f"Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
 		return maplist
 
 	def appendImportLog(self, bouquetname, totalfound, importlist, dupeslist, unsupported):  # append last import results to logfile

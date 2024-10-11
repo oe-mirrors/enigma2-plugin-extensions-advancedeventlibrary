@@ -2730,7 +2730,6 @@ def get_searchResults(title, lang='de'):
 
 def downloadTVSImage(tvsImage, imgname):
 	if not fileExists(imgname):
-		print("#####tvsImage:", tvsImage)
 		ir = get(tvsImage, stream=True, timeout=4)
 		if ir.status_code == 200:
 			with open(imgname, 'wb') as f:
