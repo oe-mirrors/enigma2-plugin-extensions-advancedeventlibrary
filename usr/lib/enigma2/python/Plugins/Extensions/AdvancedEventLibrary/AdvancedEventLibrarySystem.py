@@ -25,8 +25,6 @@ from re import match, compile, IGNORECASE
 from shutil import copy
 from twisted.internet.reactor import callInThread
 from enigma import eTimer, eServiceReference, eServiceCenter
-
-
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
@@ -48,6 +46,7 @@ from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
 from Tools import AdvancedEventLibrary as AEL
 
+from . import _  # for localized messages
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -333,7 +332,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 
 	def goRestart(self, ret=None):
 #		if ret:
-#			AEL.aelGlobals.write_log('return ' + str(ret), DEFAULT_MODULE_NAME)
+#			AEL.write_log(f"return {ret}", DEFAULT_MODULE_NAME)
 #			config.plugins.AdvancedEventLibrary.ViewType.value = ret
 #			config.plugins.AdvancedEventLibrary.ViewType.save()
 #		if self.viewType != config.plugins.AdvancedEventLibrary.ViewType.value:
@@ -553,7 +552,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(recdir), subpaths))
 #
 #		except Exception as ex:
-#			AEL.aelGlobals.write_log(f"Error in buildConfigList : {ex}",DEFAULT_MODULE_NAME)
+#			AEL.write_log(f"Error in buildConfigList : {ex}", DEFAULT_MODULE_NAME)
 
 
 #	def do_close(self):
@@ -565,7 +564,7 @@ class AdvancedEventLibrarySetup(Setup):
 #			for x in self["config"].list:
 #				if len(x) > 1:
 #					if "suche" not in x[0] and "Einstellungen" not in x[0] and x[0]:
-#						AEL.aelGlobals.write_log('save : ' + str(x[0]) + ' - ' + str(x[1].value), DEFAULT_MODULE_NAME)
+#						AEL.write_log(f"save : {x[0]} - {x[1].value}", DEFAULT_MODULE_NAME)
 #						x[1].save()
 #					else:
 #						if 'suche in Unterverzeichnissen von ' in str(x[0]):
@@ -674,9 +673,9 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		keyList = []
 		# TODO: Hier holt er sich alle verfügbaren TVS-Sender, das wird später nur zum Check der "tvs_mapping.txt" verwendet, ob alle nötigen Regex vorhanden sind
 		tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9jb250ZW50L2NoYW5uZWwtbGlzdC9saXZldHY=k"[:-1]).decode()
-		errmsg, results = AEL.aelGlobals.getAPIdata(tvsurl)
+		errmsg, results = AEL.getAPIdata(tvsurl)
 		if errmsg:
-			AEL.aelGlobals.write_log("API download error in module 'get_tvsRefList", DEFAULT_MODULE_NAME)
+			AEL.write_log("API download error in module 'get_tvsRefList", DEFAULT_MODULE_NAME)
 		if results:
 			for service in results:
 				if "id" in service.items() and "name" in service:
@@ -794,7 +793,7 @@ class Editor(Screen, ConfigListScreen):
 				if ptr:
 					self.ptr = ptr.getEventName()
 					self.ptr2 = self.ptr
-					AEL.aelGlobals.write_log('ptr.getEventName() ' + str(self.ptr), DEFAULT_MODULE_NAME)
+					AEL.write_log(f"{ptr.getEventName()} {self.ptr}", DEFAULT_MODULE_NAME)
 					self.evt = self.db.getliveTV(ptr.getEventId(), str(self.ptr))
 					if self.evt:
 						self.eid = self.evt[0][0]
@@ -815,8 +814,8 @@ class Editor(Screen, ConfigListScreen):
 		self.ptr = AEL.convertSearchName(AEL.convertDateInFileName(self.ptr))
 		if self.ptr2:
 			self.ptr2 = AEL.convertSearchName(AEL.convertDateInFileName(self.ptr2))
-			AEL.aelGlobals.write_log('found second name : ' + str(self.ptr2), DEFAULT_MODULE_NAME)
-		AEL.aelGlobals.write_log('search name : ' + str(self.ptr), DEFAULT_MODULE_NAME)
+			AEL.write_log(f"found second name : {self.ptr2}", DEFAULT_MODULE_NAME)
+		AEL.write_log(f"search name : {self.ptr}", DEFAULT_MODULE_NAME)
 		self["key_red"] = StaticText(_("Activate"))
 		self["key_green"] = StaticText("")
 		self["key_yellow"] = StaticText(_("Activate poster selection"))
@@ -903,7 +902,7 @@ class Editor(Screen, ConfigListScreen):
 				if selection:
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.pSource == 1:
-							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
+							AEL.write_log(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
 							fileName = f"/tmp/{selection[5]}"  # NOSONAR
 							AEL.createSingleThumbnail(fileName, selection[4])
 							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
@@ -916,7 +915,7 @@ class Editor(Screen, ConfigListScreen):
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.cSource == 1:
 							fileName = f"/tmp/{selection[5]}"  # NOSONAR
-							AEL.aelGlobals.write_log('Selection to move : ' + str(selection), DEFAULT_MODULE_NAME)
+							AEL.write_log(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
 							AEL.createSingleThumbnail(fileName, selection[4])
 							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
 								AEL.reduceSigleImageSize(fileName, selection[4])
@@ -1001,7 +1000,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/cover/", "/cover/thumbnails/"))
 						except Exception as ex:
-							AEL.aelGlobals.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							AEL.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				if self.pSource == 0:
 					for file in self["pList"].getList():
@@ -1009,7 +1008,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/poster/", "/poster/thumbnails/"))
 						except Exception as ex:
-							AEL.aelGlobals.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							AEL.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				self.eventCountry.value = ""
 				self.eventFSK.value = ""
@@ -1027,7 +1026,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/cover/", "/cover/thumbnails/"))
 						except Exception as ex:
-							AEL.aelGlobals.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							AEL.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				if self.pSource == 0:
 					for file in self["pList"].getList():
@@ -1035,7 +1034,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/poster/", "/poster/thumbnails/"))
 						except Exception as ex:
-							AEL.aelGlobals.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							AEL.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				self.eventCountry.value = ""
 				self.eventFSK.value = ""
@@ -1051,7 +1050,7 @@ class Editor(Screen, ConfigListScreen):
 						remove(selection[3].replace("/poster/", "/poster/thumbnails/"))
 						self.afterInit(True, False)
 				except Exception as ex:
-					AEL.aelGlobals.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 			elif ret[0] == _("Delete cover"):
 				try:
 					selection = self["cList"].l.getCurrentSelection()[0]
@@ -1060,7 +1059,7 @@ class Editor(Screen, ConfigListScreen):
 						remove(selection[3].replace("/cover/", "/cover/thumbnails/").replace("/preview/", "/preview/thumbnails/"))
 						self.afterInit(False, True)
 				except Exception as ex:
-					AEL.aelGlobals.write_log(f"remove image : {ex}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"remove image : {ex}", DEFAULT_MODULE_NAME)
 			elif ret[0] == _("Delete BlackList"):
 				self.db.cleanblackList()
 			elif ret[0] == _("Delete thumbnails"):
@@ -1097,11 +1096,11 @@ class Editor(Screen, ConfigListScreen):
 				elif "cover" in ret[0].lower():
 					self.activeList = "screenshot cover"
 				self.hide()
-			AEL.aelGlobals.write_log(f"Menü : {ret[0]} - {self.ptr}", DEFAULT_MODULE_NAME)
+			AEL.write_log(f"Menü : {ret[0]} - {self.ptr}", DEFAULT_MODULE_NAME)
 
 	def languageCallBack(self, ret=None):
 		if ret:
-			AEL.aelGlobals.write_log(f"current language: {ret[0]}", DEFAULT_MODULE_NAME)
+			AEL.write_log(f"current language: {ret[0]}", DEFAULT_MODULE_NAME)
 			self.language = str(ret[1])
 
 	def key_up_handler(self):
@@ -1233,23 +1232,23 @@ class Editor(Screen, ConfigListScreen):
 				pName1 = f"{AEL.convert2base64(self.ptr)}.jpg"
 				pName2 = f"{AEL.convert2base64(AEL.convertTitle(self.ptr))}.jpg"
 				pName3 = f"{AEL.convert2base64(AEL.convertTitle2(self.ptr))}.jpg"
-				AEL.aelGlobals.write_log(f"1. possible picture name : {self.ptr} as {pName1}", DEFAULT_MODULE_NAME)
+				AEL.write_log(f"1. possible picture name : {self.ptr} as {pName1}", DEFAULT_MODULE_NAME)
 				if pName1 != pName2:
-					AEL.aelGlobals.write_log(f"2. possible picture name : {AEL.convertTitle(self.ptr)} as {pName2}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"2. possible picture name : {AEL.convertTitle(self.ptr)} as {pName2}", DEFAULT_MODULE_NAME)
 				if pName2 != pName3:
-					AEL.aelGlobals.write_log(f"3. possible picture name : {AEL.convertTitle2(self.ptr)} as {pName3}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"3. possible picture name : {AEL.convertTitle2(self.ptr)} as {pName3}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.COVERPATH, pName1)):
-					AEL.aelGlobals.write_log(f"found 1. possible cover : {pName1}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 1. possible cover : {pName1}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.COVERPATH, pName2)) and pName1 != pName2:
-					AEL.aelGlobals.write_log(f"found 2. possible cover : {pName2}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 2. possible cover : {pName2}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.COVERPATH, pName3)) and pName2 != pName3:
-					AEL.aelGlobals.write_log(f"found 3. possible cover : {pName3}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 3. possible cover : {pName3}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.POSTERPATH, pName1)):
-					AEL.aelGlobals.write_log(f"found 1. possible poster : {pName1}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 1. possible poster : {pName1}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.POSTERPATH, pName2)) and pName1 != pName2:
-					AEL.aelGlobals.write_log(f"found 2. possible poster : {pName2}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 2. possible poster : {pName2}", DEFAULT_MODULE_NAME)
 				if isfile(join(AEL.aelGlobals.POSTERPATH, pName3)) and pName2 != pName3:
-					AEL.aelGlobals.write_log(f"found 3. possible poster : {pName3}", DEFAULT_MODULE_NAME)
+					AEL.write_log(f"found 3. possible poster : {pName3}", DEFAULT_MODULE_NAME)
 			self.coverList = []
 			self.posterList = []
 			waitList = []
@@ -1532,12 +1531,12 @@ class TVSmakeReferenceFile(Screen):
 
 	def onShownFinished(self):
 		if not exists(join(AEL.aelGlobals.CONFIGPATH, "tvs_mapping.txt")):
-			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{AEL.aelGlobals.MAPFILE}' not found.")
+			AEL.write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{AEL.aelGlobals.MAPFILE}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % AEL.aelGlobals.MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		networks = join(AEL.aelGlobals.CONFIGPATH, "networks.json")
 		if not exists(networks):
-			print(f"[{DEFAULT_MODULE_NAME}] Error in class 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
+			AEL.write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % networks), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		self.getAllBouquets()
@@ -1651,7 +1650,7 @@ class TVSmakeReferenceFile(Screen):
 						if items:
 							maplist.append((items[0], items[1]))
 			except Exception as error:
-				print(f"[{DEFAULT_MODULE_NAME}] Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
+				AEL.write_log(f"Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
 		return maplist
 
 	def appendImportLog(self, bouquetname, totalfound, importlist, dupeslist, unsupported):  # append last import results to logfile

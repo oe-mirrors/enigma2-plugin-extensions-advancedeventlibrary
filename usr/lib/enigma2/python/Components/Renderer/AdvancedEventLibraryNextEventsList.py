@@ -5,7 +5,7 @@ from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HA
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, getDB, getImageFile, clearMem, aelGlobals
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):
@@ -13,7 +13,7 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		Renderer.__init__(self)
 		self.nameCache = {}
 		self.imageType = str(variables.get('EventLibraryEPGListsImageType', ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		self.imagePath = f"{getPictureDir()}{self.imageType}/thumbnails/"
+		self.imagePath = f"{aelGlobals.HDDPATH}{self.imageType}/thumbnails/"
 		self.x = 1
 		self.y = 140
 		self.onSelChanged = []
@@ -77,10 +77,7 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		x2, y2, w2, h2 = parameters.get('EventLibraryEPGSingleListSecondLine', (130, 25, 1100, 60))
 		width = self.l.getItemSize().width()
 		height = self.l.getItemSize().height()
-		flc = '#00ffffff'
-		flcs = '#00ffffff'
-		slc = '#00ffffff'
-		slcs = '#00ffffff'
+		flc, flcs, slc, slcs = "#00ffffff", "#00ffffff", "#00ffffff", "#00ffffff"
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
 			flc = f"#00{parseColor('EventLibraryListsFirstLineColor').argb():03x}"
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:

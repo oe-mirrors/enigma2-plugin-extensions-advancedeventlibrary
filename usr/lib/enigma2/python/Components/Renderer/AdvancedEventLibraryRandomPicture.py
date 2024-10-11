@@ -3,14 +3,14 @@ from glob import glob
 from random import randint
 from enigma import ePixmap, eTimer, loadJPG
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import getPictureDir
+from Tools.AdvancedEventLibrary import aelGlobals
 
 
 class AdvancedEventLibraryRandomPicture(Renderer):
 	def __init__(self):
 		Renderer.__init__(self)
 		self.delay = 2000
-		self.Path = getPictureDir()
+		self.Path = aelGlobals.HDDPATH
 
 	def applySkin(self, desktop, parent):
 		attribs = []

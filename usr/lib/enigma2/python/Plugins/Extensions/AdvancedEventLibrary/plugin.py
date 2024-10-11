@@ -13,8 +13,9 @@ from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations
-from Tools.AdvancedEventLibrary import getDB, getallEventsfromEPG, createBackup, aelGlobals
+from Tools.AdvancedEventLibrary import write_log, getDB, getallEventsfromEPG, createBackup, aelGlobals
 
+DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 gSession = None
 ServiceTrack = None
 addFont(join(aelGlobals.PLUGINPATH, "fonts/Normal.ttf"), 'Normal', 100, False)
@@ -41,7 +42,7 @@ def sessionstart(reason, **kwargs):
 			functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "fnc": createBackup}))
 
 #			for evt in systemevents.getSystemEvents():
-			#	aelGlobals.write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt))
+			#	write_log('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt), DEFAULT_MODULE_NAME)
 #				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
 #					refreshMovieWall = config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value
 #					if refreshMovieData and refreshMovieWall:
@@ -52,14 +53,14 @@ def sessionstart(reason, **kwargs):
 
 #def _serviceStart(evt, *args):
 #		global ServiceTrack
-#		# aelGlobals.write_log("new service detected : " + str(args[1]))
+#		# write_log("new service detected : " + str(args[1]), DEFAULT_MODULE_NAME)
 #		if len(args) > 0 and ServiceTrack and not Screens.Standby.inStandby:
 #			ServiceTrack.newServiceStarted(args)
 
 
 #def _refreshMovieWall(evt, *args):
 #		if len(args) > 0:
-#			aelGlobals.write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args))
+#			write_log('refresh MovieWallData because of : ' + str(evt) + ' args : ' + str(args), DEFAULT_MODULE_NAME)
 #		if (evt == systemevents.RECORD_START or evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
 #			refreshData = Timer(30, refreshMovieWallData)
 #			refreshData.start()
@@ -72,7 +73,7 @@ def sessionstart(reason, **kwargs):
 #def saveMovieWallData():
 #	try:
 #		if not AdvancedEventLibrarySimpleMovieWall.saving:
-#			aelGlobals.write_log("create MovieWall data after new record detected")
+#			write_log("create MovieWall data after new record detected", DEFAULT_MODULE_NAME)
 #			try:
 #				itype = None
 #				if isfile('/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/imageType.data'):
@@ -82,15 +83,15 @@ def sessionstart(reason, **kwargs):
 #				if itype:
 #					from .AdvancedEventLibrarySimpleMovieWall import saveList
 #					saveList(itype)
-#					aelGlobals.write_log("MovieWall data saved with " + str(itype))
+#					write_log("MovieWall data saved with " + str(itype), DEFAULT_MODULE_NAME)
 #			except Exception as ex:
-#				aelGlobals.write_log('save moviewall data : ' + str(ex))
+#				write_log('save moviewall data : ' + str(ex), DEFAULT_MODULE_NAME)
 #	except:
-#		aelGlobals.write_log('saveMovieWallData ' + str(ex))
+#		write_log('saveMovieWallData ' + str(ex), DEFAULT_MODULE_NAME)
 
 
 def cancelTimerFunction():
-	print("[Advanced-Event-Library-Update] Aufgabe beendet!")
+	write_log("[Advanced-Event-Library-Update] Aufgabe beendet!", DEFAULT_MODULE_NAME)
 
 
 def getMovieDescriptionFromTXT(ref):
@@ -270,7 +271,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				aelGlobals.write_log('remove genre from favourites : ' + str(k))
+				write_log('remove genre from favourites : ' + str(k))
 				del self.favourites['genres'][key]
 		keys = []
 		for k, v in self.favourites['titles'].items():
@@ -278,7 +279,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				aelGlobals.write_log('remove title from favourites : ' + str(k))
+				write_log('remove title from favourites : ' + str(k))
 				del self.favourites['titles'][key]
 
 	def convertTitle(self, name):
