@@ -6,7 +6,7 @@ from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, getImageFile, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 
@@ -41,8 +41,8 @@ class AEL_EPGList(GUIComponent):
 	def __init__(self, type=EPG_TYPE_SINGLE, selChangedCB=None, timer=None):
 		self.nameCache = {}
 		self.days = (_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun"))
-		self.imageType = str(variables.get("EventLibraryEPGListsImageType", ('cover',))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
-		self.imagePath = f"{getPictureDir()}{self.imageType}/thumbnails/"
+		self.imageType = str(variables.get("EventLibraryEPGListsImageType", ("cover",))).replace(",", "").replace("(", "").replace(")", "").replace(""", "")
+		self.imagePath = f"{aelGlobals.HDDPATH}{self.imageType}/thumbnails/"
 		self.timer = timer
 		self.db = getDB()
 		self.onSelChanged = []
@@ -51,17 +51,17 @@ class AEL_EPGList(GUIComponent):
 		GUIComponent.__init__(self)
 		self.type = type
 		self.l = eListboxPythonMultiContent()
-		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(',', '').replace('(', '').replace(')', '').replace("'", '')
+		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(",", "").replace("(", "").replace(")", "").replace(""", "")
 		if type == EPG_TYPE_SINGLE or type == EPG_TYPE_INFOBAR:
-			ffont, fsize = parameters.get("EventLibraryEPGSingleListFirstFont", ('Regular', 26))
-			sfont, ssize = parameters.get("EventLibraryEPGSingleListSecondFont", ('Regular', 30))
+			ffont, fsize = parameters.get("EventLibraryEPGSingleListFirstFont", ("Regular", 26))
+			sfont, ssize = parameters.get("EventLibraryEPGSingleListSecondFont", ("Regular", 30))
 			self.l.setItemHeight(int(parameters.get("EventLibraryEPGSingleListItemHeight", (70,))[0]))
 			self.l.setFont(0, gFont(ffont, fsize))
 			self.l.setFont(1, gFont(sfont, ssize))
 			self.l.setBuildFunc(self.buildSingleEntry)
 		elif type == EPG_TYPE_MULTI:
-			ffont, fsize = parameters.get("EventLibraryEPGMultiListFirstFont", ('Regular', 26))
-			sfont, ssize = parameters.get("EventLibraryEPGMultiListSecondFont", ('Regular', 30))
+			ffont, fsize = parameters.get("EventLibraryEPGMultiListFirstFont", ("Regular", 26))
+			sfont, ssize = parameters.get("EventLibraryEPGMultiListSecondFont", ("Regular", 30))
 			self.l.setItemHeight(int(parameters.get("EventLibraryEPGMultiListItemHeight", (70,))[0]))
 			self.l.setFont(0, gFont(ffont, fsize))
 			self.l.setFont(1, gFont(sfont, ssize))
@@ -196,18 +196,15 @@ class AEL_EPGList(GUIComponent):
 		x1, y1, w1, h1 = parameters.get("EventLibraryEPGSingleListFirstLine", (130, 0, 1100, 30))
 		x2, y2, w2, h2 = parameters.get("EventLibraryEPGSingleListSecondLine", (130, 25, 1100, 60))
 		width = self.l.getItemSize().width()
-		flc = '#00ffffff'
-		flcs = '#00ffffff'
-		slc = '#00ffffff'
-		slcs = '#00ffffff'
+		flc, flcs, slc, slcs = "#00ffffff", "#00ffffff", "#00ffffff", "#00ffffff"
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = "#00{:03x}".format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = "#00{:03x}".format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = "#00{:03x}".format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = "#00{:03x}".format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		res = [None]
 		if beginTime is not None and duration is not None and eventId is not None:
 			timeobj = datetime.fromtimestamp(beginTime)
@@ -215,7 +212,7 @@ class AEL_EPGList(GUIComponent):
 			timeobj = datetime.fromtimestamp(beginTime + duration)
 			_timeend = timeobj.strftime(" - %H:%M")
 			dauer = "   (%d Min.)" % (duration / 60)
-			dauer = str(dauer).replace('+', '')
+			dauer = str(dauer).replace("+", "")
 			self.picloader = PicLoader(wp, hp)
 			picon = self.picloader.load(self.getImageFiles(EventName, eventId))
 			self.picloader.destroy()
@@ -260,18 +257,15 @@ class AEL_EPGList(GUIComponent):
 		xpr, ypr, wpr, hpr = parameters.get("EventLibraryEPGMultiListProgressPosition", (10, 40, 55, 20))
 		x1, y1, w1, h1 = parameters.get("EventLibraryEPGMultiListFirstLine", (130, 0, 1100, 30))
 		x2, y2, w2, h2 = parameters.get("EventLibraryEPGMultiListSecondLine", (130, 25, 1100, 60))
-		flc = '#00ffffff'
-		flcs = '#00ffffff'
-		slc = '#00ffffff'
-		slcs = '#00ffffff'
+		flc, flcs, slc, slcs = "#00ffffff", "#00ffffff", "#00ffffff", "#00ffffff"
 		if "EventLibraryListsFirstLineColor" in skin.colorNames:
-			flc = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColor").argb())
+			flc = "#00{:03x}".format(parseColor("EventLibraryListsFirstLineColor").argb())
 		if "EventLibraryListsSecondLineColor" in skin.colorNames:
-			slc = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColor").argb())
+			slc = "#00{:03x}".format(parseColor("EventLibraryListsSecondLineColor").argb())
 		if "EventLibraryListsFirstLineColorSelected" in skin.colorNames:
-			flcs = '#00{:03x}'.format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
+			flcs = "#00{:03x}".format(parseColor("EventLibraryListsFirstLineColorSelected").argb())
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
-			slcs = '#00{:03x}'.format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
+			slcs = "#00{:03x}".format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		if beginTime is not None and duration is not None and eventId is not None:
 			(clock_pic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
 			timeobj = datetime.fromtimestamp(beginTime)
@@ -279,7 +273,7 @@ class AEL_EPGList(GUIComponent):
 			timeobj = datetime.fromtimestamp(beginTime + duration)
 			_timeend = timeobj.strftime(" - %H:%M")
 			dauer = "   (%d Min.)" % (duration / 60)
-			dauer = str(dauer).replace('+', '')
+			dauer = str(dauer).replace("+", "")
 			self.picloader = PicLoader(wp, hp)
 			picon = self.picloader.load(self.getImageFiles(EventName, eventId))
 			self.picloader.destroy()
@@ -289,27 +283,24 @@ class AEL_EPGList(GUIComponent):
 			_timeend = ""
 			rec = None
 			picon = None
-
 		res = [None]  # no private data needed
 		if rec:
-			res.extend((
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic),
-				(eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb())
-			))
+			res.extend(((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic),
+						(eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, f"{self.correctweekdays(_time)}{_timeend}{dauer}", parseColor(flc).argb(), parseColor(flcs).argb())
+						))
 		else:
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, f"{self.correctweekdays(_time)}{_timeend}{dauer}", parseColor(flc).argb(), parseColor(flcs).argb()))
 		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xp, yp, wp, hp, picon))
 		if beginTime is not None:
 			if nowTime < beginTime:
 				begin = localtime(beginTime)
 				end = localtime(beginTime + duration)
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, parseColor(slc).argb(), parseColor(slcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{service_name} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb()))
 			else:
 				percent = (nowTime - beginTime) * 100 / duration
-				res.extend((
-					(eListboxPythonMultiContent.TYPE_PROGRESS, xpr, ypr, wpr, hpr, percent),
-					(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, str(service_name) + ' - ' + EventName, parseColor(slc).argb(), parseColor(slcs).argb())
-				))
+				res.extend(((eListboxPythonMultiContent.TYPE_PROGRESS, xpr, ypr, wpr, hpr, percent),
+							(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{service_name} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb())
+							))
 		return res
 
 	def queryEPG(self, list, buildFunc=None):
@@ -320,14 +311,14 @@ class AEL_EPGList(GUIComponent):
 	def fillMultiEPG(self, services, stime=-1):
 		self.l.setItemHeight(int(parameters.get("EventLibraryEPGMultiListItemHeight", (70,))[0]))
 		test = [(service.ref.toString(), 0, stime) for service in services]
-		test.insert(0, 'X0RIBDTCn')
+		test.insert(0, "X0RIBDTCn")
 		self.list = self.queryEPG(test)
 		self.l.setList(self.list)
 		self.selectionChanged()
 
 	def updateMultiEPG(self, direction):
 		test = [x[3] and (x[1], direction, x[3]) or (x[1], direction, 0) for x in self.list]
-		test.insert(0, 'XRIBDTCn')
+		test.insert(0, "XRIBDTCn")
 		tmp = self.queryEPG(test)
 		cnt = 0
 		for x in tmp:
@@ -340,7 +331,7 @@ class AEL_EPGList(GUIComponent):
 
 	def fillSingleEPG(self, service):
 		self.l.setItemHeight(int(parameters.get("EventLibraryEPGSingleListItemHeight", (70,))[0]))
-		test = ['RIBDT', (service.ref.toString(), 0, -1, -1)]
+		test = ["RIBDT", (service.ref.toString(), 0, -1, -1)]
 		self.list = self.queryEPG(test)
 		self.l.setList(self.list)
 		self.selectionChanged()
@@ -385,7 +376,7 @@ class AEL_EPGList(GUIComponent):
 	def fillSimilarList(self, refstr, event_id):
 		if event_id is None:  # search similar broadcastings
 			return
-		ln = self.epgcache.search(('RIBND', 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, event_id))
+		ln = self.epgcache.search(("RIBND", 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, event_id))
 		if ln and len(ln):
 			ln.sort(key=lambda x: x[2])
 		self.l.setList(ln)
@@ -407,16 +398,15 @@ class AEL_EPGList(GUIComponent):
 				self.fillMultiEPG([cur[1]])
 
 	def getImageFiles(self, eventName, eventId):
-		niC = self.nameCache.get(eventName, '')
-		if niC != '':
+		niC = self.nameCache.get(eventName, "")
+		if niC != "":
 			if isfile(niC):
-				return self.nameCache.get(eventName, '')
+				return self.nameCache.get(eventName, "")
 		else:
 			if config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 				evt = self.db.getliveTV(eventId, eventName)
-				if evt:
-					if evt[0][3] != '' and not str(evt[0][3]).endswith('.jpg'):
-						eventName = str(evt[0][3])
+				if evt and evt[0][3] != "" and not str(evt[0][3]).endswith(".jpg"):
+					eventName = str(evt[0][3])
 			coverFileName = getImageFile(self.imagePath, eventName)
 			if coverFileName:
 				self.nameCache[eventName] = str(coverFileName)

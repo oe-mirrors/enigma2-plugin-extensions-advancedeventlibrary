@@ -24,33 +24,23 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import aelGlobals, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, PicLoader
-
-htmlParser = HTMLParser()
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, aelGlobals
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
 skinpath = pluginpath + 'skin/1080/' if desktopSize.width() == 1920 else pluginpath + 'skin/720/'
 imgpath = '/usr/share/enigma2/AELImages/'
 log = "/var/tmp/AdvancedEventLibrary.log"
-Movies = ["Abenteuer", "Abenteuerfilm", "Abenteuerkom�die", "Action", "Action Abenteuer", "Action-Abenteuer", "Action-Fantasyfilm", "Actionabenteuer", "Actiondrama", "Actionfilm", "Actionkom�die", "Actionkrimi", "Actionthriller", "Agentenfilm", "Agentenkom�die", "Agententhriller", "Beziehungsdrama", "Beziehungskom�die", "Bibelverfilmung", "Bollywoodfilm", "Comicverfilmung", "Crime", "Deutsche Kom�die", "Drama", "Dramedy", "Ehedrama", "Ehekom�die", "Episodenfilm", "Erotikdrama", "Erotikfilm", "Erotikkom�die", "Familie", "Familiendrama", "Familienfilm", "Familienkom�die", "Familiensaga", "Fantasy", "Fantasy-Abenteuer", "Fantasy-Abenteuerfilm", "Fantasy-Action", "Fantasyabenteuer", "Fantasyaction", "Fantasydrama", "Fantasyfilm", "Fantasykom�die", "Fernsehfilm", "Gangsterdrama", "Gangsterkom�die", "Gangsterthriller", "Gaunerkom�die", "Gef�ngnisdrama", "Geschichtliches Drama", "Gesellschaftsdrama", "Gesellschaftskom�die", "Gesellschaftssatire", "Gruselfilm", "Gruselkom�die", "Heimatdrama", "Heimatfilm", "Heimatkom�die", "Historienabenteuer", "Historiendrama", "Historienfilm", "Historisches Drama", "Horror", "Horror-Actionfilm", "Horrorfilm", "Horrorkom�die", "Horrorthriller", "Italo-Western", "Jugenddrama", "Jugendfilm", "Jugendkom�die", "Justizdrama", "Justizthriller", "Katastrophendrama", "Katastrophenfilm", "Kriegsdrama", "Kom�die", "Kriegsfilm", "Krimi", "Krimidrama", "Krimikom�die", "Krimik�m�die", "Kriminalfilm", "Krimiparodie", "Liebesdrama", "Liebesdram�die", "Liebesfilm", "Liebesgeschichte", "Liebeskom�die", "Liebesmelodram", "Literaturverfilmung", "Mediensatire", "Melodram", "Monumentalfilm", "Mystery", "Mysterydrama", "Mysteryfilm", "Mysterythriller", "Psychodrama", "Psychokrimi", "Psychothriller", "Revuefilm", "Politdrama", "Politkom�die", "Politsatire", "Politthriller", "Road Movie", "Romance", "Romantic Comedy", "Romantikkom�die", "Romantische Kom�die", "Romanverfilmung", "Romanze", "Satire", "Schwarze Kom�die", "Sci-Fi-Fantasy", "Science-Fiction", "Science-Fiction-Abenteuer", "Science-Fiction-Action", "Science-Fiction-Film", "Science-Fiction-Horror", "Science-Fiction-Kom�die", "Science-Fiction-Thriller", "Spielfilm", "Spionagethriller", "Sportfilm", "Sportlerkom�die", "Tanzfilm", "Teenagerfilm", "Teenagerkom�die", "Teeniekom�die", "Thriller", "Thrillerkom�die", "Tierfilm", "Tragikom�die", "TV-Movie", "Vampirfilm", "Vampirkom�die", "Western", "Westerndrama", "Westernkom�die"]
+Movies = ["Abenteuer", "Abenteuerfilm", "Abenteuerkomödie", "Action", "Action Abenteuer", "Action-Abenteuer", "Action-Fantasyfilm", "Actionabenteuer", "Actiondrama", "Actionfilm", "Actionkomödie", "Actionkrimi", "Actionthriller", "Agentenfilm", "Agentenkomödie", "Agententhriller", "Beziehungsdrama", "Beziehungskomödie", "Bibelverfilmung", "Bollywoodfilm", "Comicverfilmung", "Crime", "Deutsche Komödie", "Drama", "Dramedy", "Ehedrama", "Ehekomödie", "Episodenfilm", "Erotikdrama", "Erotikfilm", "Erotikkomödie", "Familie", "Familiendrama", "Familienfilm", "Familienkomödie", "Familiensaga", "Fantasy", "Fantasy-Abenteuer", "Fantasy-Abenteuerfilm", "Fantasy-Action", "Fantasyabenteuer", "Fantasyaction", "Fantasydrama", "Fantasyfilm", "Fantasykomödie", "Fernsehfilm", "Gangsterdrama", "Gangsterkomödie", "Gangsterthriller", "Gaunerkomödie", "Geföngnisdrama", "Geschichtliches Drama", "Gesellschaftsdrama", "Gesellschaftskomödie", "Gesellschaftssatire", "Gruselfilm", "Gruselkomödie", "Heimatdrama", "Heimatfilm", "Heimatkomödie", "Historienabenteuer", "Historiendrama", "Historienfilm", "Historisches Drama", "Horror", "Horror-Actionfilm", "Horrorfilm", "Horrorkomödie", "Horrorthriller", "Italo-Western", "Jugenddrama", "Jugendfilm", "Jugendkomödie", "Justizdrama", "Justizthriller", "Katastrophendrama", "Katastrophenfilm", "Kriegsdrama", "Komödie", "Kriegsfilm", "Krimi", "Krimidrama", "Krimikomödie", "Krimikömödie", "Kriminalfilm", "Krimiparodie", "Liebesdrama", "Liebesdramödie", "Liebesfilm", "Liebesgeschichte", "Liebeskomödie", "Liebesmelodram", "Literaturverfilmung", "Mediensatire", "Melodram", "Monumentalfilm", "Mystery", "Mysterydrama", "Mysteryfilm", "Mysterythriller", "Psychodrama", "Psychokrimi", "Psychothriller", "Revuefilm", "Politdrama", "Politkomödie", "Politsatire", "Politthriller", "Road Movie", "Romance", "Romantic Comedy", "Romantikkomödie", "Romantische Komödie", "Romanverfilmung", "Romanze", "Satire", "Schwarze Komödie", "Sci-Fi-Fantasy", "Science-Fiction", "Science-Fiction-Abenteuer", "Science-Fiction-Action", "Science-Fiction-Film", "Science-Fiction-Horror", "Science-Fiction-Komödie", "Science-Fiction-Thriller", "Spielfilm", "Spionagethriller", "Sportfilm", "Sportlerkomödie", "Tanzfilm", "Teenagerfilm", "Teenagerkomödie", "Teeniekomödie", "Thriller", "Thrillerkomödie", "Tierfilm", "Tragikomödie", "TV-Movie", "Vampirfilm", "Vampirkomödie", "Western", "Westerndrama", "Westernkomödie"]
 Series = ["Abenteuer-Serie", "Actionserie", "Arztreihe", "Crime-Serie", "Episode", "Familien-Serie", "Staffel", "Folge", "Familienserie", "Fernsehserie", "Fernsehspiel", "Heimatserie", "Horror-Serie", "Comedy-Serie", "Dramaserie", "Krankenhaus-Serie", "Krankenhaus-Soap", "Krimireihe", "Krimi-Serie", "Krimiserie", "Polizeiserie", "Reality", "Scripted Reality", "Scripted-Reality", "Science-Fiction-Serie", "Sci-Fi-Serie", "Serie", "Serien", "Sitcom", "Soap", "Telenovela"]
-Dokus = ["Doku-Experiment", "Doku-Reihe", "Doku-Serie", "Documentary", "Documentary-Serie", "Dokumentarfilm", "Dokumentarreihe", "Dokumentarserie", "Dokumentation", "Dokumentation-Serie", "Dokumentationsreihe", "Dokureihe", "Dokuserie", "Dokutainment", "Dokutainment-Reihe", "History", "Naturdokumentarreihe", "Naturdokumentation", "Naturdokumentationsreihe", "Real Life Doku", "Reality-Doku", "Reality-TV", "Reisedoku", "Reportage", "Reportagemagazin", "Reportagereihe", "Biografie", "Biographie", "Familienchronik", "Ermittler-Doku", "Koch-Doku", "Portr�t", "War", "War & Politics", "Wissenschaftsmagazin", "Wissensmagazin"]
-Music = ["Disco", "Musical", "Musik", "Music", "Musikdokumentation", "Musikfilm", "Musikkom�die", "Konzertfilm", "Konzert"]
-Kinder = ["Animation", "Animations-Serie", "Animationsfilm", "Animationsserie", "Kinder-Abenteuerfilm", "Kinder-Animationsfilm", "Kinder-Fantasyfilm", "Kinder-Kom�die", "Kinder-Zeichentrickfilm", "Kinderabenteuer", "Kinderfilm", "Kinderserie", "Kinder-Serie", "M�rchenfilm", "Trickfilm", "Zeichentrick-Serie", "Zeichentrick-Special", "Zeichentrickfilm"]
+Dokus = ["Doku-Experiment", "Doku-Reihe", "Doku-Serie", "Documentary", "Documentary-Serie", "Dokumentarfilm", "Dokumentarreihe", "Dokumentarserie", "Dokumentation", "Dokumentation-Serie", "Dokumentationsreihe", "Dokureihe", "Dokuserie", "Dokutainment", "Dokutainment-Reihe", "History", "Naturdokumentarreihe", "Naturdokumentation", "Naturdokumentationsreihe", "Real Life Doku", "Reality-Doku", "Reality-TV", "Reisedoku", "Reportage", "Reportagemagazin", "Reportagereihe", "Biografie", "Biographie", "Familienchronik", "Ermittler-Doku", "Koch-Doku", "Portröt", "War", "War & Politics", "Wissenschaftsmagazin", "Wissensmagazin"]
+Music = ["Disco", "Musical", "Musik", "Music", "Musikdokumentation", "Musikfilm", "Musikkomödie", "Konzertfilm", "Konzert"]
+Kinder = ["Animation", "Animations-Serie", "Animationsfilm", "Animationsserie", "Kinder-Abenteuerfilm", "Kinder-Animationsfilm", "Kinder-Fantasyfilm", "Kinder-Komödie", "Kinder-Zeichentrickfilm", "Kinderabenteuer", "Kinderfilm", "Kinderserie", "Kinder-Serie", "Mörchenfilm", "Trickfilm", "Zeichentrick-Serie", "Zeichentrick-Special", "Zeichentrickfilm"]
 Shows = ["Clipshow", "Comedy Show", "Information", "Informationssendung", "Infotainment", "Kochshow", "Kulturmagazin", "Live Shopping", "Magazin", "Quizshow", "Show", "Sketch-Comedy", "Talk", "Talkshow", "Unterhaltung", "Unterhaltungs-Show", "Unterhaltungsshow"]
-Sport = ["Sport", "Fu�ball", "Bundesliga", "PL:", "Handball", "Champions-League", "Tennis", "Sportschau", "Sportmagazin", "Sportnachrichten", "Boxen", "Formel 1", "Wrestling", "Sportclub", "Blickpunkt Sport", "Golf"]
+Sport = ["Sport", "Fuöball", "Bundesliga", "PL:", "Handball", "Champions-League", "Tennis", "Sportschau", "Sportmagazin", "Sportnachrichten", "Boxen", "Formel 1", "Wrestling", "Sportclub", "Blickpunkt Sport", "Golf"]
 
 global active
 active = False
-
-
-def write_log(svalue):
-	t = localtime()
-	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
-	AdvancedEventLibrary_log = open(log, "a")
-	AdvancedEventLibrary_log.write(str(logtime) + " : [PrimeTimeScreen] : " + str(svalue) + "\n")
-	AdvancedEventLibrary_log.close()
 
 
 class EventEntry():
@@ -76,7 +66,6 @@ class EventEntry():
 
 class AdvancedEventLibraryPlanerScreens(Screen):
 	ALLOW_SUSPEND = True
-
 	skin = loadSkin(skinpath + "AdvancedEventLibraryPlaners.xml")
 
 	def __init__(self, session, viewType):
@@ -84,7 +73,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		active = True
 		self.session = session
 		Screen.__init__(self, session)
-
 		self.title = "Prime-Time-Planer"
 		self.viewType = viewType
 		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 1 else "AdvancedEventLibraryWallPlaners"
@@ -176,7 +164,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			else:
 				self.close('Listenansicht')
 		except Exception as ex:
-			write_log('infoKeyPressed : ' + str(ex))
+			write_log(f"infoKeyPressed : {ex}")
 
 	def key_menu_handler(self):
 		self.session.openWithCallback(self.return_from_setup, MySetup)
@@ -366,7 +354,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					sRef.setName(str(selected_element.name))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			write_log("key_play : " + str(ex))
+			write_log(f"key_play : {ex}")
 
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple
@@ -381,15 +369,13 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			if self.current_event and sRef:
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
-
 		except Exception as ex:
-			write_log("call EventView : " + str(ex))
+			write_log(f"call EventView : {ex}")
 
 	def addtimer(self):
 		try:
 			if self.current_event is None:
 				return False
-
 			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
 				sRef = str(selected_element[1])
@@ -442,7 +428,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : " + str(ex))
+			write_log(f"addtimer : {ex}")
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -508,7 +494,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					self["ServiceRef"].setText(sRef)
 					self["ServiceName"].setText(selected_element.sname)
 		except Exception as ex:
-			write_log("sel_changed : " + str(ex))
+			write_log(f"sel_changed : {ex}")
 			self["Content"].setText("Keine Sendetermine im EPG gefunden\n" + str(ex))
 			self["Event"].newEvent(None)
 
@@ -530,7 +516,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 		except Exception as ex:
 			self["Content"].setText("Keine Sendetermine im EPG gefunden")
-			write_log("menu_sel_changed : " + str(ex))
+			write_log(f"menu_sel_changed : {ex}")
 
 	def getAllEvents(self, currentBouquet='Favourites'):
 		try:
@@ -617,9 +603,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					if eventGenre:
 						hasTrailer = None
 						evt = self.db.getliveTV(eit, name, begin)
-						if evt:
-							if evt[0][16].endswith('mp4'):
-								hasTrailer = evt[0][16]
+						if evt and evt[0][16].endswith('mp4'):
+							hasTrailer = evt[0][16]
 						if hasTrailer is None:
 							dbdata = self.db.getTitleInfo(convert2base64(name))
 							if dbdata and dbdata[7].endswith('mp4'):
@@ -628,12 +613,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							itm = [name, serviceref, eit, begin, duration, hasTimer, edesc, service_name, hasTrailer]
 						else:
 							image = None
-							if self.imageType == "cover":
-								if evt:
-									if evt[0][3] != '':
-										image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', evt[0][3])
+							if self.imageType == "cover" and evt and evt[0][3] != '':
+								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', evt[0][3])
 							if image is None:
-								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', name)
+								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, service_name, image, hasTrailer)
 						if 'Spielfilm' in eventGenre:
 							self.movielist.append((itm,))
@@ -673,7 +656,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if not self.unknownlist:
 				self.unknownlist.append((itm,))
 		except Exception as ex:
-			write_log("getAllEvents : " + str(ex))
+			write_log(f"getAllEvents : {ex}")
 
 	def getSimilarEvents(self, id, ref):
 		epgcache = eEPGCache.getInstance()
@@ -720,83 +703,51 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.listlen = len(cList)
 			return cList
 		except Exception as ex:
-			write_log("getEPGdata : " + str(ex))
+			write_log(f"getEPGdata : {ex}")
 
 	def getEventGenre(self, eit, serviceref, name, desc, begin):
 		try:
 			val = self.db.getliveTV(eit, name, begin)
-			if val:
-				if len(str(val[0][11]).strip()) > 0:
-					return str(val[0][11]).strip()
-
+			if val and len(str(val[0][11]).strip()) > 0:
+				return str(val[0][11]).strip()
 			eventName = convertDateInFileName(convertSearchName(name))
 			dbData = self.db.getTitleInfo(convert2base64(eventName))
 			if not dbData:
 				dbData = self.db.getTitleInfo(convert2base64(convertTitle(eventName)))
 				if not dbData:
 					dbData = self.db.getTitleInfo(convert2base64(convertTitle2(eventName)))
-			if dbData:
-				if len(dbData[2]) > 0:
-					if 'Serie' in str(dbData[2]):
-						if 'Dokumentation' in str(dbData[2]) or 'Documentary' in str(dbData[2]):
-							return 'Reportage'
-						elif 'Kinder' in str(dbData[2]) or 'Children' in str(dbData[2]):
-							return 'Kinder'
-						elif 'Talk' in str(dbData[2]) or 'Show' in str(dbData[2]):
-							return 'Unterhaltung'
-						elif 'Music' in str(dbData[2]) or 'Musik' in str(dbData[2]):
-							return 'Music'
-						elif 'Sport' in str(dbData[2]):
-							return 'Sport'
-						else:
-							return 'Serien'
-					genres = dbData[2].split()
-					if genres:
-						for genre in genres:
-							if str(genre).strip() in map(lambda x: x.strip(), Movies):
-								return 'Spielfilm'
-							elif str(genre).strip() in map(lambda x: x.strip(), Series):
-								return 'Serien'
-							elif str(genre).strip() in map(lambda x: x.strip(), Dokus):
-								return 'Reportage'
-							elif str(genre).strip() in map(lambda x: x.strip(), Music):
-								return 'Music'
-							elif str(genre).strip() in map(lambda x: x.strip(), Kinder):
-								return 'Kinder'
-							elif str(genre).strip() in map(lambda x: x.strip(), Shows):
-								return 'Unterhaltung'
-							elif str(genre).strip() in map(lambda x: x.strip(), Sport):
-								return 'Sport'
-
-			if 'Folge' in desc or 'Staffel' in desc or 'Episode' in desc or 'Soap' in desc or 'Reihe' in desc or 'Serie' in desc:
-				return 'Serien'
-			if 'film' in desc:
+			if dbData and len(dbData[2]) > 0:
+				if 'Serie' in str(dbData[2]):
+					if 'Dokumentation' in str(dbData[2]) or 'Documentary' in str(dbData[2]):
+						return 'Reportage'
+					elif 'Kinder' in str(dbData[2]) or 'Children' in str(dbData[2]):
+						return 'Kinder'
+					elif 'Talk' in str(dbData[2]) or 'Show' in str(dbData[2]):
+						return 'Unterhaltung'
+					elif 'Music' in str(dbData[2]) or 'Musik' in str(dbData[2]):
+						return 'Music'
+					elif 'Sport' in str(dbData[2]):
+						return 'Sport'
+					else:
+						return 'Serien'
+				genres = dbData[2].split()
+				if genres:
+					for genre in genres:
+						for items in [(Dokus, 'Reportage'), (Sport, 'Sport'), (Music, 'Music'), (Kinder, 'Kinder'), (Shows, 'Unterhaltung'), (Movies, 'Spielfilm'), (Series, 'Serien')]:
+							if str(genre).strip() in map(lambda x: x.strip(), items[0]):
+								return items[1]
+			for item in ["Folge", "Staffel", "Episode", "Soap", "Reihe", "Serie"]:
+				if item in desc:
+					return "Serien"
+			if "film" in desc:
 				return 'Spielfilm'
-			for genre in Dokus:
-				if genre in desc:
-					return 'Reportage'
-			for genre in Sport:
-				if genre in desc:
-					return 'Sport'
-			for genre in Music:
-				if genre in desc:
-					return 'Music'
-			for genre in Kinder:
-				if genre in desc:
-					return 'Kinder'
-			for genre in Shows:
-				if genre in desc:
-					return 'Unterhaltung'
-			for genre in Movies:
-				if genre in desc:
-					return 'Spielfilm'
-			for genre in Series:
-				if genre in desc:
-					return 'Serien'
-
+			for items in [(Dokus, 'Reportage'), (Sport, 'Sport'), (Music, 'Music'), (Kinder, 'Kinder'), (Shows, 'Unterhaltung'), (Movies, 'Spielfilm'), (Series, 'Serien')]:
+				for genre in items[0]:
+					if genre in desc:
+						return items[1]
 			return 'Sonstiges'
 		except Exception as ex:
-			write_log("getEventGenre : " + str(name) + ' - ' + str(ex))
+			write_log(f"getEventGenre : {name} - {ex}")
 			return 'Sonstiges'
 
 	def seteventEntry(self, entrys):
@@ -820,7 +771,6 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.picloader.destroy()
 			if pic:
 				picon = LoadPixmap(pic)  # self.picloader.load(entrys.picon)
-
 			ret = [entrys]
 			if image:
 				ret.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, self.parameter[17][0], self.parameter[17][1], self.parameter[17][0], self.parameter[17][1], self.parameter[17][2], self.parameter[17][3], self.parameter[17][2], self.parameter[17][3], image, None, None, BT_SCALE))
@@ -836,13 +786,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 			return ret
-
-			write_log("error in entrys : " + str(entrys))
+			write_log(f"error in entrys : {entrys}")
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
 		except Exception as ex:
-			write_log('Error in seteventEntry : ' + str(ex))
+			write_log(f"Error in seteventEntry : {ex}")
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]

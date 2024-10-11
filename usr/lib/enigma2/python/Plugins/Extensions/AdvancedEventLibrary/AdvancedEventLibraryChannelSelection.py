@@ -1,8 +1,8 @@
-import datetime
-import os
-import NavigationInstance
+from datetime import datetime
 from html.parser import HTMLParser
+from os.path import join, isfile
 from time import time
+import NavigationInstance
 
 from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import variables
@@ -30,7 +30,9 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import aelGlobals, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, convert2base64, getDB, getImageFile, clearMem, aelGlobals
+
+DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
 htmlParser = HTMLParser()
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
@@ -214,7 +216,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			self.eventListCoverings = eval(str(self.eventParameter[23]))
 			self.eventListFontOrientation = self.getFontOrientation(self.eventParameter[24])
 			imgpath = variables.get("EventLibraryImagePath", '/usr/share/enigma2/AELImages/,').replace(',', '')
-			ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
+			ptr = LoadPixmap(join(imgpath, "play.png"))
 			self["trailer"].instance.setPixmap(ptr)
 			if config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet.value == 'Alle Bouquets':
 				self.getChannelList(self.tvbouquets)
@@ -258,8 +260,8 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					picon = self.findPicon(serviceref, servicename)
 					if picon is None:
 						picon = imgpath + 'folder.png'
-					beginTime = datetime.datetime.fromtimestamp(events[0][2])
-					endTime = datetime.datetime.fromtimestamp(events[0][2] + events[0][3])
+					beginTime = datetime.fromtimestamp(events[0][2])
+					endTime = datetime.fromtimestamp(events[0][2] + events[0][3])
 					duration = int((events[0][3] - (int(time()) - events[0][2])) / 60)
 					_timespan = ""
 					if "weekday" in self.channelParameter[26]:
@@ -290,7 +292,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, evt[0][3])
+								image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, evt[0][3])
 								if image is not None:
 									self.nameCache[evt[0][3]] = str(image)
 							name = evt[0][3]
@@ -299,7 +301,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(aelGlobals.LOCPATH + self.channelImageType, events[0][1])
+								image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, events[0][1])
 								if image is not None:
 									self.nameCache[events[0][1]] = str(image)
 
@@ -363,7 +365,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#print(ret)
 			return ret
 		except Exception as ex:
-			write_log('Error in buildChannelList : ' + str(ex))
+			write_log('Error in buildChannelList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def buildEventList(self, entrys):
 		try:
@@ -389,7 +391,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][5], self.eventParameter[20][5], self.eventListFontOrientation, str(self.correctweekdays(entrys.timespan)), skin.parseColor(self.eventParameter[6]).argb(), skin.parseColor(self.eventParameter[7]).argb()))
 			return ret
 		except Exception as ex:
-			write_log('Error in buildEventList : ' + str(ex))
+			write_log('Error in buildEventList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
@@ -402,12 +404,12 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			pos = service.rfind('_http')
 			if pos != -1:
 					service = service[:pos].rstrip('_http').replace(':', '_')
-			pngname = os.path.join(config.usage.picon_dir.value, service + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, service + ".png")
+			if isfile(pngname):
 				return pngname
 		if serviceName is not None:
-			pngname = os.path.join(config.usage.picon_dir.value, serviceName + ".png")
-			if os.path.isfile(pngname):
+			pngname = join(config.usage.picon_dir.value, serviceName + ".png")
+			if isfile(pngname):
 				return pngname
 		return None
 
@@ -455,7 +457,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					sRef.setName(str(selected_element.title))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			write_log("key_play : " + str(ex))
+			write_log("key_play : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def key_ok_handler(self):
 		selection = self["channelList"].getcurrentselection()
@@ -690,7 +692,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : " + str(ex))
+			write_log("addtimer : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -728,8 +730,8 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				evts = self.epgcache.lookupEvent(['ITBD', (sRef, 0, -1, (config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration.value * 60))]) or [(0, ' ', 0, 0), (0, ' ', 0, 0)]
 				for event in evts:
 						etime = time()
-						beginTime = datetime.datetime.fromtimestamp(event[2])
-						endTime = datetime.datetime.fromtimestamp(event[2] + event[3])
+						beginTime = datetime.fromtimestamp(event[2])
+						endTime = datetime.fromtimestamp(event[2] + event[3])
 						duration = int(event[3] / 60)
 						_timespan = ""
 						if "weekday" in self.eventParameter[26]:
@@ -763,7 +765,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(aelGlobals.LOCPATH + self.eventImageType, evt[0][3])
+									image = getImageFile(aelGlobals.HDDPATH + self.eventImageType, evt[0][3])
 									if image is not None:
 										self.nameCache[evt[0][3]] = str(image)
 								name = evt[0][3]
@@ -772,7 +774,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(aelGlobals.LOCPATH + self.eventImageType, event[1])
+									image = getImageFile(aelGlobals.HDDPATH + self.eventImageType, event[1])
 									if image is not None:
 										self.nameCache[event[1]] = str(image)
 
@@ -797,7 +799,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				self["eventList"].refresh()
 				self["eventsInfo"].setText(str(self["eventList"].getCurrentIndex() + 1) + '/' + str(self.eventListLen))
 		except Exception as ex:
-			write_log("channel_changed : " + str(ex))
+			write_log("channel_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def event_changed(self):
@@ -814,7 +816,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				else:
 					self["trailer"].hide()
 		except Exception as ex:
-			write_log("event_changed : " + str(ex))
+			write_log("event_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def key_info_handler(self):

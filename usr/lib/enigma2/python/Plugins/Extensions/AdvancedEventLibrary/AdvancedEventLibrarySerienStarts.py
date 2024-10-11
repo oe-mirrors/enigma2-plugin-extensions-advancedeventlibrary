@@ -24,7 +24,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import aelGlobals, convertTitle, convert2base64, getDB, getImageFile, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, convert2base64, getDB, getImageFile, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -358,18 +358,16 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		try:
 			if self.viewType == 1:  # 'Listenansicht'
 				selected_element = self["eventList"].l.getCurrentSelection()[0]
-				if selected_element:
-					if selected_element[8]:
-						sRef = eServiceReference(4097, 0, str(selected_element[8]))
-						sRef.setName(str(selected_element[0]))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element[8]:
+					sRef = eServiceReference(4097, 0, str(selected_element[8]))
+					sRef.setName(str(selected_element[0]))
+					self.session.open(MoviePlayer, sRef)
 			else:
 				selected_element = self["eventWall"].getcurrentselection()
-				if selected_element:
-					if selected_element.hasTrailer:
-						sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
-						sRef.setName(str(selected_element.name))
-						self.session.open(MoviePlayer, sRef)
+				if selected_element and selected_element.hasTrailer:
+					sRef = eServiceReference(4097, 0, str(selected_element.hasTrailer))
+					sRef.setName(str(selected_element.name))
+					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
 			write_log("key_play : " + str(ex))
 
@@ -596,9 +594,8 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						sname = self.slist.get(serviceref, None)
 						hasTrailer = None
 						evt = self.db.getliveTV(eit, name, begin)
-						if evt:
-							if evt[0][16].endswith('mp4'):
-								hasTrailer = evt[0][16]
+						if evt and evt[0][16].endswith('mp4'):
+							hasTrailer = evt[0][16]
 						if hasTrailer is None:
 							dbdata = self.db.getTitleInfo(convert2base64(name))
 							if dbdata and dbdata[7].endswith('mp4'):
@@ -607,12 +604,10 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 							itm = [name, serviceref, eit, begin, duration, hasTimer, edesc, sname, hasTrailer]
 						else:
 							image = None
-							if self.imageType == "cover":
-								if evt:
-									if evt[0][3] != '':
-										image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', evt[0][3])
+							if self.imageType == "cover" and evt and evt[0][3] != '':
+								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', evt[0][3])
 							if image is None:
-								image = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', name)
+								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
 						if 'Reportage' in startEvent[2]:
 							self.doculist.append((itm,))
