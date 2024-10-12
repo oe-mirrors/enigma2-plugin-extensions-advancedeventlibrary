@@ -17,7 +17,7 @@
 from base64 import b64decode
 from datetime import datetime
 from glob import glob
-from json import dumps
+from json import loads, dumps
 from os import rename, makedirs, system, remove, stat, statvfs
 from os.path import isfile, getsize, exists, join, basename
 from PIL import Image
@@ -63,8 +63,8 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	skin = str(loadskin("AdvancedEventLibraryMenu.xml"))
 
 	def __init__(self, session):
-		Screen.__init__(self, session)
 		self.session = session
+		Screen.__init__(self, session)
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = f"{_('Advanced-Event-Library Menüauswahl')}: (R{aelGlobals.CURRENTVERSION})"
 		self.memInfo = ""
@@ -73,12 +73,10 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self["key_green"] = StaticText(_("Start scan"))
 		self["key_yellow"] = StaticText(_("Create backup"))
 		self["key_blue"] = StaticText(_("Create TVS reference"))
-
 		#=============== geaendert (#6) ================
 		#self["key_blue"] = StaticText("")
 		#self["key_blue"] = StaticText(_("Bereinigen"))
 		# ==*=========================================
-
 		self["info"] = StaticText("")
 		self["status"] = StaticText("")
 		imgpath = join(aelGlobals.SHAREPATH, "AELImages/")
@@ -105,8 +103,13 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.refreshStatus.callback.append(self.getStatus)
 		self.reload = eTimer()
 		self.reload.callback.append(self.goReload)
-		self.onShow.append(self.afterInit)
+		write_log("##### starting Advanced Event Library GUI #####")
+		self.onLayoutFinish.append(self.onLayoutFinished)
+
+	def onLayoutFinished(self):
+		self.readMandatoryFiles()
 		self.getStatus()
+		self.afterInit
 
 	def afterInit(self):
 		self.db = getDB()
@@ -114,13 +117,10 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		if isfile(confdir):
 			posterCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'posterCount', None, 0)
 			posterSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'posterSize', None, 0))
-			posterSize = posterSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			coverCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'coverCount', None, 0)
 			coverSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'coverSize', None, 0))
-			coverSize = coverSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			previewCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'previewCount', None, 0)
 			previewSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'previewSize', None, 0))
-			previewSize = previewSize.replace("b", "").replace("'", "")  # TODO: irrtümlich liefert die Datenbank einen String im Bytes-Format: z.B. "b'6.6'"
 			usedInodes = self.db.parameter(aelGlobals.PARAMETER_GET, 'usedInodes', None, 0)
 			lastposterCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'lastposterCount', None, 0)
 			lastcoverCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'lastcoverCount', None, 0)
@@ -149,7 +149,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
 			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC}\n"
 			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC}\n"
-			statistic += f"{_('Executed on:')}\t{lastUpdateStart}\t{_('Duration:')}\t{lastUpdateDuration} h\n\n"
+			statistic += f"{_('Executed on:')}\t{lastUpdateStart} h\t{_('Duration:')}\t{lastUpdateDuration} h\n\n"
 			statistic += f"{_('Total statistics:')}\n"
 			statistic += f"{_('Number of posters:')}\t{posterCount} {_('Size:')} {posterSize}\n"
 			statistic += f"{_('Number of previews:')}\t{previewCount} {_('Size:')} {previewSize}\n"
@@ -226,6 +226,37 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def convertDuration(self, val):
 		value = datetime.fromtimestamp(float(val))
 		return value.strftime('%H:%M:%S')
+
+	def readMandatoryFiles(self):
+		if exists(aelGlobals.NETWORKFILE):
+			try:
+				with open(aelGlobals.NETWORKFILE, "r") as file:
+					aelGlobals.NETWORKDICT = loads(file.read())
+					write_log(f"AEL network file '{aelGlobals.NETWORKFILE}' successfully loaded.")
+			except Exception as errmsg:
+				write_log(f"Exception in module 'readMandatoryFiles' for AEL networks file '{aelGlobals.NETWORKFILE}': {errmsg}")
+				self.session.open(MessageBox, _("Exception error while reading AEL networks file '%s': %s\nCan't continue Advanced Event Library!" % (aelGlobals.NETWORKFILE, errmsg)), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
+				self.do_close()
+		else:
+			write_log(f"Error in module 'readMandatoryFiles': AEL networks file '{aelGlobals.NETWORKFILE}' not found.")
+			self.session.open(MessageBox, _("AEL networks file '%s' not found.\nCan't continue Advanced Event Library!" % aelGlobals.NETWORKFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
+			self.do_close()
+		if exists(aelGlobals.TVS_REFFILE):
+			try:
+				with open(aelGlobals.TVS_REFFILE, "r") as file:
+					aelGlobals.TVS_REFDICT = loads(file.read())
+					write_log(f"TV Spielfilm reference file '{aelGlobals.TVS_REFFILE}' successfully loaded.")
+			except Exception as errmsg:
+				write_log(f"Exception in module 'readMandatoryFiles' for TVS reference file '{aelGlobals.TVS_REFFILE}': {errmsg}")
+				self.session.open(MessageBox, _("Exception error while reading file '%s': %s\nTV Spielfilm services can't be supported at all!" % (aelGlobals.TVS_REFFILE, errmsg)), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
+		else:
+			write_log(f"Error in module 'readMandatoryFiles': TVS reference file '{aelGlobals.TVS_REFFILE}' not found.")
+			msg = _("TV Spielfilm reference file '%s' not found.\nTV Spielfilm services can't be supported at all!\n\nDo you now want to create this reference file starting TVS import?" % aelGlobals.TVS_REFFILE)
+			self.session.openWithCallback(self.TVSimport_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=10, default=False)
+
+	def TVSimport_answer(self, answer):
+		if answer is True:
+			self.key_blue_handler()
 
 	def key_ok_handler(self):
 		current = self["menulist"].getCurrent()
@@ -409,7 +440,8 @@ class AdvancedEventLibrarySetup(Setup):
 #		self["config"].onSelectionChanged.append(self.selectionChanged)
 
 	def keyYellow(self):
-		self.session.open(TVSSetup)
+		pass
+#		self.session.open(TVSSetup)  # TODO: fliegt raus
 
 	def keySelect(self):
 		def keySelectCallback(value):
@@ -598,8 +630,9 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		Screen.__init__(self, session)
 		self.session = session
 		self.skinName = ["TV Spielfilm-Setup", "Setup"]
-		self.title = _("TV Spielfilm-Setup")
 		self.cur = None
+		self.TVSrefDict = {}
+		self.title = _("TV Spielfilm-Setup")
 		self.setup_title = _("TV Spielfilm-Setup")
 		self["title"] = StaticText(self.title)
 		self["footnote"] = StaticText("")
@@ -631,9 +664,9 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 						if servicename not in self.senderlist:
 							self.senderlist.append(servicename)
 						self.senderdict[serviceref] = servicename
-		tvslist = self.get_tvsRefList()  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
-		self.tvsRefList = tvslist[0]
-		self.tvsKeys = tvslist[1]
+#		tvslist = self.get_tvsRefList()  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
+#		self.tvsRefList = tvslist[0] # TODO: entfernen nach Umbau auf neues TVS-System
+#		self.tvsKeys = tvslist[1]  # TODO: entfernen nach Umbau auf neues TVS-System
 		self.configlist = []
 		self.buildConfigList()
 		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
@@ -646,18 +679,19 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		}, -1)
 
 	def key_ok_handler(self):
-		self.cur = self['config'].getCurrent()
-		if self.cur:
-			tvslist = []
-			for sender in self.tvsKeys:  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
-				for k, v in self.tvsRefList.items():
-					if str(sender) == str(k):
-						tvslist.append((k, v))
-						break
-			tvslist.insert(0, (_("unused"), ""))
-			choices, idx = (tvslist, 0)
-			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
-			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title=_("Select reference"), keys=keys, list=choices, selection=idx)
+		pass
+#		self.cur = self['config'].getCurrent()
+#		if self.cur:
+#			tvslist = []
+#			for sender in self.tvsKeys:  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
+#				for k, v in self.tvsRefList.items():
+#					if str(sender) == str(k):
+#						tvslist.append((k, v))
+#						break
+#			tvslist.insert(0, (_("unused"), ""))
+#			choices, idx = (tvslist, 0)
+#			keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+#			self.session.openWithCallback(self.menuCallBack, ChoiceBox, title=_("Select reference"), keys=keys, list=choices, selection=idx)
 
 	def menuCallBack(self, ret=None):
 		if ret and self.cur:
@@ -684,6 +718,9 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 				keyList.append(k)
 			keyList.sort()
 		return (refList, keyList)
+
+	def readTVSrefList(self):
+		pass
 
 	def buildConfigList(self):
 		if self.configlist:
@@ -839,7 +876,6 @@ class Editor(Screen, ConfigListScreen):
 		self.eventOverview = None
 		self.configlist = []
 		ConfigListScreen.__init__(self, self.configlist, session=self.session, on_change=self.changedEntry)
-		self.onShow.append(self.checkDoupleNames)
 		self["myActionMap"] = ActionMap(["AdvancedEventLibraryActions"],
 		{
 			"key_cancel": self.doClose,
@@ -854,6 +890,7 @@ class Editor(Screen, ConfigListScreen):
 			"key_ok": self.key_ok_handler,
 			"key_menu": self.key_menu_handler
 		}, -1)
+		self.onShow.append(self.checkDoupleNames)
 
 	def removeExtension(self, ext):
 		ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
@@ -1530,14 +1567,9 @@ class TVSmakeReferenceFile(Screen):
 		self.onShown.append(self.onShownFinished)
 
 	def onShownFinished(self):
-		if not exists(join(aelGlobals.CONFIGPATH, "tvs_mapping.txt")):
-			write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{aelGlobals.MAPFILE}' not found.")
-			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % aelGlobals.MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
-			self.keyExit()
-		networks = join(aelGlobals.CONFIGPATH, "networks.json")
-		if not exists(networks):
-			write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{networks}' not found.")
-			self.session.open(MessageBox, _("File '%s' not found.\nCan't continue with TVS import!" % networks), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
+		if not exists(aelGlobals.TVS_MAPFILE):
+			write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{aelGlobals.TVS_MAPFILE}' not found.")
+			self.session.open(MessageBox, _("File '%s' not found.\nTV Spielfilm import function can't be supported" % aelGlobals.TVS_MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		self.getAllBouquets()
 
@@ -1641,7 +1673,7 @@ class TVSmakeReferenceFile(Screen):
 
 	def readMappingList(self):  # Lese mapping (=Übersetzungsregeln (TVS-Kanalkürzel: E2-Servicename))
 		maplist = []
-		with open(aelGlobals.MAPFILE, "r") as file:  # lese Zeile-für-Zeile um die fehlerhafte Fehlerzeile zeigen zu können
+		with open(aelGlobals.TVS_MAPFILE, "r") as file:  # lese Zeile-für-Zeile um die fehlerhafte Fehlerzeile zeigen zu können
 			line = "{No line evaluated yet}"
 			try:
 				for line in file.read().replace(",", "").strip().split("\n"):
