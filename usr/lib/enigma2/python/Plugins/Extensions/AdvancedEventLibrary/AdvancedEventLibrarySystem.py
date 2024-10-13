@@ -18,7 +18,7 @@ from base64 import b64decode
 from datetime import datetime
 from glob import glob
 from json import loads, dumps
-from os import rename, makedirs, system, remove, stat, statvfs
+from os import rename, system, remove, stat, statvfs
 from os.path import isfile, getsize, exists, join, basename
 from PIL import Image
 from re import match, compile, IGNORECASE
@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, convert2base64, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, PicLoader, clearMem
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, convert2base64, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, PicLoader
 
 from . import _  # for localized messages
 
@@ -65,6 +65,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def __init__(self, session):
 		self.session = session
 		Screen.__init__(self, session)
+		write_log("##### starting Advanced Event Library GUI #####")
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = f"{_('Advanced-Event-Library Menüauswahl')}: (R{aelGlobals.CURRENTVERSION})"
 		self.memInfo = ""
@@ -103,15 +104,13 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.refreshStatus.callback.append(self.getStatus)
 		self.reload = eTimer()
 		self.reload.callback.append(self.goReload)
-		write_log("##### starting Advanced Event Library GUI #####")
-		self.onLayoutFinish.append(self.onLayoutFinished)
+		self.delayedStart = eTimer()
+		self.delayedStart.callback.append(self.readMandatoryFiles)  # unfortunately necessary, because self.session.open(MessageBox,...) returns a modal error
+		self.onLayoutFinish.append(self.layoutFinished)
 
-	def onLayoutFinished(self):
-		self.readMandatoryFiles()
+	def layoutFinished(self):
+		self.delayedStart.start(250, True)
 		self.getStatus()
-		self.afterInit
-
-	def afterInit(self):
 		self.db = getDB()
 		confdir = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
 		if isfile(confdir):
@@ -228,6 +227,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		return value.strftime('%H:%M:%S')
 
 	def readMandatoryFiles(self):
+		self.delayedStart.stop()
 		if exists(aelGlobals.NETWORKFILE):
 			try:
 				with open(aelGlobals.NETWORKFILE, "r") as file:
@@ -252,7 +252,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		else:
 			write_log(f"Error in module 'readMandatoryFiles': TVS reference file '{aelGlobals.TVS_REFFILE}' not found.")
 			msg = _("TV Spielfilm reference file '%s' not found.\nTV Spielfilm services can't be supported at all!\n\nDo you now want to create this reference file starting TVS import?" % aelGlobals.TVS_REFFILE)
-			self.session.openWithCallback(self.TVSimport_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=10, default=False)
+			self.session.openWithCallback(self.TVSimport_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=10, default=True)
 
 	def TVSimport_answer(self, answer):
 		if answer is True:
@@ -283,9 +283,9 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				self.open_favourites()
 
 	def key_green_handler(self):
-		if exists(join(aelGlobals.CONFIGPATH, "tvs_reflist.json")):
+		if exists(aelGlobals.TVS_REFFILE):
 			self["status"].setText(_("start search run..."))
-			self.createDirs(config.plugins.AdvancedEventLibrary.Location.value)
+			createDirs(config.plugins.AdvancedEventLibrary.Location.value)
 			startUpdate()
 		else:
 			msg = _("The TVS reference file was not found.\nTV Spielfilm can therefore not be supported!\n\nShould a bouquets import be carried out now (recommended)?")
@@ -300,13 +300,6 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 
 	def key_blue_handler(self):
 		self.session.open(TVSmakeReferenceFile)
-
-	def createDirs(self, path):
-		if not exists(path):
-			makedirs(path)
-		for subpath in ["poster/", "cover/", "preview/"]:
-			if not exists(join(path, subpath)):
-				makedirs(join(path, subpath))
 
 	def getStatus(self):
 		self["status"].setText(aelGlobals.STATUS if aelGlobals.STATUS else _("No search is currently running."))
@@ -446,16 +439,11 @@ class AdvancedEventLibrarySetup(Setup):
 	def keySelect(self):
 		def keySelectCallback(value):
 			self.getCurrentItem().value = value
-			#self.createDirs(value) # TODO
+			#createDirs(value) # TODO
 		if self.getCurrentItem() in (config.plugins.AdvancedEventLibrary.Location, config.plugins.AdvancedEventLibrary.dbFolder):
 			self.session.openWithCallback(keySelectCallback, AdvancedEventLibrarySetupLocationBox, currDir=self.getCurrentItem().value)
 			return
 		Setup.keySelect(self)
-
-	def createDirs(self, path):
-		for currpath in [path, f"{path}poster/", f"{path}cover/"]:
-			if not exists(currpath):
-				makedirs(currpath)
 
 	def key_blue_handler(self):
 		if self.myFileListActive:
@@ -726,12 +714,11 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 		if self.configlist:
 			del self.configlist[:]
 		if self.tvsRefList:
-			jsonfile = join(aelGlobals.CONFIGPATH, "tvs_reflist.json")
-			tvsref = self.load_json(jsonfile) if fileExists(jsonfile) else {}
+			aelGlobals.TVS_REFDICT = self.load_json(aelGlobals.TVS_REFFILE) if fileExists(aelGlobals.TVS_REFFILE) else {}
 			for sender in sorted(self.senderlist):
 				for k, v in self.senderdict.items():
 					if str(v) == str(sender):
-						entry = ConfigText(default=tvsref.get(k, ""))
+						entry = ConfigText(default=aelGlobals.TVS_REFDICT.get(k, ""))
 						self.configlist.append(getConfigListEntry(sender, entry))
 						break
 
@@ -1339,12 +1326,10 @@ class Editor(Screen, ConfigListScreen):
 					self.coverList.sort(key=lambda x: x[0], reverse=False)
 					self.cSource = 0
 					self['cList'].setList(self.coverList, 0)
-					i = 0
-					for name in self.coverList:
+					for idx, name in enumerate(self.coverList):
 						if name[0][0] == self.eventTitle.value.lower():
-							self['cList'].moveToIndex(i)
+							self['cList'].moveToIndex(idx)
 							break
-						i += 1
 				else:
 					self.cSource = 1
 					self['cList'].setList(waitList)
@@ -1394,12 +1379,10 @@ class Editor(Screen, ConfigListScreen):
 					self.posterList.sort(key=lambda x: x[0], reverse=False)
 					self.pSource = 0
 					self['pList'].setList(self.posterList, 0)
-					i = 0
-					for name in self.posterList:
+					for idx, name in enumerate(self.posterList):
 						if name[0][0] == self.eventTitle.value.lower():
-							self['pList'].moveToIndex(i)
+							self['pList'].moveToIndex(idx)
 							break
-						i += 1
 				else:
 					self.pSource = 1
 					self['pList'].setList(waitList)
@@ -1542,7 +1525,7 @@ class TVSmakeReferenceFile(Screen):
 	skin = """
 	<screen name="TVSmakeReferenceFile" position="480,90" size="320,540" backgroundColor="#10f5f5f5" flags="wfNoBorder" resolution="1280,720" title="TV Spielfilm">
 		<widget source="headline" render="Label" position="0,0" size="320,60" font="Regular;24" transparent="1" foregroundColor="#00373f43" backgroundColor="#10f5f5f5" halign="center" valign="center" zPosition="3" />
-		<widget source="bouquetslist" render="Listbox" position="0,60" size="320,480" backgroundColor="#10f5f5f5" enableWrapAround="1" scrollbarMode="showNever" scrollbarBorderWidth="2" scrollbarForegroundColor="#10f5f5f5" scrollbarBorderColor="#7e7e7e">
+		<widget source="bouquetslist" render="Listbox" position="0,60" size="320,440" backgroundColor="#10f5f5f5" enableWrapAround="1" scrollbarMode="showNever" scrollbarBorderWidth="2" scrollbarForegroundColor="#10f5f5f5" scrollbarBorderColor="#7e7e7e">
 			<convert type="TemplatedMultiContent">
 				{"template": [
 				MultiContentEntryText(pos=(0,0), size=(320,30), font=0, color="#10152e4e", backcolor="#10f5f5f5", color_sel="#10f5f5f5", backcolor_sel="#10152e4e", flags=RT_HALIGN_CENTER|RT_VALIGN_CENTER, text=0),  # menutext
@@ -1552,21 +1535,29 @@ class TVSmakeReferenceFile(Screen):
 				}
 			</convert>
 		</widget>
+		<eLabel name="blue" position="86,504" size="8,30" backgroundColor="blue" zPosition="1" />
+		<widget name="key_blue" position="100,506" size="210,30" font="Regular;20" foregroundColor="#00373f43" backgroundColor="#10f5f5f5" />
 	</screen>"""
 
 	def __init__(self, session):
 		self.session = session
 		Screen.__init__(self, session)
+		self.mappinglog = join(aelGlobals.LOGPATH, "AEL_TVSmapping.log")
 		self.totaldupes = []
 		self.totalimport = []
 		self.totalunsupp = []
 		self["headline"] = StaticText(_("TV Spielfilm\nBouquets import"))
+		self["key_blue"] = Label(_("check converting rules"))
 		self["bouquetslist"] = List()
-		self['actions'] = ActionMap(['OkCancelActions'], {'ok': self.keyOk,
-														  'cancel': self.keyExit}, -1)
-		self.onShown.append(self.onShownFinished)
+		self["actions"] = ActionMap(["OkCancelActions", "ColorActions"],
+							  {"ok": self.keyOk,
+								"blue": self.keyBlue,
+								"cancel": self.keyExit
+								}, -1)
+		self.onLayoutFinish.append(self.layoutFinished)
+		self.maplist = self.readMappingList()
 
-	def onShownFinished(self):
+	def layoutFinished(self):
 		if not exists(aelGlobals.TVS_MAPFILE):
 			write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{aelGlobals.TVS_MAPFILE}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nTV Spielfilm import function can't be supported" % aelGlobals.TVS_MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
@@ -1575,6 +1566,10 @@ class TVSmakeReferenceFile(Screen):
 
 	def keyExit(self):
 		self.close(False)
+
+	def keyBlue(self):
+		self.checkMappingList()
+		self.session.open(MessageBox, _("Conversion rules in file '%s' have been ckecked.\nThe detailed analysis can be found in the logfile:\n'%s'" % (aelGlobals.TVS_MAPFILE, self.mappinglog)), MessageBox.TYPE_INFO, timeout=10, close_on_any_key=True)
 
 	def keyOk(self):
 		current = self["bouquetslist"].getCurrent()  # e.g. ('Favoriten (TV)', <enigma.eServiceReference; proxy of <Swig Object of type 'eServiceReference *' at 0xa70d46f8> >)
@@ -1606,10 +1601,9 @@ class TVSmakeReferenceFile(Screen):
 			self.getAllBouquets()
 		else:  # create TVS service-, dupes and unsupported JSONs and finish successfully
 			if self.totalimport:
-				reffile = join(aelGlobals.CONFIGPATH, "tvs_reflist.json")
-				with open(f"{reffile}.new", "w") as file:
+				with open(f"{aelGlobals.TVS_REFFILE}.new", "w") as file:
 					file.write(dumps(dict(self.totalimport)))
-				rename(f"{reffile}.new", reffile)
+				rename(f"{aelGlobals.TVS_REFFILE}.new", aelGlobals.TVS_REFFILE)
 			if self.totaldupes:
 				dupesfile = join(aelGlobals.CONFIGPATH, "tvs_dupes.json")
 				with open(f"{dupesfile}.new", 'w') as file:
@@ -1620,6 +1614,7 @@ class TVSmakeReferenceFile(Screen):
 				with open(f"{unsuppfile}.new", 'w') as file:
 					file.write(dumps(dict(self.totalunsupp)))
 				rename(f"{unsuppfile}.new", unsuppfile)
+			self.session.open(MessageBox, _("The bouquet(s) import was successful.\nThe detailed analysis can be found in the logfile:\n'%s'" % f"{aelGlobals.LOGPATH}AEL_TVSbouquets.log"), MessageBox.TYPE_INFO, timeout=10, close_on_any_key=True)
 			self.close(True)
 
 	def getAllBouquets(self):
@@ -1651,12 +1646,11 @@ class TVSmakeReferenceFile(Screen):
 		supported, unsupported, importlist, dupeslist, = [], [], [], []
 		slist = ServiceList(bouquet, validate_commands=False)
 		services = slist.getServicesAsList(format='SN')  # z.B. [('1:0:27:212F:31B:1:FFFF0000:0:0:0:', 'Das Erste HD'), ...]
-		mappinglist = self.readMappingList()
 		for service in services:
 			found = ""
 			sname = service[1].strip()
 			sref = f"{service[0].split("http")[0]}{{IPTV-Stream}}" if "http" in service[0].lower() else service[0]
-			for tvskey, regstr in mappinglist:  # find TVS shortcut for channelname
+			for tvskey, regstr in self.maplist:  # find TVS shortcut for channelname
 				if match(compile(regstr), sname.lower()):
 					found = tvskey
 					break
@@ -1671,9 +1665,9 @@ class TVSmakeReferenceFile(Screen):
 				importlist.append(item)
 		return importlist, dupeslist, unsupported
 
-	def readMappingList(self):  # Lese mapping (=Übersetzungsregeln (TVS-Kanalkürzel: E2-Servicename))
+	def readMappingList(self):  # read mapping (=conversion rules (TVS channel abbreviation: E2 service name))
 		maplist = []
-		with open(aelGlobals.TVS_MAPFILE, "r") as file:  # lese Zeile-für-Zeile um die fehlerhafte Fehlerzeile zeigen zu können
+		with open(aelGlobals.TVS_MAPFILE, "r") as file:  # read line-by-line to show the faulty error line
 			line = "{No line evaluated yet}"
 			try:
 				for line in file.read().replace(",", "").strip().split("\n"):
@@ -1701,3 +1695,52 @@ class TVSmakeReferenceFile(Screen):
 			for item in unsupported:
 				file.write(formatstr.format(*(_("n/a"), item[0], item[1][1])))
 			file.write("\n")
+
+	def checkMappingList(self):  # tool: checks whether conversion rules are missing / obsolete / double in the mapping file
+		maplist = sorted(self.maplist, key=lambda x: x[0])
+		mapkeys = [x[0] for x in maplist]
+		tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9jb250ZW50L2NoYW5uZWwtbGlzdC9saXZldHY=u"[:-1]).decode()
+		errmsg, results = getAPIdata(tvsurl)
+		if errmsg:
+			write_log("API download error in module 'checkMappingList", DEFAULT_MODULE_NAME)
+		if results:
+			reskeys = [x.get("id", _("n/a")).lower() for x in results]
+			formatstr = "{0:<10} {1:<0}\n"
+			with open(self.mappinglog, "w") as file:
+				file.write("Found %s channels that are supported by TV Spielfilm\n" % len(results))
+				file.write(_("\nMissing rules for channels supported by TV Spielfilm: "))
+				notfound = []
+				for service in results:  # search for missing conversion rules
+					shortkey = service.get("id", _("n/a")).lower()
+					if shortkey not in mapkeys:
+						notfound.append((shortkey, service.get("name", _("n/v"))))
+				if notfound:
+					file.write(f"\n{formatstr.format(*(_('shortkey'), _('Channel name')))}")
+					file.write("%s\n" % ('-' * 58))
+					for service in notfound:
+						file.write(formatstr.format(*service))
+				else:
+					file.write(_("{No missing rules found}\n"))
+				file.write(_("\nObsolete rules for channels supported by TV Spielfilm: "))
+				obsolete = []
+				for service in maplist:  # search for obsolete conversion rules
+					if service[0] not in reskeys:
+						obsolete.append((service[0], service[1]))
+				if obsolete:
+					file.write(f"\n{formatstr.format(*(_('shortkey'), _('conversion rule')))}")
+					file.write("%s\n" % ('-' * 58))
+					for service in obsolete:
+						file.write(formatstr.format(*service))
+				else:
+					file.write(_("{No obsolete rules found}\n"))
+				file.write(_("\nDuplicate rules for channels supported by TV Spielfilm: "))
+				double = []
+				for idx in [i for i, x in enumerate(mapkeys) if mapkeys.count(x) > 1]:  # search for duplicate rules and get indexes
+					double.append((maplist[idx][0], maplist[idx][1]))
+				if double:
+					file.write(f"\n{formatstr.format(*(_('shortkey'), _('conversion rule')))}")
+					file.write("%s\n" % ('-' * 58))
+					for service in double:
+						file.write(formatstr.format(*service))
+				else:
+					file.write(_("{No duplicate rules found}\n"))
