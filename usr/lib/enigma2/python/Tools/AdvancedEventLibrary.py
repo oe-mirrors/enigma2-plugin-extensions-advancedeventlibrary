@@ -14,8 +14,9 @@
 # Aenderung (#8): Suche auch bei IPTV
 # Aenderung (#9): Fix Key not in resultDict
 # Aenderung (#10): Serienkennezeichnung 1-4 stellig
-# Aenderung (#11): Global 'aelGlobals.NETWORKS' eingeführt und im Code ausgetauscht
+# Aenderung (#11): Global 'aelGlobals.NETWORKDICT' eingeführt und im Code ausgetauscht
 # Aenderung (#12): POSTERPATH, COVERPATH & PREVIEWPATH im Code umgetauscht, b64decode() mit .decode() ergänzt, TVS-bugfix, Lokalisationen
+# Aenderung (#13): new improved handling for TV Spielfilm
 # ==================================================
 from base64 import b64decode, b64encode
 from datetime import datetime
@@ -83,10 +84,18 @@ config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, li
 config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default=0, choices=[(0, _("Movies")), (1, _("Series")), (2, _("Documentaries")), (3, _("Music")), (4, _("Children")), (5, _("Shows")), (6, _("Sport"))])
+# config.plugins.AdvancedEventLibrary.ExcludedGenres.value.split(',')
 config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default=0, choices=[(0, _("Favorites")), (1, _("All Bouquets"))])
 config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
 config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
+config.plugins.AdvancedEventLibrary.tmdbUsage = ConfigSelection(default=3, choices=[(0, _("off")), (1, _("Data only")), (2, _("Image only")), (3, _("Data+Image"))])
+config.plugins.AdvancedEventLibrary.tvdbUsage = ConfigSelection(default=3, choices=[(0, _("off")), (1, _("Data only")), (2, _("Image only")), (3, _("Data+Image"))])
+config.plugins.AdvancedEventLibrary.omdbUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
+config.plugins.AdvancedEventLibrary.tvsUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
+config.plugins.AdvancedEventLibrary.tvmaszeUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
+config.plugins.AdvancedEventLibrary.tvmovieUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
+config.plugins.AdvancedEventLibrary.bingUsage = ConfigSelection(default=2, choices=[(0, _("off")), (2, _("Image only"))])
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 #not used
@@ -147,9 +156,8 @@ def createDirs(path):
 
 
 def write_log(svalue, module=DEFAULT_MODULE_NAME):
-	logtime = datetime.now().strftime("%T")
-	with open(aelGlobals.LOGFILE, "a") as f:
-		f.write(f"{logtime} : [{module}] - {svalue}\n")
+	with open(aelGlobals.LOGFILE, "a") as file:
+		file.write(f"{datetime.now().strftime("%T")} : [{module}] - {svalue}\n")
 
 
 def getAPIdata(url, params=None):
@@ -492,7 +500,7 @@ def createMovieInfo(db):
 													episoden = epis.all()
 												except Exception:
 													episoden = []
-												if aelGlobals.NETWORKS:
+												if aelGlobals.NETWORKDICT:
 													if episoden:
 														for episode in episoden:
 															if str(episode['episodeName']) in str(ctitle):
@@ -507,8 +515,8 @@ def createMovieInfo(db):
 																		for genre in response['genre']:
 																			titleinfo['genre'] = f"{titleinfo['genre']}{genre}-Serie "
 																	titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-																	if titleinfo['country'] == "" and response['network'] in aelGlobals.NETWORKS:
-																		titleinfo['country'] = aelGlobals.NETWORKS[response['network']]
+																	if titleinfo['country'] == "" and response['network'] in aelGlobals.NETWORKDICT:
+																		titleinfo['country'] = aelGlobals.NETWORKDICT[response['network']]
 																	break
 													else:
 														if response:
@@ -520,8 +528,8 @@ def createMovieInfo(db):
 																	titleinfo['genre'] = f"{titleinfo['genre']}{genre}-Serie "
 															titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
 															if titleinfo['country'] == "":
-																if response['network'] in aelGlobals.NETWORKS:
-																	titleinfo['country'] = aelGlobals.NETWORKS[response['network']]
+																if response['network'] in aelGlobals.NETWORKDICT:
+																	titleinfo['country'] = aelGlobals.NETWORKDICT[response['network']]
 															if 'overview' in response:
 																titleinfo['overview'] = response['overview']
 										if titleinfo['overview'] != "":
@@ -735,9 +743,6 @@ def getallEventsfromEPG():
 	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
 	serviceHandler = eServiceCenter.getInstance()
 	tvbouquets = serviceHandler.list(root).getContent("SN", True)
-	jsonfile = join(aelGlobals.CONFIGPATH, "tvs_reflist.json")
-	tvsref = load_json(jsonfile) if fileExists(jsonfile) else {}
-	write_log(f"TV Spielfilm mapping file '{jsonfile}' successfully loaded" if jsonfile else f"WARNING: could not find TV Spielfilm mapping file '{jsonfile}'")
 	for bouquet in tvbouquets:
 		root = eServiceReference(str(bouquet[0]))
 		serviceHandler = eServiceCenter.getInstance()
@@ -748,7 +753,7 @@ def getallEventsfromEPG():
 				playable = not (eServiceReference(serviceref).flags & mask)
 				# =========== geaendert (#8) =====================
 				if playable and "<n/a>" not in servicename and servicename != "." and serviceref:
-					if serviceref not in tvsref and "%3a" not in serviceref:
+					if serviceref not in aelGlobals.TVS_REFDICT and "%3a" not in serviceref:
 #				if playable and "p%3a" not in serviceref and "<n/a>" not in servicename and servicename != "." and not serviceref.startswith('4097'):
 #					if serviceref not in tvsref:
 				# ===============================================
@@ -794,7 +799,7 @@ def getallEventsfromEPG():
 			names.add(name)
 	write_log(f"check {len(names)} new events")
 	limgs = False if config.plugins.AdvancedEventLibrary.SearchFor.value == 1 else True  # "Extra data only"
-	get_titleInfo(names, None, limgs, db, liveTVRecords, tvsref)
+	get_titleInfo(names, None, limgs, db, liveTVRecords, aelGlobals.TVS_REFDICT)
 	del names
 	del lines
 	del allevents
@@ -1650,8 +1655,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 												titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
 									titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
 									if titleinfo['country'] == "" and response['network'] is not None:
-										if response['network'] in aelGlobals.NETWORKS:
-											titleinfo['country'] = aelGlobals.NETWORKS[response['network']]
+										if response['network'] in aelGlobals.NETWORKDICT:
+											titleinfo['country'] = aelGlobals.NETWORKDICT[response['network']]
 									#===== geaendert (#9) ========
 									#if response['poster'] and loadImages:
 									if response.get('poster', "") and loadImages:
@@ -1666,8 +1671,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							for genre in response['genre']:
 								titleinfo['genre'] = titleinfo['genre'] + genre + '-Serie '
 						titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-						if titleinfo['country'] == "" and response['network'] in aelGlobals.NETWORKS:
-							titleinfo['country'] = aelGlobals.NETWORKS[response['network']]
+						if titleinfo['country'] == "" and response['network'] in aelGlobals.NETWORKDICT:
+							titleinfo['country'] = aelGlobals.NETWORKDICT[response['network']]
 						imdb_id = response['imdbId']
 						if titleinfo['rating'] == "" and response['siteRating'] != "0":
 							titleinfo['rating'] = response['siteRating']
@@ -2606,15 +2611,15 @@ def get_searchResults(title, lang='de'):
 										for genre in response['genre']:
 											genres = genres + genre + '-Serie '
 									genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-									if response['network'] in aelGlobals.NETWORKS:
-										countries = aelGlobals.NETWORKS[response['network']]
+									if response['network'] in aelGlobals.NETWORKDICT:
+										countries = aelGlobals.NETWORKDICT[response['network']]
 								itm = [str(result['seriesName'] + epiname), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
 								resultList.append((itm,))
 								break
 						if response and not foundEpisode and 'overview' in response:
 							desc = response['overview']
-						if response['network'] in aelGlobals.NETWORKS:
-							countries = aelGlobals.NETWORKS[response['network']]
+						if response['network'] in aelGlobals.NETWORKDICT:
+							countries = aelGlobals.NETWORKDICT[response['network']]
 						year = response['firstAired'][:4]
 						for genre in response['genre']:
 							genres = genres + genre + '-Serie '
@@ -2805,7 +2810,6 @@ class AELGlobals:
 			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.18363"
 			]
 	FSKDICT = {"R": "18", "TV-MA": "18", "TV-PG": "16", "TV-14": "12", "TV-Y7": "6", "PG-13": "12", "PG": "6", "G": "16"}
-
 	SPDICT = {}
 	if config.plugins.AdvancedEventLibrary.searchPlaces.value != '':
 		SPDICT = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
@@ -2818,29 +2822,25 @@ class AELGlobals:
 	EXCLUDENAMES = ['RTL UHD', '--', 'Sendeschluss', 'Dokumentation', 'EaZzzy', 'MediaShop', 'Dauerwerbesendung', 'Impressum']
 	APIKEYS = {"tmdb": ["ZTQ3YzNmYzJkYzRlMWMwN2UxNGE4OTc1YjI5MTE1NWI=", "MDA2ZTU5NGYzMzFiZDc1Nzk5NGQwOTRmM2E0ZmMyYWM=", "NTRkMzg1ZjBlYjczZDE0NWZhMjNkNTgyNGNiYWExYzM="],
 		   	"tvdb": ["NTRLVFNFNzFZWUlYM1Q3WA==", "MzRkM2ZjOGZkNzQ0ODA5YjZjYzgwOTMyNjI3ZmE4MTM=", "Zjc0NWRiMDIxZDY3MDQ4OGU2MTFmNjY2NDZhMWY4MDQ="],
-			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]  # ["fd0b9216", "bf911bfc", "9fd71c32"]
-			}
+			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]}  # ["fd0b9216", "bf911bfc", "9fd71c32"]
 	DESKTOPSIZE = getDesktop(0).size()
 	TEMPPATH = "/var/volatile/tmp"
 	# TODO: später wieder auf TEMPPATH setzen
 	# LOGFILE = join(TEMPPATH, "AdvancedEventLibrary.log")
 	LOGPATH = "/home/root/logs/"
-	LOGFILE = join(LOGPATH, "ael_logfile.log")
+	LOGFILE = join(LOGPATH, "ael_debug.log")
 	SKINPATH = resolveFilename(SCOPE_CURRENT_SKIN)  # /usr/share/enigma2/MetrixHD/
 	SHAREPATH = resolveFilename(SCOPE_SKIN_IMAGE)  # /usr/share/enigma2/
 	CONFIGPATH = resolveFilename(SCOPE_CONFIG, "AEL/")  # /etc/enigma2/AEL/
 	PYTHONPATH = eEnv.resolve("${libdir}/enigma2/python/")  # /usr/lib/enigma2/python/
 	PLUGINPATH = resolveFilename(SCOPE_CURRENT_PLUGIN, "Extensions/AdvancedEventLibrary/")  # /usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/
 	SKINPATH = f"{PLUGINPATH}skin/1080/" if DESKTOPSIZE.width() == 1920 else f"{PLUGINPATH}skin/720/"
-	MAPFILE = join(CONFIGPATH, "tvs_mapping.txt")
-	# =========== ergänzt (#11) ======================
-	jsonfile = join(CONFIGPATH, "networks.json")
-	NETWORKS = {}
-	if exists(jsonfile):
-		with open(jsonfile, "r") as file:
-			jsonstr = file.read()
-		NETWORKS = loads(jsonstr)
-	# ================================================
+	NETWORKDICT = {}
+	NETWORKFILE = join(CONFIGPATH, "networks.json")
+	TVS_MAPDICT = {}
+	TVS_MAPFILE = join(CONFIGPATH, "tvs_mapping.txt")
+	TVS_REFDICT = {}
+	TVS_REFFILE = join(CONFIGPATH, "tvs_reflist.json")
 
 	def __init__(self):
 		self.saving = False
