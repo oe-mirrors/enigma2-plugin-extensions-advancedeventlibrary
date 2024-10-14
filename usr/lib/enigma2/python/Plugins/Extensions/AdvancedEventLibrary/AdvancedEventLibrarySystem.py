@@ -133,29 +133,29 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			dbSize = getsize(confdir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
 			blackListCount = self.db.getblackListCount()
-			percent = f"{round(100 * titleCount / (titleCount + blackListCount)) if (titleCount + blackListCount) > 0 else 0} %"
+			percent = round(100 * titleCount / (titleCount + blackListCount)) if (titleCount + blackListCount) > 0 else 0
 			liveTVtitleCount = self.db.getliveTVCount()
 			liveTVidtitleCount = self.db.getliveTVidCount()
-			percentTV = f"{round(100 * liveTVidtitleCount / liveTVtitleCount) if (liveTVidtitleCount + liveTVtitleCount) > 0 else 0} %"
+			percentTV = round(100 * liveTVidtitleCount / liveTVtitleCount) if (liveTVidtitleCount + liveTVtitleCount) > 0 else 0
+			percentlIC = round(100 * int(lasteventInfoCountSuccsess) / int(lasteventInfoCount)) if int(lasteventInfoCount) > 0 else 0
+			percentlaC = round(100 * int(lastadditionalDataCountSuccess) / int(lastadditionalDataCount)) if int(lastadditionalDataCount) > 0 else 0
 			cpS = round(float(posterSize.replace('G', '')) * 1024.0, 2) if 'G' in posterSize else posterSize
 			ccS = round(float(coverSize.replace('G', '')) * 1024.0, 2) if 'G' in coverSize else coverSize
 			pcS = round(float(previewSize.replace('G', '')) * 1024.0, 2) if 'G' in previewSize else previewSize
-			percentlIC = f"{round(100 * int(lasteventInfoCountSuccsess) / int(lasteventInfoCount)) if int(lasteventInfoCount) > 0 else 0} %"
-			percentlaC = f"{round(100 * int(lastadditionalDataCountSuccess) / int(lastadditionalDataCount)) if int(lastadditionalDataCount) > 0 else 0} %"
 			trailers = self.db.getTrailerCount()
 			size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
 			statistic = f"{_('Statistics last search run:')}\n"
 			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
-			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC}\n"
-			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC}\n"
+			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC} %\n"
+			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC} %\n"
 			statistic += f"{_('Executed on:')}\t{lastUpdateStart} h\t{_('Duration:')}\t{lastUpdateDuration} h\n\n"
 			statistic += f"{_('Total statistics:')}\n"
 			statistic += f"{_('Number of posters:')}\t{posterCount} {_('Size:')} {posterSize}\n"
 			statistic += f"{_('Number of previews:')}\t{previewCount} {_('Size:')} {previewSize}\n"
 			statistic += f"{_('Number of trailers:')}\t{trailers}\n"
 			statistic += f"{_('Database size:')}\t{dbSize} KB\n"
-			statistic += f"{_('Entries:')}\t{titleCount} | {blackListCount} | {percent}\n"
-			statistic += f"{_('Extra data:')}\t{liveTVtitleCount} | {liveTVidtitleCount} | {percentTV}\n"
+			statistic += f"{_('Entries:')}\t{'{:5d}'.format(titleCount)} | {'{:5d}'.format(blackListCount)} | {'{:3d}'.format(percent)} %\n"
+			statistic += f"{_('Extra data:')}\t{'{:5d}'.format(liveTVtitleCount)} | {'{:5d}'.format(liveTVidtitleCount)} | {'{:3d}'.format(percentTV)} %\n"
 			statistic += f"{_('Storage space:')}\t{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB\t{_('Inodes used:')}\t{usedInodes}\n"
 			self.statistic = statistic
 			memInfo = f"\n{_('Memory allocation:')}\n{self.getDiskInfo('/')}{self.getMemInfo('Mem')}"
@@ -294,6 +294,8 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def key_green_answer(self, answer):
 		if answer is True:
 			self.key_blue_handler()
+		else:
+			startUpdate()
 
 	def key_yellow_handler(self):
 		callInThread(createBackup)
