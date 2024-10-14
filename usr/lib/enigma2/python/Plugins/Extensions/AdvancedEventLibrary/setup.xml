@@ -50,6 +50,14 @@
 		<item level="0" text="Starter genre:" description="---Startgenre---">config.plugins.AdvancedEventLibrary.Genres</item>
 		<item level="0" text="Prime-Time Start:" description="---Prime-Time Start---">config.plugins.AdvancedEventLibrary.StartTime</item>
 		<item level="0" text="Prime time Duration (minutes):" description="---Prime-Time Dauer (Minuten)---">config.plugins.AdvancedEventLibrary.Duration</item>
+		<item level="0" text="-----Usage of servers---------------------------------------------------------"/>
+		<item level="0" text="TMDb - The Movie Database:" description="Choose how to use the server of TMdb - The Movie Database">config.plugins.AdvancedEventLibrary.tmdbUsage</item>
+		<item level="0" text="TVDb - TV Database:" description="Choose how to use the server of TVDb - TV Database">config.plugins.AdvancedEventLibrary.tvdbUsage</item>
+		<item level="0" text="TVmaze - TVMAZE Database:" description="Choose how to use the server of TVmaze - TVMAZE Database">config.plugins.AdvancedEventLibrary.tvmaszeUsage</item>
+		<item level="0" text="OMDb - Open Media Database:" description="Choose how to use the server of OMDb - Open Media Database">config.plugins.AdvancedEventLibrary.omdbUsage</item>
+		<item level="0" text="TVS - TV Spielfilm Database:" description="Choose how to use the server of TVS - TV Spielfilm Database">config.plugins.AdvancedEventLibrary.tvsUsage</item>
+		<item level="0" text="TVmovie - TV Movie Database:" description="Choose how to use the server of TVmovie - TV Movie Database">config.plugins.AdvancedEventLibrary.tvmovieUsage</item>
+		<item level="0" text="Bing - Microsoft Bing Database:" description="Choose how to use the server of Bing - Microsoft Bing Databas">config.plugins.AdvancedEventLibrary.bingUsage</item>
 	</setup>
 
 	<setup key="AEL-Channel-Selection-Setup" title="AEL-Channel-Selection-Setup">

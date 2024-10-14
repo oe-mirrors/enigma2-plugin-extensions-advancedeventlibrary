@@ -91,9 +91,9 @@ config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20
 config.plugins.AdvancedEventLibrary.Duration = ConfigInteger(default=60, limits=(20, 1440))
 config.plugins.AdvancedEventLibrary.tmdbUsage = ConfigSelection(default=3, choices=[(0, _("off")), (1, _("Data only")), (2, _("Image only")), (3, _("Data+Image"))])
 config.plugins.AdvancedEventLibrary.tvdbUsage = ConfigSelection(default=3, choices=[(0, _("off")), (1, _("Data only")), (2, _("Image only")), (3, _("Data+Image"))])
+config.plugins.AdvancedEventLibrary.tvmaszeUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.omdbUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.tvsUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
-config.plugins.AdvancedEventLibrary.tvmaszeUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.tvmovieUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.bingUsage = ConfigSelection(default=2, choices=[(0, _("off")), (2, _("Image only"))])
 
@@ -310,7 +310,8 @@ def checkUsedSpace(db=None):
 			while i < 100:
 				titles = db.getUnusedTitles()
 				if titles:
-					write_log(f"{(i + 1)}. Cleaning up the storage space.")
+					aelGlobals.setStatus(f"{_('Cleaning up the storage space #{(i + 1)}')}")
+					write_log(f"Cleaning up the storage space #{(i + 1)}")
 					for title in titles:
 						if str(title[1]) not in recordings:
 							for currdir in [f"{aelGlobals.POSTERPATH}{title[0]}", f"{aelGlobals.POSTERPATH}thumbnails/{title[0]}", f"{aelGlobals.COVERPATH}{title[0]}", f"{aelGlobals.COVERPATH}thumbnails/{title[0]}"]:
@@ -324,7 +325,7 @@ def checkUsedSpace(db=None):
 					break
 				i += 1
 			db.vacuumDB()
-			write_log(f"used memory space: {posterSize + coverSize} KB of {maxSize} KB.")
+			write_log(f"finally used memory space: {posterSize + coverSize} KB of {maxSize} KB.")
 
 
 def removeLogs():
@@ -357,11 +358,10 @@ def createMovieInfo(db):
 									titleNyear = convertYearInTitle(title)
 									title = titleNyear[0]
 									jahr = str(titleNyear[1])
-									if title and title != '' and title != ' ':
+									if title and title != ' ':
 										tmdb.API_KEY = get_keys('tmdb')
 										titleinfo = {"title": mtitle, "genre": "", "year": "", "country": "", "overview": ""}
 										aelGlobals.setStatus(f"{_("search meta information for")} {title}")
-										write_log(aelGlobals.STATUS)
 										search = tmdb.Search()
 										res = callLibrary(search.movie, "", query=title, language='de', year=jahr) if jahr != '' else callLibrary(search.movie, "", query=title, language='de')
 										if res and res['results']:
@@ -560,7 +560,7 @@ def createMovieInfo(db):
 												db.addimageBlackList(removeExtension(str(filename)))
 										else:
 											db.addimageBlackList(removeExtension(str(filename)))
-											write_log(f"nothing found for {join(root, filename)}")
+											write_log(f"no meta files found for {join(root, filename)}")
 
 
 def getAllRecords(db):
@@ -740,7 +740,7 @@ def getallEventsfromEPG():
 	aelGlobals.setStatus(_("searching current EPG..."))
 	lines = []
 	mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
-	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
+	root = eServiceReference(f'{service_types_tv} FROM BOUQUET "bouquets.tv" ORDER BY bouquet')
 	serviceHandler = eServiceCenter.getInstance()
 	tvbouquets = serviceHandler.list(root).getContent("SN", True)
 	for bouquet in tvbouquets:
@@ -799,36 +799,34 @@ def getallEventsfromEPG():
 			names.add(name)
 	write_log(f"check {len(names)} new events")
 	limgs = False if config.plugins.AdvancedEventLibrary.SearchFor.value == 1 else True  # "Extra data only"
-	get_titleInfo(names, None, limgs, db, liveTVRecords, aelGlobals.TVS_REFDICT)
+	get_titleInfo(names, None, limgs, db, liveTVRecords)
 	del names
 	del lines
 	del allevents
 	del liveTVRecords
 
 
-def getTVSpielfilm(db, tvsref):
-	evt = 0
-	founded = 0
-	imgcount = 0
-	trailers = 0
+def getTVSpielfilm(db):
+	evt, founded, imgcount, trailers = 0, 0, 0, 0
 	refs = db.getSrefsforUpdate()
 	tcount = db.getUpdateCount()
-	if refs and tvsref:
+	if refs:
+		fulltext = {"U": _("Entertainment"), "SE": _("Series"), "SPO": _("Sport"), "SP": _("Movie"), "KIN": _("Children"), "RE": _("Reportage"), "AND": _("Other")}
 		for sref in refs:
-			if sref in tvsref:
+			if sref in aelGlobals.TVS_REFDICT:
+				print("#####refs:", refs)
 				evt += 1
 				maxDate = db.getMaxAirtimeforUpdate(sref)
 				curDate = db.getMinAirtimeforUpdate(sref)
 				while (int(curDate) - 86400) <= int(maxDate) + 86400:  # while int(curDate) <= int(maxDate) + 86400:
 					curDatefmt = datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")
-					aelGlobals.setStatus(f"({evt}/{len(refs)}) {_('search')} {tvsref[sref][1]} {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({founded}/{tcount} | {imgcount})")
+					aelGlobals.setStatus(f"({evt}/{len(refs)}) {_('search')} {aelGlobals.TVS_REFDICT[sref][1]} {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({founded}/{tcount} | {imgcount})")
 					tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
-					errmsg, res = getAPIdata(f"{tvsurl}{tvsref[sref][0].upper()}/{curDatefmt}")
+					errmsg, res = getAPIdata(f"{tvsurl}{aelGlobals.TVS_REFDICT[sref][0].upper()}/{curDatefmt}")
 					if errmsg:
 						write_log("API download error in module 'getTVSpielfilm'")
 					if res:
 						lastImage = ""
-						fulltext = {"U": _("Entertainment"), "SE": _("Series"), "SPO": _("Sport"), "SP": _("Movie"), "KIN": _("Children"), "RE": _("Reportage"), "AND": _("Other")}
 						for event in res:
 							airtime = event.get("timestart", 0)
 							eid = event.get("id", "")
@@ -851,13 +849,15 @@ def getTVSpielfilm(db, tvsref):
 								ratingPoints += int(currrating * 3.33)
 								ratingAmount += 1
 							rating = str(round(float(ratingPoints / ratingAmount), 1)) if ratingAmount else 0
-							imdb = event.get("videos", [{}])[0].get("video", [{}])[0].get("url", [{}])
-							if imdb and db.checkTitle(convert2base64(title)):
-								db.updateTrailer(imdb, convert2base64(title))
+							video = event.get("videos", [{}])[0].get("video", [{}])[0].get("url", [{}])
+							if video and db.checkTitle(convert2base64(title)):
+								db.updateTrailer(video, convert2base64(title))
+							imdb = ""  # TODO: imdb is no more supported by TVS
 							if not db.checkTitle(convert2base64(title)) and categoryName == "Spielfilm":
 								db.addTitleInfo(convert2base64(title), title, genre, year, rating, fsk, country, imdb)
 							if db.checkTitle(convert2base64(title)):
 								data = db.getTitleInfo(convert2base64(title))
+								print("#####db.getTitleInfo:", data)
 								if genre and data[2]:
 									db.updateSingleEventInfo('genre', genre, convert2base64(title))
 								if year and data[3]:
@@ -884,7 +884,7 @@ def getTVSpielfilm(db, tvsref):
 							db.updateliveTVS(eid, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb, sref, airtime, title)
 							founded = tcount - db.getUpdateCount()
 							if founded == success:
-								write_log(f"no matches found for {title} on {tvsref[sref][1]} at {datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")} with TV-Spielfilm")
+								write_log(f"no matches found for {title} on {aelGlobals.TVS_REFDICT[sref][1]} at {datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")} with TV-Spielfilm")
 							if founded > success and imdb != "":
 								trailers += 1
 							if founded > success and bld != "" and config.plugins.AdvancedEventLibrary.SearchFor.value != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
@@ -893,7 +893,7 @@ def getTVSpielfilm(db, tvsref):
 									if downloadTVSImage(bld, imgpath):
 										imgcount += 1
 										lastImage = image
-					curDate = curDate + 86400
+					curDate += 86400
 	write_log(f"have updated {founded} events from TV-Spielfilm")
 	write_log(f"have downloaded {imgcount} images from TV-Spielfilm")
 	write_log(f"have found {trailers} trailers on TV-Spielfilm")
@@ -944,64 +944,45 @@ def getTVMovie(db, secondRun=False):
 						airtime = int(mktime(datetime.strptime(str(event['airTime']), '%Y-%m-%d %H:%M:%S').timetuple()))
 					if airtime <= db.getMaxAirtime(title[0]):
 						nothingfound = False
-						tid, subtitle, image, year, fsk, rating, leadText, conclusion, categoryName, season, episode, genre, country, imdb = "", "", "", "", "", "", "", "", "", "", "", "", "", ""
-						if 'id' in event:
-							tid = str(event['id'])
-						if 'previewImage' in event:
-							image = event['previewImage']['id']
-						if 'genreName' in event:
-							genre = event['genreName']
-						if 'categoryName' in event:
-							categoryName = event['categoryName']
-						if 'productionYear' in event:
-							year = event['productionYear']
-						if 'countryOfProduction' in event:
-							country = event['countryOfProduction']
-						if 'ageRating' in event and 'Unbekannt' not in str(event['ageRating']):
-							if 'OhneAlter' in str(event['ageRating']):
-								fsk = '0'
-							elif 'KeineJugend' in str(event['ageRating']):
-								fsk = '18'
-							else:
-								fsk = event['ageRating']
-						if 'season' in event:
-							season = event['season']
-						if 'episode' in event:
-							episode = event['episode']
-						if 'subTitle' in event and 'None' not in str(event['subTitle']):
-							subtitle = event['subTitle']
-						if 'leadText' in event:
-							leadText = event['leadText']
-						if 'conclusion' in event:
-							conclusion = event['conclusion']
-						if 'movieStarValue' in event:
-							rating = str(int(event['movieStarValue'] * 2))
-#						rating = ""
-#						if 'imdbId' in event:
-#							imdb = event['imdbId']
+						tid = event.get("id", "")
+						image = event.get("previewImage", {}).get("id", "")
+						genre = event.get("genreName", "")
+						categoryName = event.get("categoryName", "")
+						year = event.get("productionYear", "")
+						country = event.get("countryOfProduction", "")
+						ageRating = event.get("ageRating", "")
+						fsk = {"OhneAlter": "0", "KeineJugend": "18", "Unbekannt": ""}.get(ageRating, "")
+						fsk = ageRating if not fsk else fsk
+						season = event.get("season", "")
+						episode = event.get("episode", "")
+						subtitle = event.get("subTitle", "").replace("None", "")
+						leadText = event.get("leadText", "")
+						conclusion = event.get("conclusion", "")
+						rating = str(round(event.get("movieStarValue", 0) * 2))
+						imdb = event.get("imdbId", "")
 						if not db.checkTitle(convert2base64(title[0])) and categoryName == "Spielfilm":
 							db.addTitleInfo(convert2base64(title[0]), title[0], genre, year, rating, fsk, country, imdb)
 						if db.checkTitle(convert2base64(title[0])):
 							data = db.getTitleInfo(convert2base64(title[0]))
-							if genre != "" and data[2] == "":
+							if genre and not data[2]:
 								db.updateSingleEventInfo('genre', genre, convert2base64(title[0]))
-							if year != "" and data[3] == "":
+							if year and not data[3]:
 								db.updateSingleEventInfo('year', year, convert2base64(title[0]))
-							if rating != "" and data[4] == "":
+							if rating and not data[4]:
 								db.updateSingleEventInfo('rating', rating, convert2base64(title[0]))
-							if fsk != "" and data[5] == "":
+							if fsk and not data[5]:
 								db.updateSingleEventInfo('fsk', fsk, convert2base64(title[0]))
-							if country != "" and data[5] == "":
+							if country and not data[5]:
 								db.updateSingleEventInfo('country', country, convert2base64(title[0]))
 						bld = ""
-						if image != "" and config.plugins.AdvancedEventLibrary.SearchFor.value != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
+						if image and config.plugins.AdvancedEventLibrary.SearchFor.value != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
 							bld = image
-							imgname = title[0] + ' - '
-							if season != "":
+							imgname = f"{title[0]} - "
+							if season:
 								imgname += f"S{season.zfill(2)}"
-							if episode != "":
+							if episode:
 								imgname += f"E{episode.zfill(2)} - "
-							if subtitle != "":
+							if subtitle:
 								imgname += f"{subtitle} - "
 							image = imgname[:-3]
 						else:
@@ -1011,12 +992,12 @@ def getTVMovie(db, secondRun=False):
 						founded = tcount - db.getUpdateCount()
 						if founded > success and bld != "" and config.plugins.AdvancedEventLibrary.SearchFor.value != 1 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and str(image) != str(lastImage):
 							if len(convert2base64(image)) < 255:
-								imgpath = aelGlobals.COVERPATH + convert2base64(image) + '.jpg'
+								imgpath = f"{aelGlobals.COVERPATH}{convert2base64(image)}.jpg"
 								if downloadTVMovieImage(bld, imgpath):
 									imgcount += 1
 									lastImage = image
 			if nothingfound:
-				write_log(f"nothing found on TV-Movie for {title[0]}")
+				write_log(f"nothing found on TV-Movie for '{title[0]}'")
 	write_log(f"have updated {founded} events from TV-Movie")
 	write_log(f"have downloaded {imgcount} images from TV-Movie")
 	if not secondRun:
@@ -1028,86 +1009,85 @@ def getTVMovie(db, secondRun=False):
 	del failedNames
 
 
-def correctTitleName(tvname):
-	if 'CSI: New York' in tvname:
-		tvname = 'CSI: NY'
-	elif 'CSI: Vegas' in tvname:
-		tvname = 'CSI: Den Tätern auf der Spur'
-	elif 'Star Trek - Das n' in tvname:
-		tvname = 'Raumschiff Enterprise - Das nächste Jahrhundert'
-	elif 'SAT.1-Fr' in tvname:
-		tvname = 'Sat.1-Frühstücksfernsehen'
-	elif 'Gefragt - Gejagt' in tvname:
-		tvname = 'Gefragt Gejagt'
-	elif 'nder - Menschen - Abenteuer' in tvname:
-		tvname = 'Länder Menschen Abenteuer'
-	elif 'Land - Liebe - Luft' in tvname:
-		tvname = 'Land Liebe Luft'
-	elif 'Stadt - Land - Quiz' in tvname:
-		tvname = 'Stadt Land Quiz'
-	elif 'Peppa Pig' in tvname:
-		tvname = 'Peppa'
-	elif 'Scooby-Doo!' in tvname:
-		tvname = 'Scooby-Doo'
-	elif 'ZDF SPORTreportage' in tvname:
-		tvname = 'Sportreportage'
-	elif 'The Garfield ShowT' in tvname:
-		tvname = 'The Garfield Show'
-	elif 'ProSieben S' in tvname:
-		tvname = 'Spätnachrichten'
-	elif 'Explosiv - Weekend' in tvname:
-		tvname = 'Explosiv Weekend'
-	elif 'Exclusiv - Weekend' in tvname:
-		tvname = 'Exclusiv Weekend'
-	elif 'Exclusiv - Das Starmagazin' in tvname:
-		tvname = 'Exclusiv - Das Star-Magazin'
-	elif 'Krass Schule - Die jungen Lehrer - Wie alles begann' in tvname:
-		tvname = 'Krass Schule - Die jungen Lehrer'
-	elif 'Die Megaschiff-Bauer' in tvname:
-		tvname = 'Die Megaschiffbauer'
-	elif 'Stargate: Atlantis' in tvname:
-		tvname = 'Stargate Atlantis'
-	elif 'Mega-Bauwerke' in tvname:
-		tvname = 'Megastructures'
-	elif 'Das Universum' in tvname:
-		tvname = 'Das Universum - Eine Reise durch Raum und Zeit'
-	elif 'Die wilden Siebziger' in tvname or 'Die Wilden Siebziger' in tvname:
-		tvname = 'Die wilden 70er'
-	elif 'MDR um 2' in tvname:
-		tvname = 'MDR um zwei'
-	elif 'MDR um 4' in tvname:
-		tvname = 'MDR um vier'
-	elif 'MDR um 11' in tvname:
-		tvname = 'MDR um elf'
-	elif 'MDR SACHSEN-ANHALT HEUTE' in tvname:
-		tvname = 'MDR Regional'
-	elif 'MDR SACHSENSPIEGEL' in tvname:
-		tvname = 'MDR Regional'
-	elif 'RINGEN JOURNAL' in tvname:
-		tvname = 'MDR Regional'
-	elif 'Geo Reportage' in tvname or 'GEO Reportage' in tvname:
-		tvname = '360 Geo-Reportage'
-	elif '7 Tage' in tvname:
-		tvname = '7 Tage'
-	elif 'Die Brot-Piloten' in tvname:
-		tvname = 'Die Brotpiloten'
-	elif 'Die UFO-Akten' in tvname:
-		tvname = 'Die geheimen UFO-Akten - Besuch aus dem All'
-	elif 'Dragons - Die W' in tvname:
-		tvname = 'DreamWorks: Die Drachenreiter von Berk'
-	elif 'Jim Hensons: Doozers' in tvname:
-		tvname = 'Doozers'
-	elif 'Lecker aufs Land' in tvname:
-		tvname = 'Lecker aufs Land - eine kulinarische Reise'
-	elif 'Schloss Einstein' in tvname:
-		tvname = 'Schloss Einstein'
-	elif 'Heiter bis t' in tvname:
-		if tvname.find(': ') > 0:
-			tvname = tvname[tvname.find(': ') + 2:].strip()
-		elif tvname.find(' - ') > 0:
-			tvname = tvname[tvname.find(' - ') + 3:].strip()
-	return tvname.replace(' & ', ' ')
-
+#def correctTitleName(tvname):
+#	if 'CSI: New York' in tvname:
+#		tvname = 'CSI: NY'
+#	elif 'CSI: Vegas' in tvname:
+#		tvname = 'CSI: Den Tätern auf der Spur'
+#	elif 'Star Trek - Das n' in tvname:
+#		tvname = 'Raumschiff Enterprise - Das nächste Jahrhundert'
+#	elif 'SAT.1-Fr' in tvname:
+#		tvname = 'Sat.1-Frühstücksfernsehen'
+#	elif 'Gefragt - Gejagt' in tvname:
+#		tvname = 'Gefragt Gejagt'
+#	elif 'nder - Menschen - Abenteuer' in tvname:
+#		tvname = 'Länder Menschen Abenteuer'
+#	elif 'Land - Liebe - Luft' in tvname:
+#		tvname = 'Land Liebe Luft'
+#	elif 'Stadt - Land - Quiz' in tvname:
+#		tvname = 'Stadt Land Quiz'
+#	elif 'Peppa Pig' in tvname:
+#		tvname = 'Peppa'
+#	elif 'Scooby-Doo!' in tvname:
+#		tvname = 'Scooby-Doo'
+#	elif 'ZDF SPORTreportage' in tvname:
+#		tvname = 'Sportreportage'
+#	elif 'The Garfield ShowT' in tvname:
+#		tvname = 'The Garfield Show'
+#	elif 'ProSieben S' in tvname:
+#		tvname = 'Spätnachrichten'
+#	elif 'Explosiv - Weekend' in tvname:
+#		tvname = 'Explosiv Weekend'
+#	elif 'Exclusiv - Weekend' in tvname:
+#		tvname = 'Exclusiv Weekend'
+#	elif 'Exclusiv - Das Starmagazin' in tvname:
+#		tvname = 'Exclusiv - Das Star-Magazin'
+#	elif 'Krass Schule - Die jungen Lehrer - Wie alles begann' in tvname:
+#		tvname = 'Krass Schule - Die jungen Lehrer'
+#	elif 'Die Megaschiff-Bauer' in tvname:
+#		tvname = 'Die Megaschiffbauer'
+#	elif 'Stargate: Atlantis' in tvname:
+#		tvname = 'Stargate Atlantis'
+#	elif 'Mega-Bauwerke' in tvname:
+#		tvname = 'Megastructures'
+#	elif 'Das Universum' in tvname:
+#		tvname = 'Das Universum - Eine Reise durch Raum und Zeit'
+#	elif 'Die wilden Siebziger' in tvname or 'Die Wilden Siebziger' in tvname:
+#		tvname = 'Die wilden 70er'
+#	elif 'MDR um 2' in tvname:
+#		tvname = 'MDR um zwei'
+#	elif 'MDR um 4' in tvname:
+#		tvname = 'MDR um vier'
+#	elif 'MDR um 11' in tvname:
+#		tvname = 'MDR um elf'
+#	elif 'MDR SACHSEN-ANHALT HEUTE' in tvname:
+#		tvname = 'MDR Regional'
+#	elif 'MDR SACHSENSPIEGEL' in tvname:
+#		tvname = 'MDR Regional'
+#	elif 'RINGEN JOURNAL' in tvname:
+#		tvname = 'MDR Regional'
+#	elif 'Geo Reportage' in tvname or 'GEO Reportage' in tvname:
+#		tvname = '360 Geo-Reportage'
+#	elif '7 Tage' in tvname:
+#		tvname = '7 Tage'
+#	elif 'Die Brot-Piloten' in tvname:
+#		tvname = 'Die Brotpiloten'
+#	elif 'Die UFO-Akten' in tvname:
+#		tvname = 'Die geheimen UFO-Akten - Besuch aus dem All'
+#	elif 'Dragons - Die W' in tvname:
+#		tvname = 'DreamWorks: Die Drachenreiter von Berk'
+#	elif 'Jim Hensons: Doozers' in tvname:
+#		tvname = 'Doozers'
+#	elif 'Lecker aufs Land' in tvname:
+#		tvname = 'Lecker aufs Land - eine kulinarische Reise'
+#	elif 'Schloss Einstein' in tvname:
+#		tvname = 'Schloss Einstein'
+#	elif 'Heiter bis t' in tvname:
+#		if tvname.find(': ') > 0:
+#			tvname = tvname[tvname.find(': ') + 2:].strip()
+#		elif tvname.find(' - ') > 0:
+#			tvname = tvname[tvname.find(' - ') + 3:].strip()
+#	return tvname.replace(' & ', ' ')
 
 def convertTitle(name):
 	if name.find(' (') > 0:
@@ -1172,10 +1152,10 @@ def findEpisode(title):
 
 def convertSearchName(eventName):
 	eventName = removeExtension(eventName)
-	try:
-		text = eventName.replace('\x86', '').replace('\x87', '')
-	except Exception:
-		text = eventName.replace(b'\x86', b'').replace(b'\x87', b'')
+#	try:
+	text = eventName.replace('\x86', '').replace('\x87', '')
+#	except Exception:
+#		text = eventName.replace(b'\x86', b'').replace(b'\x87', b'')
 	return text
 
 
@@ -1391,141 +1371,156 @@ def createSingleThumbnail(src, dest):
 	img = None
 
 
-def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[], tvsref=None, lang="de"):
+def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=[], lang="de"):
 	tvdbV4 = get_TVDb()
 	if not tvdbV4:
 		write_log("TVDb API-V4 is not in use!")
-	posters = 0
-	covers = 0
-	entrys = 0
-	blentrys = 0
-	position = 0
-	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
+	posters, covers, entrys, blentrys, position = 0, 0, 0, 0, 0
 	for title in titles:
-		if title and title != '' and title != ' ' and 'BL:' not in title:
-			tmdb.API_KEY = get_keys('tmdb')
-			tvdb.KEYS.API_KEY = get_keys('tvdb')
+		if title and title != ' ' and 'BL:' not in title:
 			titleinfo = {"title": "", "genre": "", "poster_url": "", "backdrop_url": "", "year": "", "rating": "", "fsk": "", "country": ""}
 			titleinfo['title'] = convertSearchName(title)
 			titleNyear = convertYearInTitle(title)
 			title = convertSearchName(titleNyear[0])
 			jahr = str(titleNyear[1])
 			position += 1
-			org_name = None
-			imdb_id = None
-			omdb_image = None
-			foundAsMovie = False
-			foundAsSeries = False
-			aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})")
-			write_log(f"looking for {title} on themoviedb movie")
-			search = tmdb.Search()
-			res = callLibrary(search.movie, "", query=title, language='de', year=jahr) if jahr != '' else callLibrary(search.movie, "", query=title, language='de')
-			#===== geaendert (#9) ========
-			#if res['results']:
-			if res and res.get('results', ""):
-			# =============================
-				reslist = []
-				for item in res['results']:
-					if 'love blows' not in str(item['title'].lower()):
-						reslist.append(item['title'].lower())
-				bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-				if not bestmatch:
-					bestmatch = [title.lower()]
-				for item in res['results']:
-					if item['title'].lower() == bestmatch[0]:
-						foundAsMovie = True
-						write_log(f"found {bestmatch[0]} for {title.lower()} on themoviedb movie")
-						#===== geaendert (#9) ========
-						#if item['original_title']:
-						if item.get('original_title', ""):
-						# =============================
-							org_name = item['original_title']
-						#===== geaendert (#9) ========
-						#if item['poster_path'] and loadImages:
-						if item.get('poster_path', "") and loadImages:
-						# =============================
-							if item['poster_path'].endswith('.jpg'):
-								titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
-						#===== geaendert (#9) ========
-						#if item['backdrop_path'] and loadImages:
-						if item.get('backdrop_path', "") and loadImages:
-						# =============================
-							if item['backdrop_path'].endswith('.jpg'):
-								titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
-						if 'release_date' in item:
-							titleinfo['year'] = item['release_date'][:4]
-						#===== geaendert (#9) ========
-						#if item['genre_ids']
-						if item.get('genre_ids', ""):
-						# =============================
-							for genre in item['genre_ids']:
-								if aelGlobals.TMDB_GENRES[genre] not in titleinfo['genre']:
-									titleinfo['genre'] = titleinfo['genre'] + aelGlobals.TMDB_GENRES[genre] + ' '
-						if 'vote_average' in item and item['vote_average'] != "0":
-							titleinfo['rating'] = str(item['vote_average'])
-						if 'id' in item:
-							details = tmdb.Movies(item['id'])
-							#===== hinzugefuegt try (#9) ========
-							try:
-								for country in details.releases(language='de')['countries']:
-									if str(country['iso_3166_1']) == "DE":
-										titleinfo['fsk'] = str(country['certification'])
-										break
-								for country in details.info(language='de')['production_countries']:
-									titleinfo['country'] = titleinfo['country'] + country['iso_3166_1'] + " | "
-								titleinfo['country'] = titleinfo['country'][:-3]
-								imdb_id = details.info(language='de')['imdb_id']
-							except Exception as ex:
-								pass
-							# =====================
-							if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
-								if not titleinfo['backdrop_url'].startswith('http'):
-									showimgs = details.images(language='de')['backdrops']
-									if showimgs:
-										titleinfo['backdrop_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
-								if not titleinfo['poster_url'].startswith('http'):
-									showimgs = details.images(language='de')['posters']
-									if showimgs:
-										titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
-						break
-			if not foundAsMovie:
-				aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
-				write_log(f"looking for {str(title)} on themoviedb tv")
+			org_name, imdb_id, omdb_image = None, None, None
+			foundAsMovie, foundAsSeries = False, False
+			# TMDBmovie dataserver
+			if config.plugins.AdvancedEventLibrary.tmdbUsage.value & 1:
+				tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
+				aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				write_log(f"looking for {title} on themoviedb movie")
+				tmdb.API_KEY = get_keys('tmdb')
 				search = tmdb.Search()
-				searchName = findEpisode(title)
-				if searchName:
-					res = callLibrary(search.tv, None, query=searchName[2], language='de', year=jahr, include_adult=True, search_type='ngram')
-				else:
-					res = callLibrary(search.tv, None, query=title, language='de', year=jahr)
-				if res and res['results']:
+				res = callLibrary(search.movie, "", query=title, language='de', year=jahr) if jahr != '' else callLibrary(search.movie, "", query=title, language='de')
+				#===== geaendert (#9) ========
+				#if res['results']:
+				if res and res.get('results', ""):
+				# =============================
 					reslist = []
 					for item in res['results']:
-						if 'love blows' not in str(item['name'].lower()):
-							reslist.append(item['name'].lower())
-					if searchName:
-						bestmatch = get_close_matches(searchName[2].lower(), reslist, 1, 0.7)
-						if not bestmatch:
-							bestmatch = [searchName[2].lower()]
-					else:
-						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-						if not bestmatch:
-							bestmatch = [title.lower()]
+						if 'love blows' not in str(item['title'].lower()):
+							reslist.append(item['title'].lower())
+					bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+					if not bestmatch:
+						bestmatch = [title.lower()]
 					for item in res['results']:
-						if item['name'].lower() == bestmatch[0]:
-							foundAsSeries = True
-							write_log(f"found ' {bestmatch[0]} for {title.lower()} on themoviedb tv")
-							if searchName:
-								details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
-								if details:
-									epi = details.info(language='de')
-									#imgs = details.images(language='de')
-									if 'air_date' in epi:
-										titleinfo['year'] = epi['air_date'][:4]
-									if 'vote_average' in epi:
-										titleinfo['rating'] = epi['vote_average']
-									if epi['still_path'] and loadImages:
-										if epi['still_path'].endswith('.jpg'):
-											titleinfo['backdrop_url'] = f"{tmdburl}{epi['still_path']}"
+						if item['title'].lower() == bestmatch[0]:
+							foundAsMovie = True
+							write_log(f"found {bestmatch[0]} for {title.lower()} on themoviedb movie")
+							#===== geaendert (#9) ========
+							#if item['original_title']:
+							if item.get('original_title', ""):
+							# =============================
+								org_name = item['original_title']
+							#===== geaendert (#9) ========
+							#if item['poster_path'] and loadImages:
+							if item.get('poster_path', "") and loadImages:
+							# =============================
+								if item['poster_path'].endswith('.jpg'):
+									titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
+							#===== geaendert (#9) ========
+							#if item['backdrop_path'] and loadImages:
+							if item.get('backdrop_path', "") and loadImages:
+							# =============================
+								if item['backdrop_path'].endswith('.jpg'):
+									titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
+							if 'release_date' in item:
+								titleinfo['year'] = item['release_date'][:4]
+							#===== geaendert (#9) ========
+							#if item['genre_ids']
+							if item.get('genre_ids', ""):
+							# =============================
+								for genre in item['genre_ids']:
+									if aelGlobals.TMDB_GENRES[genre] not in titleinfo['genre']:
+										titleinfo['genre'] = titleinfo['genre'] + aelGlobals.TMDB_GENRES[genre] + ' '
+							if 'vote_average' in item and item['vote_average'] != "0":
+								titleinfo['rating'] = str(item['vote_average'])
+							if 'id' in item:
+								details = tmdb.Movies(item['id'])
+								#===== hinzugefuegt try (#9) ========
+								try:
+									for country in details.releases(language='de')['countries']:
+										if str(country['iso_3166_1']) == "DE":
+											titleinfo['fsk'] = str(country['certification'])
+											break
+									for country in details.info(language='de')['production_countries']:
+										titleinfo['country'] = titleinfo['country'] + country['iso_3166_1'] + " | "
+									titleinfo['country'] = titleinfo['country'][:-3]
+									imdb_id = details.info(language='de')['imdb_id']
+								except Exception as ex:
+									pass
+								# =====================
+								if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
+									if not titleinfo['backdrop_url'].startswith('http'):
+										showimgs = details.images(language='de')['backdrops']
+										if showimgs:
+											titleinfo['backdrop_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
+									if not titleinfo['poster_url'].startswith('http'):
+										showimgs = details.images(language='de')['posters']
+										if showimgs:
+											titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
+							break
+				if not foundAsMovie:
+					# TMDBtv dataserver
+					aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+					write_log(f"looking for {str(title)} on themoviedb tv")
+					search = tmdb.Search()
+					searchName = findEpisode(title)
+					if searchName:
+						res = callLibrary(search.tv, None, query=searchName[2], language='de', year=jahr, include_adult=True, search_type='ngram')
+					else:
+						res = callLibrary(search.tv, None, query=title, language='de', year=jahr)
+					if res and res['results']:
+						reslist = []
+						for item in res['results']:
+							if 'love blows' not in str(item['name'].lower()):
+								reslist.append(item['name'].lower())
+						if searchName:
+							bestmatch = get_close_matches(searchName[2].lower(), reslist, 1, 0.7)
+							if not bestmatch:
+								bestmatch = [searchName[2].lower()]
+						else:
+							bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+							if not bestmatch:
+								bestmatch = [title.lower()]
+						for item in res['results']:
+							if item['name'].lower() == bestmatch[0]:
+								foundAsSeries = True
+								write_log(f"found ' {bestmatch[0]} for {title.lower()} on themoviedb tv")
+								if searchName:
+									details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
+									if details:
+										epi = details.info(language='de')
+										#imgs = details.images(language='de')
+										if 'air_date' in epi:
+											titleinfo['year'] = epi['air_date'][:4]
+										if 'vote_average' in epi:
+											titleinfo['rating'] = epi['vote_average']
+										if epi['still_path'] and loadImages:
+											if epi['still_path'].endswith('.jpg'):
+												titleinfo['backdrop_url'] = f"{tmdburl}{epi['still_path']}"
+										#===== geaendert (#9) ========
+										#if item['origin_country']
+										if item.get('origin_country', ""):
+										# =============================
+											for country in item['origin_country']:
+												titleinfo['country'] = titleinfo['country'] + country + ' | '
+											titleinfo['country'] = titleinfo['country'][:-3]
+										#===== geaendert (#9) ========
+										#if item['genre_ids']
+										if item.get('genre_ids', ""):
+										# =============================
+											for genre in item['genre_ids']:
+												if aelGlobals.TMDB_GENRES[genre] not in titleinfo['genre']:
+													titleinfo['genre'] = titleinfo['genre'] + aelGlobals.TMDB_GENRES[genre] + '-Serie '
+								else:
+									#===== geaendert (#9) ========
+									#if item['original_name']
+									if item.get('original_name', ""):
+									# =============================
+										org_name = item['original_name']
 									#===== geaendert (#9) ========
 									#if item['origin_country']
 									if item.get('origin_country', ""):
@@ -1534,75 +1529,57 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											titleinfo['country'] = titleinfo['country'] + country + ' | '
 										titleinfo['country'] = titleinfo['country'][:-3]
 									#===== geaendert (#9) ========
+									#if item['poster_path'] and loadImages:
+									if item.get('poster_path', "") and loadImages:
+									# =============================
+										if item['poster_path'].endswith('.jpg'):
+											titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
+									#===== geaendert (#9) ========
+									#if item['backdrop_path'] and loadImages:
+									if item.get('backdrop_path', "") and loadImages:
+									# =============================
+										if item['backdrop_path'].endswith('.jpg'):
+											titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
+									if 'first_air_date' in item:
+										titleinfo['year'] = item['first_air_date'][:4]
+									#===== geaendert (#9) ========
 									#if item['genre_ids']
 									if item.get('genre_ids', ""):
 									# =============================
 										for genre in item['genre_ids']:
 											if aelGlobals.TMDB_GENRES[genre] not in titleinfo['genre']:
 												titleinfo['genre'] = titleinfo['genre'] + aelGlobals.TMDB_GENRES[genre] + '-Serie '
-							else:
-								#===== geaendert (#9) ========
-								#if item['original_name']
-								if item.get('original_name', ""):
-								# =============================
-									org_name = item['original_name']
-								#===== geaendert (#9) ========
-								#if item['origin_country']
-								if item.get('origin_country', ""):
-								# =============================
-									for country in item['origin_country']:
-										titleinfo['country'] = titleinfo['country'] + country + ' | '
-									titleinfo['country'] = titleinfo['country'][:-3]
-								#===== geaendert (#9) ========
-								#if item['poster_path'] and loadImages:
-								if item.get('poster_path', "") and loadImages:
-								# =============================
-									if item['poster_path'].endswith('.jpg'):
-										titleinfo['poster_url'] = f"{tmdburl}{item['poster_path']}"
-								#===== geaendert (#9) ========
-								#if item['backdrop_path'] and loadImages:
-								if item.get('backdrop_path', "") and loadImages:
-								# =============================
-									if item['backdrop_path'].endswith('.jpg'):
-										titleinfo['backdrop_url'] = f"{tmdburl}{item['backdrop_path']}"
-								if 'first_air_date' in item:
-									titleinfo['year'] = item['first_air_date'][:4]
-								#===== geaendert (#9) ========
-								#if item['genre_ids']
-								if item.get('genre_ids', ""):
-								# =============================
-									for genre in item['genre_ids']:
-										if aelGlobals.TMDB_GENRES[genre] not in titleinfo['genre']:
-											titleinfo['genre'] = titleinfo['genre'] + aelGlobals.TMDB_GENRES[genre] + '-Serie '
-								if 'vote_average' in item and item['vote_average'] != "0":
-									titleinfo['rating'] = str(item['vote_average'])
-								if 'id' in item:
-									details = tmdb.TV(item['id'])
-									#===== hinzugefuegt try (#9) ========
-									try:
-										for country in details.content_ratings(language='de')['results']:
-											if str(country['iso_3166_1']) == "DE":
-												titleinfo['fsk'] = str(country['rating'])
-												break
-									except Exception as ex:
-											pass
-									# ==================================
-									if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
-										if not titleinfo['backdrop_url'].startswith('http'):
-											showimgs = details.images(language='de')['backdrops']
-											if showimgs:
-												titleinfo['backdrop_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
-										if not titleinfo['poster_url'].startswith('http'):
-											showimgs = details.images(language='de')['posters']
-											if showimgs:
-												titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
-							break
-			if not foundAsMovie and not foundAsSeries:
+									if 'vote_average' in item and item['vote_average'] != "0":
+										titleinfo['rating'] = str(item['vote_average'])
+									if 'id' in item:
+										details = tmdb.TV(item['id'])
+										#===== hinzugefuegt try (#9) ========
+										try:
+											for country in details.content_ratings(language='de')['results']:
+												if str(country['iso_3166_1']) == "DE":
+													titleinfo['fsk'] = str(country['rating'])
+													break
+										except Exception as ex:
+												pass
+										# ==================================
+										if not titleinfo['poster_url'].startswith('http') or not titleinfo['backdrop_url'].startswith('http') and loadImages:
+											if not titleinfo['backdrop_url'].startswith('http'):
+												showimgs = details.images(language='de')['backdrops']
+												if showimgs:
+													titleinfo['backdrop_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
+											if not titleinfo['poster_url'].startswith('http'):
+												showimgs = details.images(language='de')['posters']
+												if showimgs:
+													titleinfo['poster_url'] = f"{tmdburl}{showimgs[0]['file_path']}"
+								break
+			# TVDB dataserver
+			if not foundAsMovie and not foundAsSeries and config.plugins.AdvancedEventLibrary.tvdbUsage.value & 1:
 				aelGlobals.setStatus(f"{position}/{len(titles)}: thetvdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 				write_log(f"looking for {title} on thetvdb")
-				seriesid = None
+				tvdb.KEYS.API_KEY = get_keys('tvdb')
 				search = tvdb.Search()
 				searchTitle = convertTitle2(title)
+				seriesid = None
 				response = callLibrary(search.series, searchTitle, language="de")
 				if response:
 					reslist = []
@@ -1699,7 +1676,8 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								response = callLibrary(showimgs.poster, None, language=str(lang))
 								if response and str(response) != 'None':
 									titleinfo['poster_url'] = f"{tvdburl}{response[0]['fileName']}"
-			if not foundAsMovie:
+			# TVMASZE dataserver
+			if not foundAsMovie and config.plugins.AdvancedEventLibrary.tvmaszeUsage.value & 1:
 				if titleinfo['genre'] == "" or titleinfo['country'] == "" or titleinfo['year'] == "" or titleinfo['rating'] == "" or titleinfo['poster_url'] == "":
 					aelGlobals.setStatus(f"{position}/{len(titles)}: maze.tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
 					write_log(f"looking for {title} on maze.tv")
@@ -1757,62 +1735,64 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								# =============================
 									imdb_id = item['show']['externals']['imdb']
 								break
-#			if not foundAsMovie and not foundAsSeries:
-#				aelGlobals.setStatus(f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
-#				write_log('looking for ' + str(title) + ' on omdb', config.plugins.AdvancedEventLibrary.Log.value)
-#				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
-#				if imdb_id:
-#					params = {"apikey": get_keys('omdb'), "i": imdb_id}
-#				else:
-#					params = {"apikey": get_keys('omdb'), "s": org_name, "page": 1}
-#					errmsg, res = getAPIdata(omdburl, params=params)
-#					if errmsg:
-#						write_log("API download error in module 'get_titleInfo: OMDB call #1'")
-#					params = {"apikey": get_keys('omdb'), "t": title, "page": 1}
-#					if res and res['Response'] == "True":
-#						reslist = []
-#						for result in res['Search']:
-#							reslist.append(result['Title'].lower())
-#						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-#						if not bestmatch:
-#							bestmatch = [title.lower()]
-#						for result in res['Search']:
-#							if result['Title'].lower() == bestmatch[0]:
-#								params = {"apikey": get_keys('omdb'), "i": result['imdbID']}
-#								break
-#				errmsg, res = getAPIdata(omdburl, params=params)
-#				if errmsg:
-#					write_log("API download error in module 'get_searchResults: OMDB call #2'")
-#				if res and res['Response'] == "True":
-#					if res['Year'] and titleinfo['year'] == "":
-#						titleinfo['year'] = res['Year'][:4]
-#					if res['Genre'] != "N/A" and titleinfo['genre'] == "":
-#						stype = "-Serie" if res['Type'] and res['Type'] == 'series' else " "
-#						genres = res['Genre'].split(', ')
-#						for genre in genres:
-#							if genre not in titleinfo['genre']:
-#								titleinfo['genre'] = titleinfo['genre'] + genre + stype
-#						titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-#					if res['Poster'].startswith('http') and not titleinfo['poster_url'].startswith('http') and loadImages:
-#						titleinfo['poster_url'] = res['Poster']
-#						omdb_image = True
-#					if res['imdbRating'] != "N/A" and titleinfo['rating'] == "":
-#						titleinfo['rating'] = res['imdbRating']
-#					if res['Country'] != "N/A" and titleinfo['country'] == "":
-#						rescountries = res['Country'].split(', ')
-#						countries = ""
-#						for country in rescountries:
-#							countries = countries + country + ' | '
-#						titleinfo['country'] = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
-#					if res['imdbID'] != "N/A" and not imdb_id:
-#						imdb_id = res['imdbID']
-#					titleinfo['fsk'] = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
+			# OMDB dataserver
+			if not foundAsMovie and not foundAsSeries and config.plugins.AdvancedEventLibrary.omdbUsage.value & 1:
+				aelGlobals.setStatus(f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				write_log('looking for ' + str(title) + ' on omdb', config.plugins.AdvancedEventLibrary.Log.value)
+				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
+				if imdb_id:
+					params = {"apikey": get_keys('omdb'), "i": imdb_id}
+				else:
+					params = {"apikey": get_keys('omdb'), "s": org_name, "page": 1}
+					errmsg, res = getAPIdata(omdburl, params=params)
+					if errmsg:
+						write_log("API download error in module 'get_titleInfo': OMDB call #1'")
+					params = {"apikey": get_keys('omdb'), "t": title, "page": 1}
+					if res and res['Response'] == "True":
+						reslist = []
+						for result in res['Search']:
+							reslist.append(result['Title'].lower())
+						bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+						if not bestmatch:
+							bestmatch = [title.lower()]
+						for result in res['Search']:
+							if result['Title'].lower() == bestmatch[0]:
+								params = {"apikey": get_keys('omdb'), "i": result['imdbID']}
+								break
+				errmsg, res = getAPIdata(omdburl, params=params)
+				if errmsg:
+					write_log("API download error in module 'get_titleInfo': OMDB call #2'")
+				if res and res['Response'] == "True":
+					if res['Year'] and titleinfo['year'] == "":
+						titleinfo['year'] = res['Year'][:4]
+					if res['Genre'] != "N/A" and titleinfo['genre'] == "":
+						stype = "-Serie" if res['Type'] and res['Type'] == 'series' else " "
+						genres = res['Genre'].split(', ')
+						for genre in genres:
+							if genre not in titleinfo['genre']:
+								titleinfo['genre'] = titleinfo['genre'] + genre + stype
+						titleinfo['genre'] = titleinfo['genre'].replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+					if res['Poster'].startswith('http') and not titleinfo['poster_url'].startswith('http') and loadImages:
+						titleinfo['poster_url'] = res['Poster']
+						omdb_image = True
+					if res['imdbRating'] != "N/A" and titleinfo['rating'] == "":
+						titleinfo['rating'] = res['imdbRating']
+					if res['Country'] != "N/A" and titleinfo['country'] == "":
+						rescountries = res['Country'].split(', ')
+						countries = ""
+						for country in rescountries:
+							countries = countries + country + ' | '
+						titleinfo['country'] = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
+					if res['imdbID'] != "N/A" and not imdb_id:
+						imdb_id = res['imdbID']
+					titleinfo['fsk'] = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
+			# Eintragung in Datenbank
 			filename = convert2base64(title)
-			if db and filename and filename != '' and filename != ' ':
+			if db and filename and filename != ' ':
 				if titleinfo['genre'] == "" and titleinfo['year'] == "" and titleinfo['rating'] == "" and titleinfo['fsk'] == "" and titleinfo['country'] == "" and titleinfo['poster_url'] == "" and titleinfo['backdrop_url'] == "":
 					blentrys += 1
 					db.addblackList(filename)
-					write_log(f"nothing found for {titleinfo['title']}")
+					write_log(f"no titles found for {titleinfo['title']}")
 				if titleinfo['genre'] != "" or titleinfo['year'] != "" or titleinfo['rating'] != "" or titleinfo['fsk'] != "" or titleinfo['country'] != "":
 					entrys += 1
 					if research:
@@ -1862,8 +1842,12 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		write_log(f"try to insert {len(liveTVRecords)} events into database")
 		db.addliveTV(liveTVRecords)
 		db.parameter(aelGlobals.PARAMETER_SET, 'lastadditionalDataCount', str(db.getUpdateCount()))
-		getTVSpielfilm(db, tvsref)
-		getTVMovie(db)
+		# TVSpielfilm dataserver
+		if config.plugins.AdvancedEventLibrary.tvsUsage.value & 1:
+			getTVSpielfilm(db)
+		# TVmovie dataserver
+		if config.plugins.AdvancedEventLibrary.tvmovieUsage.value & 1:
+			getTVMovie(db)
 		db.updateliveTVProgress()
 	if loadImages:
 		write_log("looking for missing pictures")
@@ -1914,66 +1898,40 @@ def get_Picture(title, what='Cover', lang='de'):
 	titleNyear = convertYearInTitle(title)
 	title = convertSearchName(titleNyear[0])
 	jahr = str(titleNyear[1])
-	search = tmdb.Search()
-	searchName = findEpisode(title)
-	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC8=x"[:-1]).decode()
-	if searchName:
-		res = callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
-	else:
-		res = callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
-	if res and res['results']:
-		reslist = []
-		for item in res['results']:
-			reslist.append(item['name'].lower())
-		if searchName:
-			bestmatch = get_close_matches(searchName[2].lower(), reslist, 1, 0.7)
-			if not bestmatch:
-				bestmatch = [searchName[2].lower()]
-		else:
-			bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-			if not bestmatch:
-				bestmatch = [title.lower()]
-		for item in res['results']:
-			if item['name'].lower() in bestmatch and 'id' in item:
-				idx = tmdb.TV(item['id'])
-				if searchName and what == 'Cover':
-					details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
-					if details:
-						epi = details.info(language=str(lang))
-						if epi:
-							imgs = details.images(language=str(lang))
-							if imgs and 'stills' in imgs:
-								picture = f"{tmdburl}{cq}{imgs['stills'][0]['file_path']}"
-				if what == 'Cover' and not searchName:
-					imgs = idx.images(language=str(lang))['backdrops']
-					if imgs:
-						picture = f"{tmdburl}{cq}{imgs[0]['file_path']}"
-					if picture is None:
-						imgs = idx.images()['backdrops']
-						if imgs:
-							picture = f"{tmdburl}{cq}{imgs[0]['file_path']}"
-				if what == 'Poster':
-					imgs = idx.images(language=str(lang))['posters']
-					if imgs:
-						picture = f"{tmdburl}{posterquality}{imgs[0]['file_path']}"
-					if picture is None:
-						imgs = idx.images()['posters']
-						if imgs:
-							picture = f"{tmdburl}{posterquality}{imgs[0]['file_path']}"
-	if picture is None:
+	# TMDB image server
+	if config.plugins.AdvancedEventLibrary.tmdbUsage.value & 2:
+		tmdb.API_KEY = get_keys('tmdb')
 		search = tmdb.Search()
-		res = callLibrary(search.movie, None, query=title, language=str(lang), year=jahr)
+		searchName = findEpisode(title)
+		if searchName:
+			res = callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
+		else:
+			res = callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
+		tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC8=x"[:-1]).decode()
 		if res and res['results']:
 			reslist = []
 			for item in res['results']:
-				reslist.append(item['title'].lower())
-			bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
-			if not bestmatch:
-				bestmatch = [title.lower()]
+				reslist.append(item['name'].lower())
+			if searchName:
+				bestmatch = get_close_matches(searchName[2].lower(), reslist, 1, 0.7)
+				if not bestmatch:
+					bestmatch = [searchName[2].lower()]
+			else:
+				bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+				if not bestmatch:
+					bestmatch = [title.lower()]
 			for item in res['results']:
-				if item['title'].lower() in bestmatch and 'id' in item:
-					idx = tmdb.Movies(item['id'])
-					if what == 'Cover':
+				if item['name'].lower() in bestmatch and 'id' in item:
+					idx = tmdb.TV(item['id'])
+					if searchName and what == 'Cover':
+						details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
+						if details:
+							epi = details.info(language=str(lang))
+							if epi:
+								imgs = details.images(language=str(lang))
+								if imgs and 'stills' in imgs:
+									picture = f"{tmdburl}{cq}{imgs['stills'][0]['file_path']}"
+					if what == 'Cover' and not searchName:
 						imgs = idx.images(language=str(lang))['backdrops']
 						if imgs:
 							picture = f"{tmdburl}{cq}{imgs[0]['file_path']}"
@@ -1989,11 +1947,41 @@ def get_Picture(title, what='Cover', lang='de'):
 							imgs = idx.images()['posters']
 							if imgs:
 								picture = f"{tmdburl}{posterquality}{imgs[0]['file_path']}"
-	if picture is None:
+		if picture is None:
+			search = tmdb.Search()
+			res = callLibrary(search.movie, None, query=title, language=str(lang), year=jahr)
+			if res and res['results']:
+				reslist = []
+				for item in res['results']:
+					reslist.append(item['title'].lower())
+				bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
+				if not bestmatch:
+					bestmatch = [title.lower()]
+				for item in res['results']:
+					if item['title'].lower() in bestmatch and 'id' in item:
+						idx = tmdb.Movies(item['id'])
+						if what == 'Cover':
+							imgs = idx.images(language=str(lang))['backdrops']
+							if imgs:
+								picture = f"{tmdburl}{cq}{imgs[0]['file_path']}"
+							if picture is None:
+								imgs = idx.images()['backdrops']
+								if imgs:
+									picture = f"{tmdburl}{cq}{imgs[0]['file_path']}"
+						if what == 'Poster':
+							imgs = idx.images(language=str(lang))['posters']
+							if imgs:
+								picture = f"{tmdburl}{posterquality}{imgs[0]['file_path']}"
+							if picture is None:
+								imgs = idx.images()['posters']
+								if imgs:
+									picture = f"{tmdburl}{posterquality}{imgs[0]['file_path']}"
+	# TVDB image server
+	if not picture and config.plugins.AdvancedEventLibrary.tvdbUsage.value & 2:
 		tvdb.KEYS.API_KEY = get_keys('tvdb')
-		seriesid = None
 		search = tvdb.Search()
 		searchTitle = convertTitle2(title)
+		seriesid = None
 		response = callLibrary(search.series, searchTitle, language=str(lang))
 		if response:
 			reslist = []
@@ -2042,9 +2030,7 @@ def get_Picture(title, what='Cover', lang='de'):
 
 def get_MissingPictures(db, poster, cover):
 	pList = db.getMissingPictures()
-	covers = 0
-	posters = 0
-	i = 0
+	covers, posters = 0, 0
 	if pList[0]:
 		for picture in pList[0]:
 			if db.getblackListCover(convert2base64(picture)):
@@ -2055,26 +2041,23 @@ def get_MissingPictures(db, poster, cover):
 				pList[1].remove(picture)
 	if pList[0]:
 		write_log(f"found {len(pList[0])} missing covers")
-		for picture in pList[0]:
-			i += 1
-			aelGlobals.setStatus(f"{_('looking for missing cover for')} {picture} ({i}/{len(pList[0])} | {covers}) ")
-			url = get_Picture(title=picture, what='Cover', lang='de')
-			if url:
+		for idx, picture in enumerate(pList[0]):
+			aelGlobals.setStatus(f"{_('looking for missing cover for')} {picture} ({idx}/{len(pList[0])} | {covers}) ")
+			picurl = get_Picture(title=picture, what='Cover', lang='de')
+			if picurl:
 				covers += 1
-				downloadImage(url, join(aelGlobals.COVERPATH, convert2base64(picture) + '.jpg'))
+				downloadImage(picurl, join(aelGlobals.COVERPATH, f"{convert2base64(picture)}.jpg"))
 			else:
 				db.addblackListCover(convert2base64(picture))
 		write_log(f"have downloaded {covers} missing covers")
 	if pList[1]:
 		write_log(f"found {len(pList[1])} missing posters")
-		i = 0
-		for picture in pList[1]:
-			i += 1
-			aelGlobals.setStatus(f"{_('looking for missing poster for')} {picture} ({i}/{len(pList[1])} | {posters}) ")
-			url = get_Picture(title=picture, what='Poster', lang='de')
-			if url:
+		for idx, picture in enumerate(pList[1]):
+			aelGlobals.setStatus(f"{_('looking for missing poster for')} {picture} ({idx}/{len(pList[1])} | {posters}) ")
+			picurl = get_Picture(title=picture, what='Poster', lang='de')
+			if picurl:
 				posters += 1
-				downloadImage(url, join(aelGlobals.POSTERPATH, convert2base64(picture) + '.jpg'))
+				downloadImage(picurl, join(aelGlobals.POSTERPATH, f"{convert2base64(picture)}.jpg"))
 			else:
 				db.addblackListPoster(convert2base64(picture))
 		write_log(f"have downloaded {posters} missing posters")
@@ -2087,7 +2070,7 @@ def get_MissingPictures(db, poster, cover):
 
 
 def writeTVStatistic(db):
-	root = eServiceReference(str(service_types_tv + ' FROM BOUQUET "bouquets.tv" ORDER BY bouquet'))
+	root = eServiceReference(f'{service_types_tv} FROM BOUQUET "bouquets.tv" ORDER BY bouquet')
 	serviceHandler = eServiceCenter.getInstance()
 	tvbouquets = serviceHandler.list(root).getContent("SN", True)
 	for bouquet in tvbouquets:
@@ -2139,8 +2122,6 @@ def createStatistics(db):
 def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bingOption=''):
 	cq = str(config.plugins.AdvancedEventLibrary.coverQuality.value) if config.plugins.AdvancedEventLibrary.coverQuality.value != "w1920" else 'original'
 	posterquality = config.plugins.AdvancedEventLibrary.posterQuality.value
-	tmdb.API_KEY = get_keys('tmdb')
-	tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
 	pictureList = []
 	titleNyear = convertYearInTitle(title)
 	title = convertSearchName(titleNyear[0])
@@ -2148,249 +2129,257 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 	write_log(f"searching {what} for {title} with language = {lang}")
 	if not b64title:
 		b64title = convert2base64(title)
-	tvdb.KEYS.API_KEY = get_keys('tvdb')
-	seriesid = None
-	search = tvdb.Search()
-	searchTitle = convertTitle2(title)
-	result = {}
-	response = callLibrary(search.series, searchTitle, language=str(lang))
-	if response:
-		reslist = []
-		for result in response:
-			reslist.append(result['seriesName'].lower())
-		bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
-		if not bestmatch:
-			bestmatch = [searchTitle.lower()]
-		for result in response:
-			if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
-				seriesid = result['id']
-				break
-	if seriesid:
-		epis = tvdb.Series_Episodes(seriesid)
-		try:  # mandatory because the library raises an error when no result
-			episoden = epis.all()
-		except Exception:
-			episoden = []
-		epilist = []
-		epiname = ""
-		if episoden:
-			for episode in episoden:
-				epilist.append(str(episode['episodeName']).lower())
-			bestmatch = get_close_matches(title.lower(), epilist, 1, 0.7)
+	# TVDB image server
+	if config.plugins.AdvancedEventLibrary.tvdbUsage.value & 2:
+		tvdb.KEYS.API_KEY = get_keys('tvdb')
+		seriesid = None
+		search = tvdb.Search()
+		searchTitle = convertTitle2(title)
+		result = {}
+		response = callLibrary(search.series, searchTitle, language=str(lang))
+		if response:
+			reslist = []
+			for result in response:
+				reslist.append(result['seriesName'].lower())
+			bestmatch = get_close_matches(searchTitle.lower(), reslist, 1, 0.7)
 			if not bestmatch:
-				bestmatch = [title.lower()]
-			for episode in episoden:
-				if str(episode['episodeName']).lower() in bestmatch[0]:
-					if 'seriesId' in episode:
-						seriesid = episode['seriesId']
-						epiname = ' - ' + str(episode['episodeName'])
+				bestmatch = [searchTitle.lower()]
+			for result in response:
+				if bestmatch[0] in result['seriesName'].lower() or result['seriesName'].lower() in bestmatch[0]:
+					seriesid = result['id']
 					break
-		showimgs = tvdb.Series_Images(seriesid)
-		if showimgs:
-			tvdburl = b64decode(b"aHR0cHM6Ly93d3cudGhldHZkYi5jb20vYmFubmVycy8=J"[:-1]).decode()
-			if what == 'Cover':
-				response = callLibrary(showimgs.fanart, None, language=str(lang))
-				if response and str(response) != 'None':
-					for img in response:
-						itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
-						pictureList.append((itm,))
-			if what == 'Poster':
-				response = callLibrary(showimgs.poster, None, language=str(lang))
-				if response and str(response) != 'None':
-					for img in response:
-						itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
-						pictureList.append((itm,))
-	search = tmdb.Search()
-	searchName = findEpisode(title)
-	if searchName:
-		res = callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
-	else:
-		res = callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
-	if res and res['results']:
-		reslist = []
-		for item in res['results']:
-			reslist.append(item['name'].lower())
-		if searchName:
-			bestmatch = get_close_matches(searchName[2].lower(), reslist, 4, 0.7)
-			if not bestmatch:
-				bestmatch = [searchName[2].lower()]
-		else:
-			bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
-			if not bestmatch:
-				bestmatch = [title.lower()]
-		#========== geaendert (#7) ===============
-		#for item in res['results']:
-		#	write_log('found on TMDb TV ' + str(item['name']))
-		#	if item['name'].lower() in bestmatch:
-		appendTopHit = True
-		itemList = []
-		for index, item in enumerate(res['results']):
-			if item['name'].lower() in bestmatch:
-				itemList.append(item)
-				if index == 0:
-					appendTopHit = False
-		if appendTopHit:
-			itemList.append(res['results'][0])
-		for item in itemList:
-			if item and 'id' in item:
-				write_log(f"found on TMDb TV {item['name']}")
-		# ==================================================
-#		for item in res['results']:
-#			write_log('found on TMDb TV ' + str(item['name']))
-#			if item['name'].lower() in bestmatch and 'id' in item:
-				idx = tmdb.TV(item['id'])
-				if searchName and what == 'Cover':
-					details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
-					if details:
-						epi = details.info(language=str(lang))
-						if epi:
-							imgs = details.images(language=str(lang))
-							if imgs and 'stills' in imgs:
-								for img in imgs['stills']:
-										imgsize = f"{img['width']}x{img['height']}"
-										itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
-										pictureList.append((itm,))
-							#======== hinzugeugt (#6) =========
-							if epi.get("still_path", "") and epi['still_path'].endswith('.jpg'):
-								tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
-								itm = [f"{item['name']} - {epi['name']}", what, _("found on TMDb TV"), f"{tmdburl}{cq}{epi['still_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(epi['still_path'])}.jpg"]
-								pictureList.append((itm,))
-							# ================================
-				#==== geaendert (#6) =====
-				#if what == 'Cover' and not searchName:
+		if seriesid:
+			epis = tvdb.Series_Episodes(seriesid)
+			try:  # mandatory because the library raises an error when no result
+				episoden = epis.all()
+			except Exception:
+				episoden = []
+			epilist = []
+			epiname = ""
+			if episoden:
+				for episode in episoden:
+					epilist.append(str(episode['episodeName']).lower())
+				bestmatch = get_close_matches(title.lower(), epilist, 1, 0.7)
+				if not bestmatch:
+					bestmatch = [title.lower()]
+				for episode in episoden:
+					if str(episode['episodeName']).lower() in bestmatch[0]:
+						if 'seriesId' in episode:
+							seriesid = episode['seriesId']
+							epiname = ' - ' + str(episode['episodeName'])
+						break
+			showimgs = tvdb.Series_Images(seriesid)
+			if showimgs:
+				tvdburl = b64decode(b"aHR0cHM6Ly93d3cudGhldHZkYi5jb20vYmFubmVycy8=J"[:-1]).decode()
 				if what == 'Cover':
-				# ========================
-					imgs = idx.images(language=str(lang))['backdrops']
-					if imgs:
-						for img in imgs:
-							imgsize = f"{img['width']}x{img['height']}"
-							itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+					response = callLibrary(showimgs.fanart, None, language=str(lang))
+					if response and str(response) != 'None':
+						for img in response:
+							itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
 							pictureList.append((itm,))
-					if len(imgs) < 2:
-						imgs = idx.images()['backdrops']
+				if what == 'Poster':
+					response = callLibrary(showimgs.poster, None, language=str(lang))
+					if response and str(response) != 'None':
+						for img in response:
+							itm = [f"{result['seriesName']}{epiname}", what, f"{img['resolution']} gefunden auf TVDb", f"{tvdburl}{img['fileName']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['fileName'])}.jpg"]
+							pictureList.append((itm,))
+	# TMDB image server
+	if config.plugins.AdvancedEventLibrary.tvdbUsage.value & 2:
+		tmdb.API_KEY = get_keys('tmdb')
+		tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
+		search = tmdb.Search()
+		searchName = findEpisode(title)
+		if searchName:
+			res = callLibrary(search.tv, None, query=searchName[2], language=str(lang), year=jahr, include_adult=True, search_type='ngram')
+		else:
+			res = callLibrary(search.tv, None, query=title, language=str(lang), year=jahr)
+		if res and res['results']:
+			reslist = []
+			for item in res['results']:
+				reslist.append(item['name'].lower())
+			if searchName:
+				bestmatch = get_close_matches(searchName[2].lower(), reslist, 4, 0.7)
+				if not bestmatch:
+					bestmatch = [searchName[2].lower()]
+			else:
+				bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
+				if not bestmatch:
+					bestmatch = [title.lower()]
+			#========== geaendert (#7) ===============
+			#for item in res['results']:
+			#	write_log('found on TMDb TV ' + str(item['name']))
+			#	if item['name'].lower() in bestmatch:
+			appendTopHit = True
+			itemList = []
+			for index, item in enumerate(res['results']):
+				if item['name'].lower() in bestmatch:
+					itemList.append(item)
+					if index == 0:
+						appendTopHit = False
+			if appendTopHit:
+				itemList.append(res['results'][0])
+			for item in itemList:
+				if item and 'id' in item:
+					write_log(f"found on TMDb TV {item['name']}")
+			# ==================================================
+			# for item in res['results']:
+			# write_log('found on TMDb TV ' + str(item['name']))
+			# if item['name'].lower() in bestmatch and 'id' in item:
+					idx = tmdb.TV(item['id'])
+					if searchName and what == 'Cover':
+						details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
+						if details:
+							epi = details.info(language=str(lang))
+							if epi:
+								imgs = details.images(language=str(lang))
+								if imgs and 'stills' in imgs:
+									for img in imgs['stills']:
+											imgsize = f"{img['width']}x{img['height']}"
+											itm = [f"{item['name']} - {epi['name']}", what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+											pictureList.append((itm,))
+								#======== hinzugeugt (#6) =========
+								if epi.get("still_path", "") and epi['still_path'].endswith('.jpg'):
+									tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
+									itm = [f"{item['name']} - {epi['name']}", what, _("found on TMDb TV"), f"{tmdburl}{cq}{epi['still_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(epi['still_path'])}.jpg"]
+									pictureList.append((itm,))
+								# ================================
+					#==== geaendert (#6) =====
+					#if what == 'Cover' and not searchName:
+					if what == 'Cover':
+					# ========================
+						imgs = idx.images(language=str(lang))['backdrops']
 						if imgs:
 							for img in imgs:
 								imgsize = f"{img['width']}x{img['height']}"
 								itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
-				if what == 'Poster':
-					imgs = idx.images(language=str(lang))['posters']
-					if imgs:
-						for img in imgs:
-							imgsize = f"{img['width']}x{img['height']}"
-							itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
-							pictureList.append((itm,))
-					if len(imgs) < 2:
-						imgs = idx.images()['posters']
+						if len(imgs) < 2:
+							imgs = idx.images()['backdrops']
+							if imgs:
+								for img in imgs:
+									imgsize = f"{img['width']}x{img['height']}"
+									itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+									pictureList.append((itm,))
+					if what == 'Poster':
+						imgs = idx.images(language=str(lang))['posters']
 						if imgs:
 							for img in imgs:
 								imgsize = f"{img['width']}x{img['height']}"
 								itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
-	search = tmdb.Search()
-	res = search.movie(query=title, language=str(lang), year=jahr) if jahr != '' else search.movie(query=title, language=str(lang))
-	if res and res['results']:
-		reslist = []
-		for item in res['results']:
-			reslist.append(item['title'].lower())
-		bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
-		if not bestmatch:
-			bestmatch = [title.lower()]
-		#========== geaendert (#7) ===============
-		#for item in res['results']:
-		#	write_log('found on TMDb Movie ' + str(item['title']))
-		#	if item['title'].lower() in bestmatch:
-		appendTopHit = True
-		itemList = []
-		for index, item in enumerate(res['results']):
-			if item['title'].lower() in bestmatch:
-				itemList.append(item)
-				if index == 0:
-					appendTopHit = False
-		if appendTopHit:
-			itemList.append(res['results'][0])
-		for item in itemList:
-			if item and 'id' in item:
-				write_log(f"found on TMDb Movie {item['title']}")
-		# ==================================================
-
-#		for item in res['results']:
-#			write_log('found on TMDb Movie ' + str(item['title']))
-#			if item['title'].lower() in bestmatch and 'id' in item:
-				idx = tmdb.Movies(item['id'])
-				if what == 'Cover':
-					imgs = idx.images(language=str(lang))['backdrops']
-					if imgs:
-						for img in imgs:
-							imgsize = f"{img['width']}x{img['height']}"
-							itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
-							pictureList.append((itm,))
-					if len(imgs) < 2:
-						imgs = idx.images()['backdrops']
+						if len(imgs) < 2:
+							imgs = idx.images()['posters']
+							if imgs:
+								for img in imgs:
+									imgsize = f"{img['width']}x{img['height']}"
+									itm = [item['name'], what, f"{imgsize} {_("found on TMDb TV")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+									pictureList.append((itm,))
+		search = tmdb.Search()
+		res = search.movie(query=title, language=str(lang), year=jahr) if jahr != '' else search.movie(query=title, language=str(lang))
+		if res and res['results']:
+			reslist = []
+			for item in res['results']:
+				reslist.append(item['title'].lower())
+			bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
+			if not bestmatch:
+				bestmatch = [title.lower()]
+			#========== geaendert (#7) ===============
+			#for item in res['results']:
+			#	write_log('found on TMDb Movie ' + str(item['title']))
+			#	if item['title'].lower() in bestmatch:
+			appendTopHit = True
+			itemList = []
+			for index, item in enumerate(res['results']):
+				if item['title'].lower() in bestmatch:
+					itemList.append(item)
+					if index == 0:
+						appendTopHit = False
+			if appendTopHit:
+				itemList.append(res['results'][0])
+			for item in itemList:
+				if item and 'id' in item:
+					write_log(f"found on TMDb Movie {item['title']}")
+			# ==================================================
+			# for item in res['results']:
+			# write_log('found on TMDb Movie ' + str(item['title']))
+			# if item['title'].lower() in bestmatch and 'id' in item:
+					idx = tmdb.Movies(item['id'])
+					if what == 'Cover':
+						imgs = idx.images(language=str(lang))['backdrops']
 						if imgs:
 							for img in imgs:
 								imgsize = f"{img['width']}x{img['height']}"
 								itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
-				if what == 'Poster':
-					imgs = idx.images(language=str(lang))['posters']
-					if imgs:
-						for img in imgs:
-							imgsize = f"{img['width']}x{img['height']}"
-							itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
-							pictureList.append((itm,))
-					if len(imgs) < 2:
-						imgs = idx.images()['posters']
+						if len(imgs) < 2:
+							imgs = idx.images()['backdrops']
+							if imgs:
+								for img in imgs:
+									imgsize = f"{img['width']}x{img['height']}"
+									itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{cq}{img['file_path']}", join(aelGlobals.COVERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+									pictureList.append((itm,))
+					if what == 'Poster':
+						imgs = idx.images(language=str(lang))['posters']
 						if imgs:
 							for img in imgs:
 								imgsize = f"{img['width']}x{img['height']}"
 								itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
 								pictureList.append((itm,))
+						if len(imgs) < 2:
+							imgs = idx.images()['posters']
+							if imgs:
+								for img in imgs:
+									imgsize = f"{img['width']}x{img['height']}"
+									itm = [item['title'], what, f"{imgsize} {_("found on TMDb Movie")}", f"{tmdburl}{posterquality}{img['file_path']}", join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64(img['file_path'])}.jpg"]
+									pictureList.append((itm,))
 	if not pictureList and what == 'Poster':
-		omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==J"[:-1]).decode()
-		errmsg, res = getAPIdata(omdburl, params={"apikey": get_keys("omdb"), "t": title})
-		if errmsg:
-			write_log("API download error in module 'get_PictureList: OMDB call'")
-		if res['Response'] == "True" and res['Poster'].startswith('http'):
-			itm = [res['Title'], what, 'OMDB', res['Poster'], join(aelGlobals.POSTERPATH, b64title + '.jpg'), convert2base64('omdbPosterFile') + '.jpg']
-			pictureList.append((itm,))
-		tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
-		errmsg, res = getAPIdata(tvmazeurl, params={"q": title})
-		if errmsg:
-			write_log("API download error in module 'get_PictureList: TVMAZE call'")
-		if res:
-			reslist = []
-			for item in res:
-				#===== geaendert (#9) ========
-				#reslist.append(item['show']['name'].lower())
-				if item.get('show', "") and item['show'].get('name', ""):
-					reslist.append(item['show']['name'].lower())
-				# =============================
-			bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
-			if not bestmatch:
-				bestmatch = [title.lower()]
-			for item in res:
-				#===== geaendert (#9) ========
-				#if item['show']['name'].lower() == bestmatch[0]:
-				if item.get('show', "") and item['show'].get('name', "") and item['show']['name'].lower() == bestmatch[0]:
-				# =============================
+		# OMDB image server
+		if config.plugins.AdvancedEventLibrary.omdbUsage.value & 2:
+			omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==J"[:-1]).decode()
+			errmsg, res = getAPIdata(omdburl, params={"apikey": get_keys("omdb"), "t": title})
+			if errmsg:
+				write_log("API download error in module 'get_PictureList: OMDB call'")
+			if res['Response'] == "True" and res['Poster'].startswith('http'):
+				itm = [res['Title'], what, 'OMDB', res['Poster'], join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64('omdbPosterFile')}.jpg"]
+				pictureList.append((itm,))
+		# TVMAZE image server
+		if config.plugins.AdvancedEventLibrary.tvmaszeUsage.value & 2:
+			tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
+			errmsg, res = getAPIdata(tvmazeurl, params={"q": title})
+			if errmsg:
+				write_log("API download error in module 'get_PictureList: TVMAZE call'")
+			if res:
+				reslist = []
+				for item in res:
 					#===== geaendert (#9) ========
-					#if item['show']['image']:
-					if item['show'].get('image', "") and item['show']['image'].get('original', ""):
+					#reslist.append(item['show']['name'].lower())
+					if item.get('show', "") and item['show'].get('name', ""):
+						reslist.append(item['show']['name'].lower())
 					# =============================
-						itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64('mazetvPosterFile')}.jpg"]
-						pictureList.append((itm,))
-	if not pictureList:
+				bestmatch = get_close_matches(title.lower(), reslist, 4, 0.7)
+				if not bestmatch:
+					bestmatch = [title.lower()]
+				for item in res:
+					#===== geaendert (#9) ========
+					#if item['show']['name'].lower() == bestmatch[0]:
+					if item.get('show', "") and item['show'].get('name', "") and item['show']['name'].lower() == bestmatch[0]:
+					# =============================
+						#===== geaendert (#9) ========
+						#if item['show']['image']:
+						if item['show'].get('image', "") and item['show']['image'].get('original', ""):
+						# =============================
+							itm = [item['show']['name'], what, 'maze.tv', item['show']['image']['original'], join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f"{convert2base64('mazetvPosterFile')}.jpg"]
+							pictureList.append((itm,))
+	# BING image server
+	if not pictureList and config.plugins.AdvancedEventLibrary.bingUsage.value & 2:
 		BingSearch = BingImageSearch(f"{title}{bingOption}", count, what)
 		res = BingSearch.search()
-		i = 0
-		for image in res:
+		for idx, image in enumerate(res):
 			if what == 'Poster':
-				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f'{convert2base64(f"bingPoster_{i}")}.jpg']
+				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.POSTERPATH, f"{b64title}.jpg"), f'{convert2base64(f"bingPoster_{idx}")}.jpg']
 			else:
-				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.COVERPATH, b64title + '.jpg'), f'{convert2base64(f"bingCover_{i}")}.jpg']
+				itm = [title, what, _("found on bing.com"), image, join(aelGlobals.COVERPATH, b64title + '.jpg'), f'{convert2base64(f"bingCover_{idx}")}.jpg']
 			pictureList.append((itm,))
-			i += 1
 	if pictureList:
 		idx = 0
 		write_log(f"found {len(pictureList)} images for {title}")
@@ -2410,51 +2399,77 @@ def get_PictureList(title, what='Cover', count=20, b64title=None, lang='de', bin
 
 
 def get_searchResults(title, lang='de'):
-	tmdb.API_KEY = get_keys('tmdb')
 	resultList = []
 	titleNyear = convertYearInTitle(title)
 	title = convertSearchName(titleNyear[0])
 	jahr = str(titleNyear[1])
 	write_log(f"searching results for {title} with language = {lang}")
 	searchName = findEpisode(title)
-	search = tmdb.Search()
-	if searchName:
-		res = callLibrary(search.tv, None, query=searchName[2], language=lang, year=jahr, include_adult=True, search_type='ngram')
-	else:
-		res = callLibrary(search.tv, None, query=title, language=lang, year=jahr)
-	if res and res['results']:
-		reslist = []
-		for item in res['results']:
-			reslist.append(item['name'].lower())
+	# TMDB data server
+	if config.plugins.AdvancedEventLibrary.tmdbUsage.value & 1:
+		tmdb.API_KEY = get_keys('tmdb')
+		search = tmdb.Search()
 		if searchName:
-			bestmatch = get_close_matches(searchName[2].lower(), reslist, 10, 0.4)
-			if not bestmatch:
-				bestmatch = [searchName[2].lower()]
+			res = callLibrary(search.tv, None, query=searchName[2], language=lang, year=jahr, include_adult=True, search_type='ngram')
 		else:
-			bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-			if not bestmatch:
-				bestmatch = [title.lower()]
-		for item in res['results']:
-			if item['name'].lower() in bestmatch:
-				countries = ""
-				year = ""
-				genres = ""
-				rating = ""
-				fsk = ""
-				desc = ""
-				epiname = ''
-				if searchName:
-					details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
-					if details:
-						epi = details.info(language=str(lang))
-						if 'name' in epi:
-							epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + epi['name']
-						if 'air_date' in epi:
-							year = epi['air_date'][:4]
-						if 'vote_average' in epi:
-							rating = epi['vote_average']
-						if 'overview' in epi:
-							desc = epi['overview']
+			res = callLibrary(search.tv, None, query=title, language=lang, year=jahr)
+		if res and res['results']:
+			reslist = []
+			for item in res['results']:
+				reslist.append(item['name'].lower())
+			if searchName:
+				bestmatch = get_close_matches(searchName[2].lower(), reslist, 10, 0.4)
+				if not bestmatch:
+					bestmatch = [searchName[2].lower()]
+			else:
+				bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+				if not bestmatch:
+					bestmatch = [title.lower()]
+			for item in res['results']:
+				if item['name'].lower() in bestmatch:
+					countries, year, genres, rating, fsk, desc, epiname = "", "", "", "", "", "", ""
+					if searchName:
+						details = tmdb.TV_Episodes(item['id'], searchName[0], searchName[1])
+						if details:
+							epi = details.info(language=str(lang))
+							if 'name' in epi:
+								epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + epi['name']
+							if 'air_date' in epi:
+								year = epi['air_date'][:4]
+							if 'vote_average' in epi:
+								rating = epi['vote_average']
+							if 'overview' in epi:
+								desc = epi['overview']
+							#===== geaendert (#9) ========
+							#if item['origin_country']
+							if item.get('origin_country', ""):
+							# =============================
+								for country in item['origin_country']:
+									countries = countries + country + ' | '
+								countries = countries[:-3]
+							#===== geaendert (#9) ========
+							#if item['genre_ids']
+							if item.get('genre_ids', ""):
+							# =============================
+								for genre in item['genre_ids']:
+									genres = genres + aelGlobals.TMDB_GENRES[genre] + '-Serie '
+								maxGenres = genres.split()
+								if maxGenres and len(maxGenres) >= 1:
+									genres = maxGenres[0]
+							if 'id' in item:
+								details = tmdb.TV(item['id'])
+								#===== hinzugefuegt try (#9) ========
+								try:
+									for country in details.content_ratings(language='de')['results']:
+										if str(country['iso_3166_1']) == "DE":
+											fsk = str(country['rating'])
+											break
+								except Exception:
+									pass
+								# =================================
+					else:
+						if 'overview' in item:
+							desc = item['overview']
 						#===== geaendert (#9) ========
 						#if item['origin_country']
 						if item.get('origin_country', ""):
@@ -2462,15 +2477,16 @@ def get_searchResults(title, lang='de'):
 							for country in item['origin_country']:
 								countries = countries + country + ' | '
 							countries = countries[:-3]
+						if 'first_air_date' in item:
+							year = item['first_air_date'][:4]
 						#===== geaendert (#9) ========
 						#if item['genre_ids']
 						if item.get('genre_ids', ""):
 						# =============================
 							for genre in item['genre_ids']:
 								genres = genres + aelGlobals.TMDB_GENRES[genre] + '-Serie '
-							maxGenres = genres.split()
-							if maxGenres and len(maxGenres) >= 1:
-								genres = maxGenres[0]
+						if 'vote_average' in item and item['vote_average'] != "0":
+							rating = str(item['vote_average'])
 						if 'id' in item:
 							details = tmdb.TV(item['id'])
 							#===== hinzugefuegt try (#9) ========
@@ -2481,245 +2497,214 @@ def get_searchResults(title, lang='de'):
 										break
 							except Exception:
 								pass
-							# =================================
-				else:
+							# ====================================
+					itm = [str(item['name']) + epiname, str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb TV", desc]
+					resultList.append((itm,))
+			search = tmdb.Search()
+		res = search.movie(query=title, language=lang, year=jahr) if jahr != '' else search.movie(query=title, language=lang)
+		if res and res['results']:
+			reslist = []
+			for item in res['results']:
+				reslist.append(item['title'].lower())
+			bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+			if not bestmatch:
+				bestmatch = [title.lower()]
+			for item in res['results']:
+				if item['title'].lower() in bestmatch:
+					countries, year, genres, rating, fsk, desc = "", "", "", "", "", ""
 					if 'overview' in item:
 						desc = item['overview']
-					#===== geaendert (#9) ========
-					#if item['origin_country']
-					if item.get('origin_country', ""):
-					# =============================
-						for country in item['origin_country']:
-							countries = countries + country + ' | '
-						countries = countries[:-3]
-					if 'first_air_date' in item:
-						year = item['first_air_date'][:4]
+					if 'release_date' in item:
+						year = item['release_date'][:4]
 					#===== geaendert (#9) ========
 					#if item['genre_ids']
 					if item.get('genre_ids', ""):
 					# =============================
 						for genre in item['genre_ids']:
-							genres = genres + aelGlobals.TMDB_GENRES[genre] + '-Serie '
+							genres = genres + aelGlobals.TMDB_GENRES[genre] + ' '
 					if 'vote_average' in item and item['vote_average'] != "0":
 						rating = str(item['vote_average'])
 					if 'id' in item:
-						details = tmdb.TV(item['id'])
-						#===== hinzugefuegt try (#9) ========
+						details = tmdb.Movies(item['id'])
+					#===== hinzugefuegt try (#9) ========
 						try:
-							for country in details.content_ratings(language='de')['results']:
+							for country in details.releases(language='de')['countries']:
 								if str(country['iso_3166_1']) == "DE":
-									fsk = str(country['rating'])
+									fsk = str(country['certification'])
 									break
+							for country in details.info(language='de')['production_countries']:
+								countries = countries + country['iso_3166_1'] + " | "
+							countries = countries[:-3]
 						except Exception:
 							pass
-						# ====================================
-				itm = [str(item['name']) + epiname, str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb TV", desc]
-				resultList.append((itm,))
-		search = tmdb.Search()
-	res = search.movie(query=title, language=lang, year=jahr) if jahr != '' else search.movie(query=title, language=lang)
-	if res and res['results']:
-		reslist = []
-		for item in res['results']:
-			reslist.append(item['title'].lower())
-		bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-		if not bestmatch:
-			bestmatch = [title.lower()]
-		for item in res['results']:
-			if item['title'].lower() in bestmatch:
-				countries = ""
-				year = ""
-				genres = ""
-				rating = ""
-				fsk = ""
-				desc = ""
-				if 'overview' in item:
-					desc = item['overview']
-				if 'release_date' in item:
-					year = item['release_date'][:4]
-				#===== geaendert (#9) ========
-				#if item['genre_ids']
-				if item.get('genre_ids', ""):
-				# =============================
-					for genre in item['genre_ids']:
-						genres = genres + aelGlobals.TMDB_GENRES[genre] + ' '
-				if 'vote_average' in item and item['vote_average'] != "0":
-					rating = str(item['vote_average'])
-				if 'id' in item:
-					details = tmdb.Movies(item['id'])
-				#===== hinzugefuegt try (#9) ========
-					try:
-						for country in details.releases(language='de')['countries']:
-							if str(country['iso_3166_1']) == "DE":
-								fsk = str(country['certification'])
-								break
-						for country in details.info(language='de')['production_countries']:
-							countries = countries + country['iso_3166_1'] + " | "
-						countries = countries[:-3]
-					except Exception:
-						pass
-				# ===================================*=
-				itm = [str(item['title']), str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb Movie", desc]
-				resultList.append((itm,))
-	tvdb.KEYS.API_KEY = get_keys('tvdb')
-	search = tvdb.Search()
-	searchTitle = convertTitle2(title)
-	searchName = findEpisode(title)
-	response = callLibrary(search.series, searchTitle, language="de")
-	if response:
-		reslist = []
-		for result in response:
-			reslist.append(result['seriesName'].lower())
-		bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-		if not bestmatch:
-			bestmatch = [title.lower()]
-		for result in response:
-			if result['seriesName'].lower() in bestmatch:
-				foundEpisode = False
-				seriesid = None
-				countries, year, genres, rating, fsk, desc, epiname = "", "", "", "", "", "", ""
-				seriesid = result['id']
-				if seriesid:
+					# ===================================*=
+					itm = [str(item['title']), str(countries), str(year), str(genres), str(rating), str(fsk), "TMDb Movie", desc]
+					resultList.append((itm,))
+	# TVDB data server
+	if config.plugins.AdvancedEventLibrary.tmdbUsage.value & 1:
+		tvdb.KEYS.API_KEY = get_keys('tvdb')
+		search = tvdb.Search()
+		searchTitle = convertTitle2(title)
+		searchName = findEpisode(title)
+		response = callLibrary(search.series, searchTitle, language="de")
+		if response:
+			reslist = []
+			for result in response:
+				reslist.append(result['seriesName'].lower())
+			bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+			if not bestmatch:
+				bestmatch = [title.lower()]
+			for result in response:
+				if result['seriesName'].lower() in bestmatch:
 					foundEpisode = False
-					show = tvdb.Series(seriesid)
-					response = show.info()
-					epis = tvdb.Series_Episodes(seriesid)
-					try:  # mandatory because the library raises an error when no result
-						episoden = epis.all()
-					except Exception:
-						episoden = []
-					epilist = []
-					if episoden:
-						for episode in episoden:
-							epilist.append(episode['episodeName'].lower())
-						bestmatch = get_close_matches(title.lower(), epilist, 1, 0.6)
-						if not bestmatch:
-							bestmatch = [title.lower()]
-						for episode in episoden:
-							if episode['episodeName'].lower() == bestmatch[0]:
-								foundEpisode = True
-								if 'episodeName' in episode:
-									epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName'] if searchName else ' - ' + episode['episodeName']
-								if 'overview' in episode:
-									desc = episode['overview']
-								if 'firstAired' in episode:
-									year = episode['firstAired'][:4]
-								if 'siteRating' in episode and episode['siteRating'] != '0' and episode['siteRating'] != 'None':
-									rating = episode['siteRating']
-								fsk = aelGlobals.FSKDICT.get(episode.get("contentRating", ""), "")
-								if response:
-									if 'genre' in response and response['genre']:
-										for genre in response['genre']:
-											genres = genres + genre + '-Serie '
-									genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-									if response['network'] in aelGlobals.NETWORKDICT:
-										countries = aelGlobals.NETWORKDICT[response['network']]
-								itm = [str(result['seriesName'] + epiname), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
-								resultList.append((itm,))
-								break
-						if response and not foundEpisode and 'overview' in response:
-							desc = response['overview']
-						if response['network'] in aelGlobals.NETWORKDICT:
-							countries = aelGlobals.NETWORKDICT[response['network']]
-						year = response['firstAired'][:4]
-						for genre in response['genre']:
+					seriesid = None
+					countries, year, genres, rating, fsk, desc, epiname = "", "", "", "", "", "", ""
+					seriesid = result['id']
+					if seriesid:
+						foundEpisode = False
+						show = tvdb.Series(seriesid)
+						response = show.info()
+						epis = tvdb.Series_Episodes(seriesid)
+						try:  # mandatory because the library raises an error when no result
+							episoden = epis.all()
+						except Exception:
+							episoden = []
+						epilist = []
+						if episoden:
+							for episode in episoden:
+								epilist.append(episode['episodeName'].lower())
+							bestmatch = get_close_matches(title.lower(), epilist, 1, 0.6)
+							if not bestmatch:
+								bestmatch = [title.lower()]
+							for episode in episoden:
+								if episode['episodeName'].lower() == bestmatch[0]:
+									foundEpisode = True
+									if 'episodeName' in episode:
+										epiname = ' - S' + searchName[0] + 'E' + searchName[1] + ' - ' + episode['episodeName'] if searchName else ' - ' + episode['episodeName']
+									if 'overview' in episode:
+										desc = episode['overview']
+									if 'firstAired' in episode:
+										year = episode['firstAired'][:4]
+									if 'siteRating' in episode and episode['siteRating'] != '0' and episode['siteRating'] != 'None':
+										rating = episode['siteRating']
+									fsk = aelGlobals.FSKDICT.get(episode.get("contentRating", ""), "")
+									if response:
+										if 'genre' in response and response['genre']:
+											for genre in response['genre']:
+												genres = genres + genre + '-Serie '
+										genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+										if response['network'] in aelGlobals.NETWORKDICT:
+											countries = aelGlobals.NETWORKDICT[response['network']]
+									itm = [str(result['seriesName'] + epiname), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
+									resultList.append((itm,))
+									break
+							if response and not foundEpisode and 'overview' in response:
+								desc = response['overview']
+							if response['network'] in aelGlobals.NETWORKDICT:
+								countries = aelGlobals.NETWORKDICT[response['network']]
+							year = response['firstAired'][:4]
+							for genre in response['genre']:
+								genres = genres + genre + '-Serie '
+							genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+							rating = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
+							itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
+							resultList.append((itm,))
+	# TVMAZE data server
+	if config.plugins.AdvancedEventLibrary.tvmaszeUsage.value & 1:
+		tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
+		errmsg, res = getAPIdata(tvmazeurl, params={"q": title})
+		if errmsg:
+			write_log("API download error in module 'get_searchResults: TVMAZE call #1'")
+		if res:
+			reslist = []
+			for item in res:
+				#===== geaendert (#9) ========
+				#reslist.append(item['show']['name'].lower())
+				if item.get('show', "") and item['show'].get('name', ""):
+					reslist.append(item['show']['name'].lower())
+				# =============================
+			bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+			if not bestmatch:
+				bestmatch = [title.lower()]
+			for item in res:
+				#===== geaendert (#9) ========
+				#if item['show']['name'].lower() in bestmatch:
+				if item.get('show', "") and item['show'].get('name', "") and item['show']['name'].lower() in bestmatch:
+					countries, year, genres, rating, fsk, desc = "", "", "", "", "", ""
+					#===== geaendert (#9) ========
+					#if item['show']['summary']:
+					if item['show'].get('summary', ""):
+					# =============================
+						desc = item['show']['summary']
+					#===== geaendert (#9) ========
+					#if item['show']['network']['country']:
+					if item['show'].get('network', "") and item['show']['network'].get('country', "") and item['show']['network']['country'].get('code', ""):
+					# =============================
+						countries = item['show']['network']['country']['code']
+					#===== geaendert (#9) ========
+					#if item['show']['premiered']:
+					if item['show'].get('premiered', ""):
+					# =============================
+						year = item['show']['premiered'][:4]
+					#===== geaendert (#9) ========
+					#if item['show']['genres']:
+					if item['show'].get('genres', ""):
+					# =============================
+						for genre in item['show']['genres']:
 							genres = genres + genre + '-Serie '
 						genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-						rating = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
-						itm = [str(result['seriesName']), str(countries), str(year), str(genres), str(rating), str(fsk), "The TVDB", desc]
-						resultList.append((itm,))
-	tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
-	errmsg, res = getAPIdata(tvmazeurl, params={"q": title})
-	if errmsg:
-		write_log("API download error in module 'get_searchResults: TVMAZE call #1'")
-	if res:
-		reslist = []
-		for item in res:
-			#===== geaendert (#9) ========
-			#reslist.append(item['show']['name'].lower())
-			if item.get('show', "") and item['show'].get('name', ""):
-				reslist.append(item['show']['name'].lower())
-			# =============================
-		bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-		if not bestmatch:
-			bestmatch = [title.lower()]
-		for item in res:
-			#===== geaendert (#9) ========
-			#if item['show']['name'].lower() in bestmatch:
-			if item.get('show', "") and item['show'].get('name', "") and item['show']['name'].lower() in bestmatch:
-
-				countries, year, genres, rating, fsk, desc = "", "", "", "", "", ""
-				#===== geaendert (#9) ========
-				#if item['show']['summary']:
-				if item['show'].get('summary', ""):
-				# =============================
-					desc = item['show']['summary']
-				#===== geaendert (#9) ========
-				#if item['show']['network']['country']:
-				if item['show'].get('network', "") and item['show']['network'].get('country', "") and item['show']['network']['country'].get('code', ""):
-				# =============================
-					countries = item['show']['network']['country']['code']
-				#===== geaendert (#9) ========
-				#if item['show']['premiered']:
-				if item['show'].get('premiered', ""):
-				# =============================
-					year = item['show']['premiered'][:4]
-				#===== geaendert (#9) ========
-				#if item['show']['genres']:
-				if item['show'].get('genres', ""):
-				# =============================
-					for genre in item['show']['genres']:
-						genres = genres + genre + '-Serie '
-					genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-				#===== geaendert (#9) ========
-				#if item['show']['rating']['average'] and str(item['show']['rating']['average']) != None:
-				if item['show'].get('rating', "") and item['show']['rating'].get('average', ""):  # and str(item['show']['rating']['average']) is not None:
-				# =============================
-					rating = item['show']['rating']['average']
-				itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
-				resultList.append((itm,))
-	omdburl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
-	omdbapi = get_keys('omdb')
-	errmsg, res = getAPIdata(omdburl, params={"apikey": omdbapi, "s": title, "page": 1})
-	if errmsg:
-		write_log("API download error in module 'get_searchResults: TVMAZE call #2'")
-	if res and res.get("Response", False):
-		reslist = []
-		for result in res.get("Search", []):
-			reslist.append(result['Title'].lower())
-		bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
-		if not bestmatch:
-			bestmatch = [title.lower()]
-		for result in res.get("Search", []):
-			if result['Title'].lower() in bestmatch:
-				errmsg, res = getAPIdata(omdburl, params={"apikey": omdbapi, "i": result.get("imdbID", "")})
-				if errmsg:
-					write_log("API download error in module 'get_searchResults: TVMAZE call #3'")
-				if res:
-					countries, year, genres, rating, fsk = "", "", "", "", ""
-					desc = ""
-					if res['Response'] == "True":
-						if res['Plot']:
-							desc = res['Plot']
-						if res['Year']:
-							year = res['Year'][:4]
-						if res['Genre'] != "N/A":
-							types = ' '
-							if res['Type'] and res['Type'] == 'series':
-								types = '-Serie '
-							resgenres = res['Genre'].split(', ')
-							for genre in resgenres:
-								genres = genres + genre + types
-							genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-						if res['imdbRating'] != "N/A":
-							rating = res['imdbRating']
-						if res['Country'] != "N/A":
-							rescountries = res['Country'].split(', ')
-							for country in rescountries:
-								countries = countries + country + ' | '
-							countries = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
-						fsk = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
-						itm = [res['Title'], countries, str(year), genres, str(rating), fsk, "omdb", desc]
-						resultList.append((itm,))
+					#===== geaendert (#9) ========
+					#if item['show']['rating']['average'] and str(item['show']['rating']['average']) != None:
+					if item['show'].get('rating', "") and item['show']['rating'].get('average', ""):  # and str(item['show']['rating']['average']) is not None:
+					# =============================
+						rating = item['show']['rating']['average']
+					itm = [str(item['show']['name']), str(countries), str(year), str(genres), str(rating), str(fsk), "maze.tv", desc]
+					resultList.append((itm,))
+	# OMDB data server
+	if config.plugins.AdvancedEventLibrary.omdbUsage.value & 1:
+		omdburl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
+		omdbapi = get_keys('omdb')
+		errmsg, res = getAPIdata(omdburl, params={"apikey": omdbapi, "s": title, "page": 1})
+		if errmsg:
+			write_log("API download error in module 'get_searchResults: TVMAZE call #2'")
+		if res and res.get("Response", False):
+			reslist = []
+			for result in res.get("Search", []):
+				reslist.append(result['Title'].lower())
+			bestmatch = get_close_matches(title.lower(), reslist, 10, 0.4)
+			if not bestmatch:
+				bestmatch = [title.lower()]
+			for result in res.get("Search", []):
+				if result['Title'].lower() in bestmatch:
+					errmsg, res = getAPIdata(omdburl, params={"apikey": omdbapi, "i": result.get("imdbID", "")})
+					if errmsg:
+						write_log("API download error in module 'get_searchResults: TVMAZE call #3'")
+					if res:
+						countries, year, genres, rating, fsk = "", "", "", "", ""
+						desc = ""
+						if res['Response'] == "True":
+							if res['Plot']:
+								desc = res['Plot']
+							if res['Year']:
+								year = res['Year'][:4]
+							if res['Genre'] != "N/A":
+								types = ' '
+								if res['Type'] and res['Type'] == 'series':
+									types = '-Serie '
+								resgenres = res['Genre'].split(', ')
+								for genre in resgenres:
+									genres = genres + genre + types
+								genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
+							if res['imdbRating'] != "N/A":
+								rating = res['imdbRating']
+							if res['Country'] != "N/A":
+								rescountries = res['Country'].split(', ')
+								for country in rescountries:
+									countries = countries + country + ' | '
+								countries = countries[:-2].replace('West Germany', 'DE').replace('East Germany', 'DE').replace('Germany', 'DE').replace('France', 'FR').replace('Canada', 'CA').replace('Austria', 'AT').replace('Switzerland', 'S').replace('Belgium', 'B').replace('Spain', 'ESP').replace('Poland', 'PL').replace('Russia', 'RU').replace('Czech Republic', 'CZ').replace('Netherlands', 'NL').replace('Italy', 'IT')
+							fsk = aelGlobals.FSKDICT.get(res.get("Rated", ""), "")
+							itm = [res['Title'], countries, str(year), genres, str(rating), fsk, "omdb", desc]
+							resultList.append((itm,))
 	write_log(f"search results : {resultList}")
 	if resultList:
 		return (sorted(resultList, key=lambda x: x[0]))
@@ -2729,16 +2714,19 @@ def get_searchResults(title, lang='de'):
 		return resultList
 
 
-def downloadTVSImage(tvsImage, imgname):
+def downloadTVSImage(imgurl, imgname):
 	if not fileExists(imgname):
-		ir = get(tvsImage, stream=True, timeout=4)
-		if ir.status_code == 200:
-			with open(imgname, 'wb') as f:
+		ir = get(imgurl, stream=True, timeout=4)
+		if ir.status_code != 200:
+			return False
+		try:  # TODO: weg damit nachdem Dateinamen von b64encode auf HASH umgestellt wurden
+			with open(imgname, 'wb') as file:
 				ir.raw.decode_content = True
-				copyfileobj(ir.raw, f)
-				f.close()
+				copyfileobj(ir.raw, file)
 			ir = None
-			return True
+		except Exception:
+			return False
+	return True
 
 
 def downloadTVMovieImage(tvMovieImage, imgname):
@@ -2748,9 +2736,12 @@ def downloadTVMovieImage(tvMovieImage, imgname):
 		ir = get(imgurl, stream=True, timeout=4)
 		if ir.status_code != 200:
 			return False
-		with open(imgname, 'wb') as file:
-			ir.raw.decode_content = True
-			copyfileobj(ir.raw, file)
+		try:  # TODO: weg damit nachdem Dateinamen von b64encode auf HASH umgestellt wurden
+			with open(imgname, 'wb') as file:
+				ir.raw.decode_content = True
+				copyfileobj(ir.raw, file)
+		except Exception:
+			return False
 	return True
 
 
