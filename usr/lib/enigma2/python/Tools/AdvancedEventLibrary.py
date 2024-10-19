@@ -1140,10 +1140,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if titleinfo.get("poster_url", ""):
 						posters += 1
 						filename = titleinfo.get("poster_url", "").split("/")[-1]
-#						print(f"#####download: {aelGlobals.POSTERPATH}{research if research else filename}")
+						print(f"#####download: {aelGlobals.POSTERPATH}{research if research else filename}")
 						downloadImage(titleinfo.get("poster_url", ""), join(aelGlobals.POSTERPATH, f"{research if research else filename}"))
 						if titleinfo.get("poster_url", ""):
-#							print(f"#####Imageopen: {aelGlobals.POSTERPATH}{filename}")
+							print(f"#####Imageopen: {aelGlobals.POSTERPATH}{filename}")
 							img = Image.open(join(aelGlobals.POSTERPATH, filename))
 							w, h = img.size
 							if w > h:
@@ -3036,10 +3036,10 @@ class DB_Functions(object):
 		row = cur.fetchall()
 		return True if row else False
 
-	def getblackList(self, filename):
+	def getblackList(self, base64title):
 		cur = self.conn.cursor()
-		query = "SELECT filename FROM blackList WHERE filename = ?"
-		cur.execute(query, (filename,))
+		query = "SELECT base64title FROM blackList WHERE base64title = ?"
+		cur.execute(query, (base64title,))
 		row = cur.fetchall()
 		return True if row else False
 
