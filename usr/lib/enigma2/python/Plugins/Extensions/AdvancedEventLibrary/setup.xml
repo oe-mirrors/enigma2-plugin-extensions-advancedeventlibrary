@@ -4,10 +4,6 @@
 		<item level="0" text="Data directory (press OK):" description="---Daten-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Location</item>
 		<item level="0" text="Database directory:" description="---Datenbank-Verzeichnis---">config.plugins.AdvancedEventLibrary.dbFolder</item>
 		<item level="0" text="Backup directory (press OK):" description="---Backup-Verzeichnis (OK drücken)---">config.plugins.AdvancedEventLibrary.Backup</item>
-		<item level="0" text="TVDb API V4 user pin used:" description="---verwendeter TVDb API-V4-User-Pin---">config.plugins.AdvancedEventLibrary.tvdbV4Key</item>
-		<item level="0" text="TVDb API key used:" description="---verwendeter TVDb API-Key---">config.plugins.AdvancedEventLibrary.tvdbKey</item>
-		<item level="0" text="TMDB API key used:" description="---verwendeter TMDb API-Key---">config.plugins.AdvancedEventLibrary.tmdbKey</item>
-		<item level="0" text="OMDB API key used:" description="---verwendeter OMDB API-Key---">config.plugins.AdvancedEventLibrary.omdbKey</item>
 		<item level="0" text="Maximum storage space (GB):" description="---maximaler Speicherplatz (GB)---">config.plugins.AdvancedEventLibrary.MaxSize</item>
 		<item level="0" text="Maximum inodes to be used (%):" description="---maximal zu benutzende Inodes (%)---">config.plugins.AdvancedEventLibrary.MaxUsedInodes</item>
 		<item level="0" text="Close AEL menu automatically:" description="---AEL-Menü automatisch schließen---">config.plugins.AdvancedEventLibrary.CloseMenu</item>
@@ -52,9 +48,13 @@
 		<item level="0" text="Prime time Duration (minutes):" description="---Prime-Time Dauer (Minuten)---">config.plugins.AdvancedEventLibrary.Duration</item>
 		<item level="0" text="-----Usage of servers---------------------------------------------------------"/>
 		<item level="0" text="TMDb - The Movie Database:" description="Choose how to use the server of TMdb - The Movie Database">config.plugins.AdvancedEventLibrary.tmdbUsage</item>
+		<item level="0" text="TMDB API key used:" description="---verwendeter TMDb API-Key---">config.plugins.AdvancedEventLibrary.tmdbKey</item>
 		<item level="0" text="TVDb - TV Database:" description="Choose how to use the server of TVDb - TV Database">config.plugins.AdvancedEventLibrary.tvdbUsage</item>
-		<item level="0" text="TVmaze - TVMAZE Database:" description="Choose how to use the server of TVmaze - TVMAZE Database">config.plugins.AdvancedEventLibrary.tvmaszeUsage</item>
+		<item level="0" text="TVDb API V4 user pin used:" description="---verwendeter TVDb API-V4-User-Pin---">config.plugins.AdvancedEventLibrary.tvdbV4Key</item>
+		<item level="0" text="TVDb API key used:" description="---verwendeter TVDb API-Key---">config.plugins.AdvancedEventLibrary.tvdbKey</item>
 		<item level="0" text="OMDb - Open Media Database:" description="Choose how to use the server of OMDb - Open Media Database">config.plugins.AdvancedEventLibrary.omdbUsage</item>
+		<item level="0" text="OMDB API key used:" description="---verwendeter OMDB API-Key---">config.plugins.AdvancedEventLibrary.omdbKey</item>
+		<item level="0" text="TVmaze - TVMAZE Database:" description="Choose how to use the server of TVmaze - TVMAZE Database">config.plugins.AdvancedEventLibrary.tvmaszeUsage</item>
 		<item level="0" text="TVS - TV Spielfilm Database:" description="Choose how to use the server of TVS - TV Spielfilm Database">config.plugins.AdvancedEventLibrary.tvsUsage</item>
 		<item level="0" text="TVmovie - TV Movie Database:" description="Choose how to use the server of TVmovie - TV Movie Database">config.plugins.AdvancedEventLibrary.tvmovieUsage</item>
 		<item level="0" text="Bing - Microsoft Bing Database:" description="Choose how to use the server of Bing - Microsoft Bing Databas">config.plugins.AdvancedEventLibrary.bingUsage</item>
