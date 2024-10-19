@@ -1140,10 +1140,10 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					if titleinfo.get("poster_url", ""):
 						posters += 1
 						filename = titleinfo.get("poster_url", "").split("/")[-1]
-						print(f"#####download: {aelGlobals.POSTERPATH}{research if research else filename}")
+#						print(f"#####download: {aelGlobals.POSTERPATH}{research if research else filename}")
 						downloadImage(titleinfo.get("poster_url", ""), join(aelGlobals.POSTERPATH, f"{research if research else filename}"))
 						if titleinfo.get("poster_url", ""):
-							print(f"#####Imageopen: {aelGlobals.POSTERPATH}{filename}")
+#							print(f"#####Imageopen: {aelGlobals.POSTERPATH}{filename}")
 							img = Image.open(join(aelGlobals.POSTERPATH, filename))
 							w, h = img.size
 							if w > h:
@@ -2533,8 +2533,7 @@ class AELGlobals:
 	EXCLUDENAMES = ["RTL UHD", "--", "Sendeschluss", "Dokumentation", "EaZzzy", "MediaShop", "Dauerwerbesendung", "Impressum"]
 	APIKEYS = {"tmdb": ["ZTQ3YzNmYzJkYzRlMWMwN2UxNGE4OTc1YjI5MTE1NWI=", "MDA2ZTU5NGYzMzFiZDc1Nzk5NGQwOTRmM2E0ZmMyYWM=", "NTRkMzg1ZjBlYjczZDE0NWZhMjNkNTgyNGNiYWExYzM="],
 		   	"tvdb": ["NTRLVFNFNzFZWUlYM1Q3WA==", "MzRkM2ZjOGZkNzQ0ODA5YjZjYzgwOTMyNjI3ZmE4MTM=", "Zjc0NWRiMDIxZDY3MDQ4OGU2MTFmNjY2NDZhMWY4MDQ="],
-			"omdb": ["'OTg3NGU1ZA=="]}  # Holger Test
-#			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]}  # ["fd0b9216", "bf911bfc", "9fd71c32"]
+			"omdb": ["ZmQwYjkyMTY=", "YmY5MTFiZmM=", "OWZkNzFjMzI="]}  # ["fd0b9216", "bf911bfc", "9fd71c32"]
 	DESKTOPSIZE = getDesktop(0).size()
 	TEMPPATH = "/var/volatile/tmp"
 	# TODO: später wieder auf TEMPPATH setzen
