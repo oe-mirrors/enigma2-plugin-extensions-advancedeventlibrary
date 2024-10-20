@@ -70,6 +70,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.title = f"{_('Advanced-Event-Library Menüauswahl')}: (R{aelGlobals.CURRENTVERSION})"
 		self.memInfo = ""
 		self.statistic = ""
+		self.lang = "de"
 		self["key_red"] = StaticText(_("Close"))
 		self["key_green"] = StaticText(_("Start scan"))
 		self["key_yellow"] = StaticText(_("Create backup"))
@@ -286,7 +287,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		if exists(aelGlobals.TVS_REFFILE):
 			self["status"].setText(_("start search run..."))
 			createDirs(config.plugins.AdvancedEventLibrary.Location.value)
-			startUpdate()
+			startUpdate(self.lang)
 		else:
 			msg = _("The TVS reference file was not found.\nTV Spielfilm can therefore not be supported!\n\nShould a bouquets import be carried out now (recommended)?")
 			self.session.openWithCallback(self.key_green_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=5, default=False)
@@ -295,7 +296,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		if answer is True:
 			self.key_blue_handler()
 		else:
-			startUpdate()
+			startUpdate(self.lang)
 
 	def key_yellow_handler(self):
 		callInThread(createBackup)
