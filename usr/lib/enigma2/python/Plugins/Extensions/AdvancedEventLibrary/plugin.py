@@ -20,6 +20,7 @@ gSession = None
 ServiceTrack = None
 addFont(join(aelGlobals.PLUGINPATH, "fonts/Normal.ttf"), 'Normal', 100, False)
 addFont(join(aelGlobals.PLUGINPATH, "fonts/Small.ttf"), 'Small', 100, False)
+addFont(join(aelGlobals.PLUGINPATH, "fonts/andale.ttf"), 'andale', 100, False)  # liegt auch in '/usr/share/fonts'
 
 
 def sessionstart(reason, **kwargs):

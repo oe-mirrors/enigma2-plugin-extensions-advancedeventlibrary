@@ -24,7 +24,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, convert2base64, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, getDB, getImageFile, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -597,7 +597,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						if evt and evt[0][16].endswith('mp4'):
 							hasTrailer = evt[0][16]
 						if hasTrailer is None:
-							dbdata = self.db.getTitleInfo(convert2base64(name))
+							dbdata = self.db.getTitleInfo(name)
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
 						if self.viewType == 1:  # 'Listenansicht'

@@ -23,7 +23,7 @@ from Tools.Directories import fileExists
 from glob import glob
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import aelGlobals, getImageFile, clearMem, getDB, convert2base64, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getImageFile, clearMem, getDB, PicLoader
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime
@@ -317,7 +317,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		try:
 			if self.currentFolder[0] == "root":
 				for k in self.moviedict:
-					img = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', k.split('/')[-1])
+					img = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', k.split('/')[-1])
 					if not img:
 						img = self.folderImage
 					itm = MovieEntry([k, k], 0, k.split('/')[-1] + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + k.split('/')[-1] + '/'), img, True, 0, "")
@@ -327,7 +327,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			else:
 				if 'parent' in self.moviedict[self.currentFolder[0]][self.currentFolder[1]]:
 					if self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'] != self.currentFolder[1]:
-						img = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1])
+						img = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1])
 						if not img:
 							img = self.folderImage
 						itm = MovieEntry([self.currentFolder[0], self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent']], 0, '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.moviedict[self.currentFolder[0]][self.currentFolder[1]]['parent'].split('/')[-1] + '/'), img, True, 0, "")
@@ -348,7 +348,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					folderlist.sort()
 					for path in folderlist:
 						if self.currentFolder[1] + '/' + path in self.moviedict[self.currentFolder[0]]:
-							img = getImageFile(aelGlobals.LOCPATH + self.imageType + '/', path)
+							img = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', path)
 							if not img:
 								img = self.folderImage
 							itm = MovieEntry([self.currentFolder[0], self.currentFolder[1] + '/' + path], 0, path + '...', eServiceReference('2:0:1:0:0:0:0:0:0:0:' + self.currentFolder[1] + '/' + path + '/'), img, True, 0, "")
@@ -1202,18 +1202,18 @@ def saveList(imageType):
 													except Exception:
 														pass
 													date = os.path.getmtime(os.path.join(root, filename))
-													dbdata = db.getTitleInfo(convert2base64(name))
+													dbdata = db.getTitleInfo(name)
 													if dbdata:
 														if str(dbdata[7]).endswith('mp4'):
 															trailer = dbdata[7]
-													image = getImageFile(aelGlobals.LOCPATH + imageType + '/', name)
+													image = getImageFile(aelGlobals.HDDPATH + imageType + '/', name)
 													if info:
 														ptr = info.getEvent(service)
 														if ptr:
 															if image is None:
-																image = getImageFile(aelGlobals.LOCPATH + imageType + '/', ptr.getEventName())
+																image = getImageFile(aelGlobals.HDDPATH + imageType + '/', ptr.getEventName())
 															if trailer == "":
-																dbdata = db.getTitleInfo(convert2base64(ptr.getEventName()))
+																dbdata = db.getTitleInfo(ptr.getEventName())
 																if dbdata:
 																	if str(dbdata[7]).endswith('mp4'):
 																		trailer = dbdata[7]

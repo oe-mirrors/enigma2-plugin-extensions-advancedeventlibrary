@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, convert2base64, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, getDB, getImageFile, clearMem, aelGlobals
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -283,7 +283,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					if evt and evt[0][16].endswith('mp4'):
 						hasTrailer = evt[0][16]
 					if hasTrailer is None:
-						dbdata = self.db.getTitleInfo(convert2base64(events[0][1]))
+						dbdata = self.db.getTitleInfo(events[0][1])
 						if dbdata and dbdata[7].endswith('mp4'):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
@@ -756,7 +756,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 						if evt and evt[0][16].endswith('mp4'):
 							hasTrailer = evt[0][16]
 						if hasTrailer is None:
-							dbdata = self.db.getTitleInfo(convert2base64(event[1]))
+							dbdata = self.db.getTitleInfo(event[1])
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
 						if self.eventImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
