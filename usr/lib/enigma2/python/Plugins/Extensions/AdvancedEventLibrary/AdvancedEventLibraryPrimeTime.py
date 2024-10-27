@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertDateInFileName, convertTitle, convertTitle2, convertSearchName, getDB, getImageFile, clearMem, aelGlobals
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
@@ -606,7 +606,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						if evt and evt[0][16].endswith('mp4'):
 							hasTrailer = evt[0][16]
 						if hasTrailer is None:
-							dbdata = self.db.getTitleInfo(convert2base64(name))
+							dbdata = self.db.getTitleInfo(name)
 							if dbdata and dbdata[7].endswith('mp4'):
 								hasTrailer = dbdata[7]
 						if self.viewType == 1:  # 'Listenansicht'
@@ -711,11 +711,11 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if val and len(str(val[0][11]).strip()) > 0:
 				return str(val[0][11]).strip()
 			eventName = convertDateInFileName(convertSearchName(name))
-			dbData = self.db.getTitleInfo(convert2base64(eventName))
+			dbData = self.db.getTitleInfo(eventName)
 			if not dbData:
-				dbData = self.db.getTitleInfo(convert2base64(convertTitle(eventName)))
+				dbData = self.db.getTitleInfo(convertTitle(eventName))
 				if not dbData:
-					dbData = self.db.getTitleInfo(convert2base64(convertTitle2(eventName)))
+					dbData = self.db.getTitleInfo(convertTitle2(eventName))
 			if dbData and len(dbData[2]) > 0:
 				if 'Serie' in str(dbData[2]):
 					if 'Dokumentation' in str(dbData[2]) or 'Documentary' in str(dbData[2]):

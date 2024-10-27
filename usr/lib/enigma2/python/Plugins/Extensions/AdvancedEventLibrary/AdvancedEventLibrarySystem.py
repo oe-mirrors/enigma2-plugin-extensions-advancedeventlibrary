@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, convert2base64, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, PicLoader
 
 from . import _  # for localized messages
 
@@ -115,21 +115,22 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		self.db = getDB()
 		confdir = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
 		if isfile(confdir):
-			posterCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'posterCount', None, 0)
-			posterSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'posterSize', None, 0))
-			coverCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'coverCount', None, 0)
-			coverSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'coverSize', None, 0))
-			previewCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'previewCount', None, 0)
-			previewSize = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'previewSize', None, 0))
-			usedInodes = self.db.parameter(aelGlobals.PARAMETER_GET, 'usedInodes', None, 0)
-			lastposterCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'lastposterCount', None, 0)
-			lastcoverCount = self.db.parameter(aelGlobals.PARAMETER_GET, 'lastcoverCount', None, 0)
-			lasteventInfoCount = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'lasteventInfoCount', None, 0))
-			lasteventInfoCountSuccsess = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'lasteventInfoCountSuccsess', None, 0))
-			lastpreviewImageCount = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'lastpreviewImageCount', None, 0))
-			lastadditionalDataCount = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'lastadditionalDataCount', None, 0))
-			lastadditionalDataCountBlacklist = str(self.db.parameter(aelGlobals.PARAMETER_GET, 'lastadditionalDataCountSuccess', None, 0))
-			lastadditionalDataCountSuccess = int(lastadditionalDataCount) - int(lastadditionalDataCountBlacklist)
+			GET = aelGlobals.PARAMETER_GET
+			posterCount = self.db.parameter(GET, 'posterCount', None, 0)
+			posterSize = str(self.db.parameter(GET, 'posterSize', None, 0))
+			coverCount = self.db.parameter(GET, 'coverCount', None, 0)
+			coverSize = str(self.db.parameter(GET, 'coverSize', None, 0))
+			previewCount = self.db.parameter(GET, 'previewCount', None, 0)
+			previewSize = str(self.db.parameter(GET, 'previewSize', None, 0))
+			usedInodes = self.db.parameter(GET, 'usedInodes', None, 0)
+			lastposterCount = self.db.parameter(GET, 'lastposterCount', None, 0)
+			lastcoverCount = self.db.parameter(GET, 'lastcoverCount', None, 0)
+			lasteventInfoCount = int(str(self.db.parameter(GET, 'lasteventInfoCount', None, 0)))
+			lasteventInfoCountSuccsess = int(str(self.db.parameter(GET, 'lasteventInfoCountSuccsess', None, 0)))
+			lastpreviewImageCount = int(str(self.db.parameter(GET, 'lastpreviewImageCount', None, 0)))
+			lastadditionalDataCount = int(str(self.db.parameter(GET, 'lastadditionalDataCount', None, 0)))
+			lastadditionalDataCountBlacklist = int(str(self.db.parameter(GET, 'lastadditionalDataCountSuccess', None, 0)))
+			lastadditionalDataCountSuccess = lastadditionalDataCount - lastadditionalDataCountBlacklist
 			lastUpdateStart, lastUpdateDuration = self.getlastUpdateInfo(self.db)
 			dbSize = getsize(confdir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
@@ -138,26 +139,28 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			liveTVtitleCount = self.db.getliveTVCount()
 			liveTVidtitleCount = self.db.getliveTVidCount()
 			percentTV = round(100 * liveTVidtitleCount / liveTVtitleCount) if (liveTVidtitleCount + liveTVtitleCount) > 0 else 0
-			percentlIC = round(100 * int(lasteventInfoCountSuccsess) / int(lasteventInfoCount)) if int(lasteventInfoCount) > 0 else 0
-			percentlaC = round(100 * int(lastadditionalDataCountSuccess) / int(lastadditionalDataCount)) if int(lastadditionalDataCount) > 0 else 0
+			percentlIC = round(100 * lasteventInfoCountSuccsess / lasteventInfoCount) if lasteventInfoCount > 0 else 0
+			percentlaC = round(100 * lastadditionalDataCountSuccess / lastadditionalDataCount) if lastadditionalDataCount > 0 else 0
 			cpS = round(float(posterSize.replace('G', '')) * 1024.0, 2) if 'G' in posterSize else posterSize
 			ccS = round(float(coverSize.replace('G', '')) * 1024.0, 2) if 'G' in coverSize else coverSize
 			pcS = round(float(previewSize.replace('G', '')) * 1024.0, 2) if 'G' in previewSize else previewSize
 			trailers = self.db.getTrailerCount()
 			size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
+			tabpos = "{0:<22} {1:<17} {2:<0}\n"
 			statistic = f"{_('Statistics last search run:')}\n"
 			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
-			statistic += f"{_('Event information:')}\t{lasteventInfoCount}\tfound:\t{lasteventInfoCountSuccsess} | {percentlIC} %\n"
-			statistic += f"{_('Extra data sought:')}\t{lastadditionalDataCount}\t{_('found:')}\t{lastadditionalDataCountSuccess} | {percentlaC} %\n"
-			statistic += f"{_('Executed on:')}\t{lastUpdateStart} h\t{_('Duration:')}\t{lastUpdateDuration} h\n\n"
-			statistic += f"{_('Total statistics:')}\n"
-			statistic += f"{_('Number of posters:')}\t{posterCount} {_('Size:')} {posterSize}\n"
-			statistic += f"{_('Number of previews:')}\t{previewCount} {_('Size:')} {previewSize}\n"
-			statistic += f"{_('Number of trailers:')}\t{trailers}\n"
-			statistic += f"{_('Database size:')}\t{dbSize} KB\n"
-			statistic += f"{_('Entries:')}\t{'{:5d}'.format(titleCount)} | {'{:5d}'.format(blackListCount)} | {'{:3d}'.format(percent)} %\n"
-			statistic += f"{_('Extra data:')}\t{'{:5d}'.format(liveTVtitleCount)} | {'{:5d}'.format(liveTVidtitleCount)} | {'{:3d}'.format(percentTV)} %\n"
-			statistic += f"{_('Storage space:')}\t{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB\t{_('Inodes used:')}\t{usedInodes}\n"
+			statistic += tabpos.format(f"{_('Event information:')}", lasteventInfoCount, f"found: {'{:5d}'.format(lasteventInfoCountSuccsess)} | {percentlIC} %")
+			statistic += tabpos.format(f"{_('Extra data sought:')}", lastadditionalDataCount, f"{_('found:')} {'{:5d}'.format(lastadditionalDataCountSuccess)} | {percentlaC} %")
+			statistic += tabpos.format(f"{_('Executed on:')}", f"{lastUpdateStart} h", f"{_('Duration:')} {lastUpdateDuration} h")
+			statistic += f"\n{_('Total statistics:')}\n"
+			statistic += tabpos.format(f"{_('Entries')}:", f"{'{:5d}'.format(titleCount)} | {'{:5d}'.format(blackListCount)} | {percent} %", "")
+			statistic += tabpos.format(f"{_('Extra data')}:", f"{'{:5d}'.format(liveTVtitleCount)} | {'{:5d}'.format(liveTVidtitleCount)} | {percentTV} %", "")
+			statistic += tabpos.format(f"{_('Number of posters')}:", posterCount, f"{_('Size')}: {posterSize}")
+			statistic += tabpos.format(f"{_('Number of covers')}:", coverCount, f"{_('Size')}: {coverSize}")
+			statistic += tabpos.format(f"{_('Number of previews')}:", previewCount, f"{_('Size')}: {previewSize}")
+			statistic += tabpos.format(f"{_('Number of trailers')}:", trailers, "")
+			statistic += tabpos.format(f"{_('Database size')}:", f'{dbSize} KB', f"{_('Size')}: {coverSize}")
+			statistic += tabpos.format(f"{_('Storage space')}:", f"{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB", f"{_('Inodes used:')} {usedInodes}")
 			self.statistic = statistic
 			memInfo = f"\n{_('Memory allocation:')}\n{self.getDiskInfo('/')}{self.getMemInfo('Mem')}"
 			memInfo += f"\n{_('Mountpoints:')}\n{self.getDiskInfo()}"
@@ -170,26 +173,26 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def getMemInfo(self, value):
 		result = [0, 0, 0, 0]  # (size, used, avail, use%)
 		check = 0
-		fd = open("/proc/meminfo")
-		for line in fd:
-			if value + "Total" in line:
-				check += 1
-				result[0] = int(line.split()[1]) * 1024		# size
-			elif value + "Free" in line:
-				check += 1
-				result[2] = int(line.split()[1]) * 1024		# avail
-			if check > 1:
-				if result[0] > 0:
-					result[1] = result[0] - result[2]  # used
-					result[3] = result[1] * 100 // result[0]  # use%
-				break
-		fd.close()
-		return f"{_('RAM')}:\t{getSizeStr(result[0])}\t{_('free')}: {getSizeStr(result[2])}\t{_('Occupied')}: {getSizeStr(result[1])} ({result[3]}%)\n"
+		with open("/proc/meminfo") as fd:
+			for line in fd:
+				if value + "Total" in line:
+					check += 1
+					result[0] = int(line.split()[1]) * 1024  # size
+				elif value + "Free" in line:
+					check += 1
+					result[2] = int(line.split()[1]) * 1024  # avail
+				if check > 1:
+					if result[0] > 0:
+						result[1] = result[0] - result[2]  # used
+						result[3] = result[1] * 100 // result[0]  # use%
+					break
+		tabpos = "{0:<11} {1:<10} {2:<16} {3:<12} {4:<0}\n"
+		return tabpos.format(f"{_('RAM')}:", getSizeStr(result[0]), f"{_('free')}: {getSizeStr(result[2])}", f"{_('occupied')}: {getSizeStr(result[1])}", f"({result[3]} %)")
 
 	def getDiskInfo(self, path=None):
 		def getMountPoints():
 			mounts = []
-			fd = open('/proc/mounts', 'r')
+			fd = open("/proc/mounts", "r")
 			for line in fd:
 				ln = line.split()
 				if len(ln) > 1:
@@ -200,23 +203,25 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		mountPoints = [path] if path else getMountPoints()
 		for mountPoint in mountPoints:
 			st = None
-			if '/media' in mountPoint or path:
+			if "/media" in mountPoint or path:
 				st = statvfs(mountPoint)
 			if st is not None and 0 not in (st.f_bsize, st.f_blocks):
-				result = [0, 0, 0, 0, mountPoint.replace('/media/net/autonet', '/...').replace('/media/net', '/...')]  # (size, used, avail, use%)
+				result = [0, 0, 0, 0, mountPoint.replace("/media/net/autonet", "/...").replace("/media/net", "/...")]  # (size, used, avail, use%)
 				result[0] = st.f_bsize * st.f_blocks  # size
 				result[2] = st.f_bsize * st.f_bavail  # avail
 				result[1] = result[0] - result[2]  # used
 				result[3] = result[1] * 100 // result[0]  # use%
 				resultList.append(result)
+		tabpos = "{0:<11} {1:<10} {2:<16} {3:<12} {4:<0}\n"
 		res = ""
 		for result in resultList:
-			res += f"{result[4]} :\t{getSizeStr(result[0])}\t{_('Free')}: {getSizeStr(result[2])}\t{_('Occupied')}: {getSizeStr(result[1])} ({result[3]}%)\n"
-		return res.replace('/ :', _('Flash:'))
+			result4 = f"{_('Flash')}:" if result[4] == '/' else f"{result[4]}:"
+			res += tabpos.format(result4, getSizeStr(result[0]), f"{_('free')}: {getSizeStr(result[2])}", f"{_('occupied')}: {getSizeStr(result[1])}", f"({result[3]} %)")
+		return res
 
 	def getlastUpdateInfo(self, db):
-		lastUpdateStart = self.convertTimestamp(db.parameter(aelGlobals.PARAMETER_GET, 'laststart', None, 0))
-		lastUpdateDuration = self.convertDuration(float(db.parameter(aelGlobals.PARAMETER_GET, 'laststop', None, 0)) - float(db.parameter(aelGlobals.PARAMETER_GET, 'laststart', None, 0)) - 3600)
+		lastUpdateStart = self.convertTimestamp(db.parameter(aelGlobals.PARAMETER_GET, "laststart", None, 0))
+		lastUpdateDuration = self.convertDuration(float(db.parameter(aelGlobals.PARAMETER_GET, "laststop", None, 0)) - float(db.parameter(aelGlobals.PARAMETER_GET, "laststart", None, 0)) - 3600)
 		return lastUpdateStart, lastUpdateDuration
 
 	def convertTimestamp(self, val):
@@ -306,9 +311,9 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 
 	def getStatus(self):
 		self["status"].setText(aelGlobals.STATUS if aelGlobals.STATUS else _("No search is currently running."))
-		self.memInfo = f"\nSpeicherbelegung :\n{self.getDiskInfo('/')}"
-		self.memInfo += str(self.getMemInfo('Mem'))
-		self.memInfo += f"\nMountpoints:\n{self.getDiskInfo()}"
+		self.memInfo = f"\n{_('Memory allocation')} :\n{self.getDiskInfo('/')}"
+		self.memInfo += self.getMemInfo("Mem")
+		self.memInfo += f"\n{_('Mountpoints')}:\n{self.getDiskInfo()}"
 		self["info"].setText(f"{self.statistic}{self.memInfo}")
 		self.refreshStatus.start(3000, True)
 
@@ -761,18 +766,12 @@ class Editor(Screen, ConfigListScreen):
 		self.session = session
 		self.skinName = 'Advanced-Event-Library-Editor'
 		self.title = _("Advanced-Event-Library-Editor")
-		self.ptr = ""
-		self.ptr2 = ""
-		self.evt = None
-		self.orgName = None
-		self.fileName = None
-		self.eid = None
+		self.ptr, self.ptr2, self.evt, self.orgName, self.fileName, self.e2eventId = "", "", "", "", "", ""
 		self.isInit = False
 		self.ImageCount = config.plugins.AdvancedEventLibrary.PreviewCount.value
 #		self.currentService = self.session.nav.getCurrentlyPlayingServiceReference()
 		self.language = 'de'
-		self.pSource = 1
-		self.cSource = 1
+		self.pSource = self.cSource = 1, 1
 		self.db = getDB()
 		if service:
 			self.ptr = ((service.getPath().split('/')[-1]).rsplit('.', 1)[0]).replace('__', ' ').replace('_', ' ')
@@ -793,7 +792,7 @@ class Editor(Screen, ConfigListScreen):
 			self.ptr2 = eventname[0]
 			self.evt = self.db.getliveTV(eventname[1], eventname[0])
 			if self.evt:
-				self.eid = self.evt[0][0]
+				self.e2eventId = self.evt[0][0]
 				if self.evt[0][3] != '':
 					self.ptr = str(self.evt[0][3])
 					self.orgName = eventname[0]
@@ -823,7 +822,7 @@ class Editor(Screen, ConfigListScreen):
 					write_log(f"{ptr.getEventName()} {self.ptr}", DEFAULT_MODULE_NAME)
 					self.evt = self.db.getliveTV(ptr.getEventId(), str(self.ptr))
 					if self.evt:
-						self.eid = self.evt[0][0]
+						self.e2eventId = self.evt[0][0]
 						if self.evt[0][3] != '':
 							self.orgName = self.ptr
 							self.ptr = str(self.evt[0][3])
@@ -949,7 +948,7 @@ class Editor(Screen, ConfigListScreen):
 							else:
 								copy(fileName, selection[4])
 			elif "screenshot" in self.activeList.lower():
-				fname = f"{convertSearchName(convert2base64(self.removeExtension(self.ptr)))}.jpg"
+				fname = f"{convertSearchName(self.removeExtension(self.ptr))}.jpg"
 				cmd = f"grab -v -j 100 /tmp/{fname}"
 				ret = system(cmd)
 				if ret == 0:
@@ -1018,9 +1017,9 @@ class Editor(Screen, ConfigListScreen):
 				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 				self.session.openWithCallback(self.languageCallBack, ChoiceBox, title=_("Language used for search"), keys=keys, list=choices, selection=idx)
 			if ret[0] == _("Delete entry"):
-				self.db.cleanDB(convertSearchName(convert2base64(self.ptr)))
-				if self.eid is not None:
-					self.db.cleanliveTVEntry(self.eid)
+				self.db.cleanDB(convertSearchName(self.ptr))
+				if self.e2eventId:
+					self.db.cleanliveTVEntry(self.e2eventId)
 				if self.cSource == 0:
 					for file in self["cList"].getList():
 						try:
@@ -1044,9 +1043,9 @@ class Editor(Screen, ConfigListScreen):
 				self.eventYear.value = ""
 				self.eventOverview = None
 			elif ret[0] == _("Delete entry and set to blacklist"):
-				self.db.cleanNadd2BlackList(convertSearchName(convert2base64(self.ptr)))
-				if self.eid is not None:
-					self.db.cleanliveTVEntry(self.eid)
+				self.db.cleanNadd2BlackList(convertSearchName(self.ptr))
+				if self.e2eventId:
+					self.db.cleanliveTVEntry(self.e2eventId)
 				if self.cSource == 0:
 					for file in self["cList"].getList():
 						try:
@@ -1183,19 +1182,17 @@ class Editor(Screen, ConfigListScreen):
 	def correctNames(self, ret):
 		if ret and ret[0] == self.ptr2:
 			self.ptr = self.ptr2
-			self.evt = None
-			self.eid = None
-		eventData = self.db.getTitleInfo(convertSearchName(convert2base64(self.ptr)))
+			self.evt, self.e2eventId = "", ""
+		eventData = self.db.getTitleInfo(convertSearchName(self.ptr))
 		if not eventData:
-			eventData = self.db.getTitleInfo(convertSearchName(convert2base64(convertTitle(self.ptr))))
+			eventData = self.db.getTitleInfo(convertSearchName(convertTitle(self.ptr)))
 			if not eventData:
-				eventData = self.db.getTitleInfo(convertSearchName(convert2base64(convertTitle2(self.ptr))))
+				eventData = self.db.getTitleInfo(convertSearchName(convertTitle2(self.ptr)))
 		if not eventData:
-			eventData = [convertSearchName(convert2base64(self.ptr)), self.ptr, "", "", "", "", ""]
-		if not self.db.checkTitle(convert2base64(self.ptr)):
-			if self.ptr != "nothing found":
-				self.db.addTitleInfo(convertSearchName(convert2base64(self.ptr)), self.ptr, "", "", "", "", "")
-		self.eventData = [convertSearchName(convert2base64(self.ptr)), self.ptr, "", "", "", "", ""]
+			eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
+		if not self.db.checkTitle(self.ptr) and self.ptr != "nothing found":
+			self.db.addTitleInfo(convertSearchName(self.ptr), self.ptr, "", "", "", "", "")
+		self.eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
 		if self.evt:  # genre
 			self.eventData[2] = self.evt[0][14] if len(str(self.evt[0][14]).strip()) > 0 else eventData[2]
 		else:
@@ -1256,9 +1253,9 @@ class Editor(Screen, ConfigListScreen):
 	def afterInit(self, refreshPoster=True, refreshCover=True):
 		if self.ptr != "nothing found":
 			if refreshCover and refreshPoster:
-				pName1 = f"{convert2base64(self.ptr)}.jpg"
-				pName2 = f"{convert2base64(convertTitle(self.ptr))}.jpg"
-				pName3 = f"{convert2base64(convertTitle2(self.ptr))}.jpg"
+				pName1 = f"{self.ptr}.jpg"
+				pName2 = f"{convertTitle(self.ptr)}.jpg"
+				pName3 = f"{convertTitle2(self.ptr)}.jpg"
 				write_log(f"1. possible picture name : {self.ptr} as {pName1}", DEFAULT_MODULE_NAME)
 				if pName1 != pName2:
 					write_log(f"2. possible picture name : {convertTitle(self.ptr)} as {pName2}", DEFAULT_MODULE_NAME)
@@ -1282,12 +1279,12 @@ class Editor(Screen, ConfigListScreen):
 			itm = [_("load data, please wait..."), None, None, None, None, None, None]
 			waitList.append((itm,))
 			if refreshCover:
-				coverFiles = glob(join(aelGlobals.COVERPATH, f"{convert2base64(self.ptr.strip())}.jpg"))
-				c2 = glob(join(aelGlobals.COVERPATH, f"{convert2base64(convertTitle(self.ptr).strip())}.jpg"))
+				coverFiles = glob(join(aelGlobals.COVERPATH, f"{self.ptr.strip()}.jpg"))
+				c2 = glob(join(aelGlobals.COVERPATH, f"{convertTitle(self.ptr).strip()}.jpg"))
 				for file in c2:
 					if file not in coverFiles:
 						coverFiles.append(file)
-				c2 = glob(join(aelGlobals.COVERPATH, f"{convert2base64(convertTitle2(self.ptr).strip())}.jpg"))
+				c2 = glob(join(aelGlobals.COVERPATH, f"{convertTitle2(self.ptr).strip()}.jpg"))
 				for file in c2:
 					if file not in coverFiles:
 						coverFiles.append(file)
@@ -1296,15 +1293,15 @@ class Editor(Screen, ConfigListScreen):
 				if coverFile and coverFile not in coverFiles:
 					coverFiles.append(coverFile)
 				if self.orgName and self.orgName != self.ptr:
-					coverFiles2 = glob(join(aelGlobals.COVERPATH, f"{convert2base64(self.orgName.strip())}.jpg"))
+					coverFiles2 = glob(join(aelGlobals.COVERPATH, f"{self.orgName.strip()}.jpg"))
 					for file in coverFiles2:
 						if file not in coverFiles:
 							coverFiles.append(file)
-					p2 = glob(join(aelGlobals.COVERPATH, f"{convert2base64(convertTitle(self.orgName).strip())}.jpg"))
+					p2 = glob(join(aelGlobals.COVERPATH, f"{convertTitle(self.orgName).strip()}.jpg"))
 					for file in p2:
 						if file not in coverFiles:
 							coverFiles.append(file)
-					p2 = glob(join(aelGlobals.COVERPATH, f"{convert2base64(convertTitle2(self.orgName).strip())}.jpg"))
+					p2 = glob(join(aelGlobals.COVERPATH, f"{convertTitle2(self.orgName).strip()}.jpg"))
 					for file in p2:
 						if file not in coverFiles:
 							coverFiles.append(file)
@@ -1339,12 +1336,12 @@ class Editor(Screen, ConfigListScreen):
 					callInThread(self.searchPics, (False, True))
 				del coverFiles
 			if refreshPoster:
-				posterFiles = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(self.ptr.strip())}.jpg"))
-				p2 = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(convertTitle(self.ptr).strip())}.jpg"))
+				posterFiles = glob(join(aelGlobals.POSTERPATH, f"{self.ptr.strip()}.jpg"))
+				p2 = glob(join(aelGlobals.POSTERPATH, f"{convertTitle(self.ptr).strip()}.jpg"))
 				for file in p2:
 					if file not in posterFiles:
 						posterFiles.append(file)
-				p2 = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(convertTitle2(self.ptr).strip())}.jpg"))
+				p2 = glob(join(aelGlobals.POSTERPATH, f"{convertTitle2(self.ptr).strip()}.jpg"))
 				for file in p2:
 					if file not in posterFiles:
 						posterFiles.append(file)
@@ -1354,15 +1351,15 @@ class Editor(Screen, ConfigListScreen):
 					posterFiles.append(posterFile)
 
 				if self.orgName and self.orgName != self.ptr:
-					posterFiles2 = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(self.orgName.strip())}.jpg"))
+					posterFiles2 = glob(join(aelGlobals.POSTERPATH, f"{self.orgName.strip()}.jpg"))
 					for file in posterFiles2:
 						if file not in posterFiles:
 							posterFiles.append(file)
-					p2 = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(convertTitle(self.orgName).strip())}.jpg"))
+					p2 = glob(join(aelGlobals.POSTERPATH, f"{convertTitle(self.orgName).strip()}.jpg"))
 					for file in p2:
 						if file not in posterFiles:
 							posterFiles.append(file)
-					p2 = glob(join(aelGlobals.POSTERPATH, f"{convert2base64(convertTitle2(self.orgName).strip())}.jpg"))
+					p2 = glob(join(aelGlobals.POSTERPATH, f"{convertTitle2(self.orgName).strip()}.jpg"))
 					for file in p2:
 						if file not in posterFiles:
 							posterFiles.append(file)
@@ -1398,7 +1395,7 @@ class Editor(Screen, ConfigListScreen):
 	def searchPics(self, poster=True, cover=True):
 		regexfinder = compile(r"\([12][90]\d{2}\)", IGNORECASE)
 		ex = regexfinder.findall(self.eventTitle.value)
-		searchtext = self.eventTitle.value + " (" + self.eventYear.value + ")" if self.eventYear.value and self.eventYear.value != "" and not ex else self.eventTitle.value
+		searchtext = f"{self.eventTitle.value} ({self.eventYear.value})" if self.eventYear.value and not ex else self.eventTitle.value
 		if poster:
 			if "Serie" in self.eventGenre.value:
 				self['pList'].setList(get_PictureList(searchtext, 'Poster', self.ImageCount, self.eventData[0], self.language, " Serie"))
@@ -1439,10 +1436,11 @@ class Editor(Screen, ConfigListScreen):
 
 	def key_red_handler(self):
 		if self.ptr != 'nothing found':
-			if self.eid:
-				self.db.updateliveTVInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eid)
+			if self.e2eventId:
+				self.db.updateliveTVInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.e2eventId)
 			if self.db.checkTitle(self.eventData[0]):
-				self.db.updateTitleInfo(self.eventTitle.value, self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.eventData[0])
+				imdbId = trailer = "", ""  # not supported here
+				self.db.updateTitleInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, imdbId, trailer, self.eventData[0])
 				if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
 					if self.fileName and not isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
 						if self.eventOverview:
@@ -1452,18 +1450,18 @@ class Editor(Screen, ConfigListScreen):
 					if self.fileName and not isfile(self.fileName + ".meta"):
 						filedt = int(stat(self.fileName).st_mtime)
 						txt = open(self.fileName + ".meta", "w")
-						minfo = "1:0:0:0:B:0:C00000:0:0:0:\n" + str(self.eventTitle.value) + "\n"
-						if str(self.eventGenre.value) != "":
-							minfo += str(self.eventGenre.value) + ", "
-						if str(self.eventCountry.value) != "":
-							minfo += str(self.eventCountry.value) + ", "
-						if str(self.eventYear.value) != "":
-							minfo += str(self.eventYear.value) + ", "
+						minfo = f"1:0:0:0:B:0:C00000:0:0:0:\n{self.eventTitle.value}\n"
+						if self.eventGenre.value:
+							minfo += f"{self.eventGenre.value}, "
+						if self.eventCountry.value:
+							minfo += f"{self.eventCountry}.value, "
+						if self.eventYear.value:
+							minfo += f"{self.eventYear.value}, "
 						if minfo.endswith(', '):
 							minfo = minfo[:-2]
 						else:
 							minfo += "\n"
-						minfo += "\n" + str(filedt) + "\nAdvanced-Event-Library\n"
+						minfo += f"\n{filedt}\nAdvanced-Event-Library\n"
 						txt.write(minfo)
 						txt.close()
 		self.doClose()
@@ -1685,18 +1683,18 @@ class TVSmakeReferenceFile(Screen):
 	def appendImportLog(self, bouquetname, totalfound, importlist, dupeslist, unsupported):  # append last import results to logfile
 		with open(join(aelGlobals.LOGPATH, "AEL_TVSbouquets.log"), "a") as file:
 			file.write(_("%s\n%i channel(s) found in bouquet '%s' (incl. duplicate TVS shortcuts)\n%s\n") % ('=' * 78, len(totalfound), bouquetname, '=' * 78))
-			formatstr = "{0:<10} {1:<40} {2:<0}\n"
+			tabpos = "{0:<10} {1:<40} {2:<0}\n"
 			for item in totalfound:
-				file.write(formatstr.format(*(item[1][0] or _("n/a"), item[0], item[1][1])))
+				file.write(tabpos.format(*(item[1][0] or _("n/a"), item[0], item[1][1])))
 			file.write(_("\n%i imported TV movie channel(s) (without duplicate TVS shortcuts):\n%s\n") % (len(importlist), '-' * 78))
 			for item in importlist:
-				file.write(formatstr.format(*(item[1][0], item[0], item[1][1])))
+				file.write(tabpos.format(*(item[1][0], item[0], item[1][1])))
 			file.write(_("\n%i not imported channel(s) (because duplicate TVS shortcuts):\n%s\n") % (len(dupeslist), '-' * 78))
 			for item in dupeslist:
-				file.write(formatstr.format(*(item[1][0], item[0], item[1][1])))
+				file.write(tabpos.format(*(item[1][0], item[0], item[1][1])))
 			file.write(_("\n%i channel(s) not supported by TV Spielfilm:\n%s\n") % (len(unsupported), '-' * 78))
 			for item in unsupported:
-				file.write(formatstr.format(*(_("n/a"), item[0], item[1][1])))
+				file.write(tabpos.format(*(_("n/a"), item[0], item[1][1])))
 			file.write("\n")
 
 	def checkMappingList(self):  # tool: checks whether conversion rules are missing / obsolete / double in the mapping file
@@ -1708,7 +1706,7 @@ class TVSmakeReferenceFile(Screen):
 			write_log("API download error in module 'checkMappingList", DEFAULT_MODULE_NAME)
 		if results:
 			reskeys = [x.get("id", _("n/a")).lower() for x in results]
-			formatstr = "{0:<10} {1:<0}\n"
+			tabpos = "{0:<10} {1:<0}\n"
 			with open(self.mappinglog, "w") as file:
 				file.write("Found %s channels that are supported by TV Spielfilm\n" % len(results))
 				file.write(_("\nMissing rules for channels supported by TV Spielfilm: "))
@@ -1718,10 +1716,10 @@ class TVSmakeReferenceFile(Screen):
 					if shortkey not in mapkeys:
 						notfound.append((shortkey, service.get("name", _("n/v"))))
 				if notfound:
-					file.write(f"\n{formatstr.format(*(_('shortkey'), _('Channel name')))}")
+					file.write(f"\n{tabpos.format(*(_('shortkey'), _('Channel name')))}")
 					file.write("%s\n" % ('-' * 58))
 					for service in notfound:
-						file.write(formatstr.format(*service))
+						file.write(tabpos.format(*service))
 				else:
 					file.write(_("{No missing rules found}\n"))
 				file.write(_("\nObsolete rules for channels supported by TV Spielfilm: "))
@@ -1730,10 +1728,10 @@ class TVSmakeReferenceFile(Screen):
 					if service[0] not in reskeys:
 						obsolete.append((service[0], service[1]))
 				if obsolete:
-					file.write(f"\n{formatstr.format(*(_('shortkey'), _('conversion rule')))}")
+					file.write(f"\n{tabpos.format(*(_('shortkey'), _('conversion rule')))}")
 					file.write("%s\n" % ('-' * 58))
 					for service in obsolete:
-						file.write(formatstr.format(*service))
+						file.write(tabpos.format(*service))
 				else:
 					file.write(_("{No obsolete rules found}\n"))
 				file.write(_("\nDuplicate rules for channels supported by TV Spielfilm: "))
@@ -1741,9 +1739,9 @@ class TVSmakeReferenceFile(Screen):
 				for idx in [i for i, x in enumerate(mapkeys) if mapkeys.count(x) > 1]:  # search for duplicate rules and get indexes
 					double.append((maplist[idx][0], maplist[idx][1]))
 				if double:
-					file.write(f"\n{formatstr.format(*(_('shortkey'), _('conversion rule')))}")
+					file.write(f"\n{tabpos.format(*(_('shortkey'), _('conversion rule')))}")
 					file.write("%s\n" % ('-' * 58))
 					for service in double:
-						file.write(formatstr.format(*service))
+						file.write(tabpos.format(*service))
 				else:
 					file.write(_("{No duplicate rules found}\n"))

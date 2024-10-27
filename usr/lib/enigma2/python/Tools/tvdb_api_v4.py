@@ -1,47 +1,58 @@
 from base64 import b64decode
-from urllib.request import Request as uRequest, urlopen
+from json import loads
 from urllib.parse import urlencode
-from json import dumps, load
+from requests import post, get, exceptions
 
 
 class Auth:
-	def __init__(self, url, pin=""):
-		loginInfo = {"apikey": b64decode("N2UwYTVjN2EtNTQ0NS00YWU2LTg4OTItOGZlYWQyYzc2ZTI3Z"[:-1]).decode()}
-		if pin != "":
-			loginInfo["pin"] = pin
-		self.token = None
-		loginInfoBytes = dumps(loginInfo, indent=2).encode('utf-8')
-		req = uRequest(url, data=loginInfoBytes)
-		req.add_header("Content-Type", "application/json")
-		response = urlopen(req, data=loginInfoBytes, timeout=5)
-		if response:
-			res = load(response)
-			if "data" in res:
-				if "token" in res["data"] and res["data"]["token"] is not None:
-					self.token = res["data"]["token"]
+	def __init__(self, url, apikey="", pin=""):  # get token from server
+		from .AdvancedEventLibrary import write_log
+		self.token = ""
+		try:
+			if not apikey:
+				apikey = b64decode("ZmFmMzUxMzEtYTUxYy00NjZjLWJiZGEtNDVmYjZlOTE1NmU1h"[:-1]).decode()
+			headers = {"accept": "application/json", "Authorization": f"Bearer {apikey}", "Content-Type": "application/json"}
+			response = post(url, headers=headers, json={"apikey": apikey}, timeout=(3.05, 3))
+			response.raise_for_status()
+			status = response.status_code
+			if status:
+				write_log(f"API server access ERROR, response code: {status}")
+			jsondict = response.json()
+			if jsondict and jsondict.get("status", "failure") == "success":
+				self.token = jsondict.get("data", {}).get("token", "")
+				print("#####self.token:", self.token)
+			else:
+				self.token
+				write_log(f"Response message from server: {jsondict.get('message', '')}")
+		except exceptions.RequestException as errmsg:
+			write_log(f"ERROR in module 'getAPIdata': {errmsg}")
 
 	def get_token(self):
 		return self.token
 
 
 class Request:
-	def __init__(self, auth_token):
+	def __init__(self, auth_token):  # get data from server
+		from .AdvancedEventLibrary import getAPIdata, write_log
+		self.getAPIdata = getAPIdata
+		self.write_log = write_log
 		self.auth_token = auth_token
 
 	def make_request(self, url):
-		req = uRequest(url)
-		req.add_header("Authorization", f"Bearer {self.auth_token}")
-		response = urlopen(req, timeout=5)
+		errmsg, response = self.getAPIdata(url, headers={"Authorization": f"Bearer {self.auth_token}"})
+		if errmsg:
+			self.write_log(f"API download error in module 'tvdb_api_v4: make_request': {errmsg}")
 		if response:
-			res = load(response)
-			data = res.get("data", None)
-			if data and res.get('status', 'failure') != 'failure':
+			data = response.get("data", "")
+			print("#####data:", data)
+			if data and response.get("status", "failure") == "success":
 				return data
 
 
 class Url:
 	def __init__(self):
-		self.base_url = "https://api4.thetvdb.com/v4"
+
+		self.base_url = b64decode(b"aHR0cHM6Ly9hcGk0LnRoZXR2ZGIuY29tL3Y03"[:-1]).decode()
 
 	def login_url(self):
 		return f"{self.base_url}/login"
@@ -58,9 +69,8 @@ class Url:
 			url = f"{url}/extended"
 		return url
 
-	def awards_url(self, page):
-		if page < 0:
-			page = 0
+	def awards_url(self, page=1):
+		page = max(page, 0)
 		url = f"{self.base_url}/awards?page={page}"
 		return url
 
@@ -107,7 +117,7 @@ class Url:
 		return url
 
 	def series_episodes_url(self, id, season_type, page=0, lang=None):
-		lang = '/' + lang if lang else ''
+		lang = f"/{lang}" if lang else ""
 		url = f"{self.base_url}/series/{id}/episodes/{season_type}{lang}?page={page}"
 		return url
 
@@ -153,6 +163,10 @@ class Url:
 			url = f"{url}/extended?meta=translations"
 		return url
 
+	def episode_translation_url(self, id, lang):
+		url = f"{self.base_url}/episodes/{id}/translations/{lang}"
+		return url
+
 	def genders_url(self):
 		url = f"{self.base_url}/genders"
 		return url
@@ -187,7 +201,7 @@ class Url:
 		url = f"{self.base_url}/sources/types"
 		return url
 
-	def updates_url(self, since=0, typ="series"):  # https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
+	def updates_url(self, since=0):  # https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
 		url = f"{self.base_url}/updates?since={since}"
 		return url
 
@@ -216,10 +230,9 @@ class Url:
 
 
 class TVDB:
-	def __init__(self, pin=""):
+	def __init__(self, apikey="", pin=""):
 		self.url = Url()
-		login_url = self.url.login_url()
-		self.auth = Auth(login_url, pin)
+		self.auth = Auth(self.url.login_url(), apikey, pin)
 		self.auth_token = self.auth.get_token()
 		self.request = Request(self.auth_token)
 
@@ -311,12 +324,12 @@ class TVDB:
 		url = self.url.series_url(id, True)
 		return self.request.make_request(url)
 
-	def get_series_episodes(self, id, season_type="official", page=0, lang='deu'):  # -> dict:
+	def get_series_episodes(self, id, season_type="official", page=0, lang="deu"):  # -> dict:
 		"""Returns a series episodes dictionary"""
 		url = self.url.series_episodes_url(id, season_type, page, lang)
 		return self.request.make_request(url)
 
-	def get_series_translation(self, id, lang='deu'):  # -> dict:
+	def get_series_translation(self, id, lang="deu"):  # -> dict:
 		"""Returns a series translation dictionary"""
 		url = self.url.series_translation_url(id, lang)
 		return self.request.make_request(url)
@@ -393,7 +406,7 @@ class TVDB:
 
 	def get_genre(self, id=0):  # -> dict:
 		"""Returns a genres dictionary"""
-		url = self.url.genre_url(id, False)
+		url = self.url.genre_url(id)
 		return self.request.make_request(url)
 
 	def get_all_languages(self):  # -> list:
@@ -426,9 +439,9 @@ class TVDB:
 		url = self.url.source_types_url()
 		return self.request.make_request(url)
 
-	def get_updates(self, since=0, typ="series"):  # -> list:
+	def get_updates(self, since=0):  # -> list:
 		"""Returns a list of updates"""
-		url = self.url.updates_url(since, typ)
+		url = self.url.updates_url(since)
 		return self.request.make_request(url)
 
 	def get_all_tag_options(self, page=0):  # -> list:

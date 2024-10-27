@@ -26,7 +26,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, write_log, convert2base64, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, write_log, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -390,7 +390,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 					if evt and evt[0][16].endswith('mp4'):
 						hasTrailer = evt[0][16]
 					if hasTrailer is None:
-						dbdata = self.db.getTitleInfo(convert2base64(event.getEventName()))
+						dbdata = self.db.getTitleInfo(event.getEventName())
 						if dbdata and dbdata[7].endswith('mp4'):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
