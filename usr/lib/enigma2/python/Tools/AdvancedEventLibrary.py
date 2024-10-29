@@ -78,7 +78,7 @@ config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, li
 config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default=0, choices=[(0, _("Movies")), (1, _("Series")), (2, _("Documentaries")), (3, _("Music")), (4, _("Children")), (5, _("Shows")), (6, _("Sport"))])
-# config.plugins.AdvancedEventLibrary.ExcludedGenres.value.split(",")
+config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigSelection(default=0, choices=[(0, _("Movies")), (1, _("Series")), (2, _("Documentaries")), (3, _("Music")), (4, _("Children")), (5, _("Shows")), (6, _("Sport"))])
 config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default=0, choices=[(0, _("Favorites")), (1, _("All Bouquets"))])
 config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
@@ -288,8 +288,8 @@ def checkUsedSpace(db=None):
 					aelGlobals.setStatus(f"{_('Cleaning up the storage space')} #{(i + 1)}")
 					write_log(f"Cleaning up the storage space #{(i + 1)}")
 					for title in titles:
-						if title[1] not in recordings:
-							for currdir in [f"{aelGlobals.POSTERPATH}{title[0]}", f"{aelGlobals.POSTERPATH}thumbnails/{title[0]}", f"{aelGlobals.COVERPATH}{title[0]}", f"{aelGlobals.COVERPATH}thumbnails/{title[0]}"]:
+						if title[0] not in recordings:
+							for currdir in [f"{aelGlobals.POSTERPATH}{title[1]}", f"{aelGlobals.POSTERPATH}thumbnails/{title[1]}", f"{aelGlobals.COVERPATH}{title[2]}", f"{aelGlobals.COVERPATH}thumbnails/{title[2]}"]:
 								for filename in glob(f"{currdir}*.*"):
 									remove(filename)
 								db.cleanDB(title[0])
@@ -330,7 +330,7 @@ def createMovieInfo(db, lang):
 									if title and title != " ":
 										tmdb.API_KEY = get_keys("tmdb")
 										titleinfo = {"title": mtitle, "genre": "", "year": "", "country": "", "overview": ""}
-										aelGlobals.setStatus(f"{_('search meta information for')} {title}")
+										aelGlobals.setStatus(f"{_('search meta information for')} '{title}'")
 										search = tmdb.Search()
 										response = callLibrary(search.movie, "", query=title, language=lang, year=jahr) if jahr != "" else callLibrary(search.movie, "", query=title, language=lang)
 										if response and response.get("results", []):
@@ -450,11 +450,11 @@ def createMovieInfo(db, lang):
 															if response:
 																searchName = findEpisode(title)
 																titleinfo["title"] = f"{response.get("seriesName", "")} - S{searchName[0]}E{searchName[1]} - {episode.get("episodeName", "")}" if searchName else f"{response.get("seriesName", "")} - {episode.get("episodeName", "")}"
-																if not titleinfo.get("genre", {}):
+																if not titleinfo.get("genre"):
 																	for genre in response.get("genre", {}):
 																		titleinfo["genre"] = f"{titleinfo.get('genre', {})}{genre}-{_('series')}"
 																titleinfo["genre"] = titleinfo.get("genre", "").replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-																if not titleinfo.get("country", {}):
+																if not titleinfo.get("country"):
 																	titleinfo["country"] = aelGlobals.NETWORKDICT.get(response.get("network", ""), "")
 																break
 												else:
@@ -543,7 +543,7 @@ def getAllRecords(db):
 									names.add(fname)
 							if (filename.endswith(".ts") or filename.endswith(".mkv") or filename.endswith(".avi") or filename.endswith(".mpg") or filename.endswith(".mp4") or filename.endswith(".iso") or filename.endswith(".mpeg2")) and doPics:
 								foundInBl = False
-								service = eServiceReference("1:0:0:0:0:0:0:0:0:0:" + join(root, filename)) if filename.endswith(".ts") else eServiceReference("4097:0:0:0:0:0:0:0:0:0:" + join(root, filename))
+								service = eServiceReference(f"1:0:0:0:0:0:0:0:0:0:{join(root, filename)}") if filename.endswith(".ts") else eServiceReference(f"4097:0:0:0:0:0:0:0:0:0:{join(root, filename)}")
 								info = eServiceCenter.getInstance().info(service)
 								if info:
 									fname = removeExtension(info.getName(service))
@@ -631,8 +631,8 @@ def getRecordings():
 def cleanPreviewImages(db):
 	recImages = getRecordings()
 	prevImages = db.getUnusedPreviewImages(int(datetime.now().timestamp() - 28800))
-	ic = 0
-	it = 0
+	ic, it = 0, 0
+
 	for image in prevImages:
 		if image not in recImages:
 			imgfile = join(aelGlobals.PREVIEWPATH, image)
@@ -703,7 +703,7 @@ def getallEventsfromEPG(lang):
 	write_log(f"found {len(allevents)} Events in EPG")
 	liveTVRecords = []
 	lenallevents = len(allevents)
-	for index, (serviceref, e2eventId, name, begin) in enumerate(allevents):  # [1000:]:  # TODO: Nur für Tests: [1000:] muss wieder entfert werden
+	for index, (serviceref, e2eventId, name, begin) in enumerate(allevents):
 		#==== hinzugefuegt (#8) =====
 		if not serviceref:
 			continue
@@ -719,7 +719,7 @@ def getallEventsfromEPG(lang):
 		if begin > minEPGBeginTime and begin < maxEPGBeginTime:
 			if not db.checkliveTV(e2eventId, serviceref):
 				if tvname not in aelGlobals.EXCLUDENAMES and "Invictus" not in tvname:
-					record = (e2eventId, "in progress", tvname, "", "", "", "", "", begin, "", "", "", "", "", "", "", "", "", serviceref)
+					record = (e2eventId, "in progress", tvname, "", "", "", "", "", round(begin), "", "", "", "", "", "", "", "", "", serviceref)
 					liveTVRecords.append(record)
 		foundInBl = False
 		name = convertTitle(name)
@@ -742,21 +742,20 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 	tvdbV4 = get_TVDb()
 	if not tvdbV4:
 		write_log("TVDb API-V4 is not in use!")
-	posters, covers, entrys, blentrys, position = 0, 0, 0, 0, 0
+	posters, covers, entrys, blentrys = 0, 0, 0, 0
 	for tindex, title in enumerate(titles):
 		if title and title != " " and "BL:" not in title:
-			titleinfo = {"title": "", "genre": "", "poster_url": "", "backdrop_url": "", "year": "", "rating": "", "fsk": "", "country": ""}
+			titleinfo = {"title": "", "genre": "", "year": "", "rating": "", "fsk": "", "country": "", "airtime": "", "imdbId": "", "cover_url": "", "poster_url": "", "trailer_url": ""}
 			titleinfo["title"] = convertSearchName(title)
 			titleNyear = convertYearInTitle(title)
 			title = convertSearchName(titleNyear[0])
 			jahr = titleNyear[1]
-			position += 1
 			original_name, imdbId = "", ""
 			foundAsMovie, foundAsSeries = False, False
 			# TMDBmovie dataserver
 			if config.plugins.AdvancedEventLibrary.tmdbUsage.value & 1:
 				tmdburl = b64decode(b"aHR0cDovL2ltYWdlLnRtZGIub3JnL3QvcC9vcmlnaW5hbA==l"[:-1]).decode()
-				aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb movie - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				aelGlobals.setStatus(f"{tindex + 1}/{len(titles)}: themoviedb movie - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
 				write_log(f"looking for '{title}' on themoviedb movie")
 				tmdb.API_KEY = get_keys("tmdb")
 				search = tmdb.Search()
@@ -773,7 +772,6 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 						if item.get("title", "").lower() == bestmatch[0]:
 							write_log(f"found '{bestmatch[0]}' for '{title.lower()}' on themoviedb movie")
 							foundAsMovie = True
-							adult = item.get("adult", False)
 							genre_ids = item.get("genre_ids", [])  #  e.g. [12, 10751, 9648]
 							tmdbId = item.get("id", 0)
 							original_title = item.get("original_title", "")  # e.g. 'Uzbuna na Zelenom Vrhu'
@@ -787,40 +785,45 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 								poster_path = item.get("poster_path", "")  # e.g. '/9pKuPigShOqh0MvkAKJEpP9iIXz.jpg'
 								titleinfo["poster_url"] = f"{tmdburl}{poster_path}" if poster_path else ""
 								backdrop_path = item.get("backdrop_path", "")  # e.g. '/pEuxDvQMBoiHbf1MsVQ8LWu0ERD.jpg'
-								titleinfo["backdrop_url"] = f"{tmdburl}{backdrop_path}" if backdrop_path else ""
+								titleinfo["cover_url"] = f"{tmdburl}{backdrop_path}" if backdrop_path else ""
 							titleinfo["year"] = release_date
-							titleinfo["rating"] = item.get("vote_average", "0.0")
-							titleinfo["fsk"] = "18" if adult else "0"
+							rating = item.get("vote_average", 0)
+							if rating:
+								titleinfo["rating"] = str(round(rating, 1))
 							if tmdbId:
 								try:
 									details = tmdb.Movies(tmdbId)
-									for country in details.releases(language=lang).get("countries", []):
-										if country.get("iso_3166_1", "") == lang.upper():
-											titleinfo["fsk"] = country.get("certification", "0")
-											break
-									for country in details.info(language=lang).get("production_countries", []):
-										titleinfo["country"] = f"{titleinfo.get('country', '')}{country.get('iso_3166_1', "")} | "
-									titleinfo["country"] = titleinfo.get("country", "")[:-3]
+									if not titleinfo.get("fsk"):
+										for country in details.releases(language=lang).get("countries", []):
+											if country.get("iso_3166_1", "") == lang.upper():
+												titleinfo["fsk"] = str(country.get("certification", ""))
+												break
+									if not titleinfo.get("country"):
+										for country in details.info(language=lang).get("production_countries", []):
+											titleinfo["country"] = f"{titleinfo.get('country', '').upper()}{country.get('iso_3166_1', "")} | "
+										titleinfo["country"] = titleinfo.get("country", "")[:-3]
 									imdbId = details.info(language=lang).get("imdbId", "")
 								except Exception as errmsg:
 									details = ""
 								if loadImages and details:
 									try:
-										if not titleinfo.get("backdrop_url", ""):
+										if not titleinfo.get("cover_url"):
 											showimgs = details.images(language=lang).get("backdrops", [])
 											if showimgs:
-												titleinfo["backdrop_url"] = f"{tmdburl}{showimgs[0]["file_path"]}"
-										if not titleinfo.get("poster_url", "").startswith("http"):
+												titleinfo["cover_url"] = f"{tmdburl}{showimgs[0]["file_path"]}"
+										if not titleinfo.get("poster_url"):
 											showimgs = details.images(language=lang).get("posters", [])
 											if showimgs:
 												titleinfo["poster_url"] = f"{tmdburl}{showimgs[0]["file_path"]}"
 									except Exception as errmsg:
 										pass
 								original_name = original_title
+							if not titleinfo.get("fsk") and item.get("adult"):
+								titleinfo["fsk"] = "18"
 							break
 				if not foundAsMovie:
 					# TMDBtv dataserver
-					aelGlobals.setStatus(f"{position}/{len(titles)}: themoviedb tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+					aelGlobals.setStatus(f"{tindex + 1}/{len(titles)}: themoviedb tv - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
 					write_log(f"looking for '{title}' on themoviedb tv")
 					search = tmdb.Search()
 					searchName = findEpisode(title)
@@ -852,67 +855,71 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 											episode = details.info(language=lang)
 										except Exception as errmsg:
 											episode = {}
-										if not titleinfo.get("year", ""):
+										if not titleinfo.get("year"):
 											titleinfo["year"] = episode.get("air_date", "")[:4]
-										if not titleinfo.get("rating", "0.0"):
-											titleinfo["rating"] = episode.get("vote_average", "0.0")
+										rating = episode.get("vote_average", 0)
+										if not titleinfo.get("rating") and rating:
+											titleinfo["rating"] = str(round(rating, 1))
 										still_path = episode.get("still_path", "")
-										if loadImages and not titleinfo.get("backdrop_url", ""):
-											titleinfo["backdrop_url"] = f"{tmdburl}{still_path}" if still_path else ""
-										for country in item.get("origin_country", {}):  # e.g. ['HR', 'FR', 'DE']
-											titleinfo["country"] = f"{titleinfo.get('country', '')}{country} | "
-										titleinfo["country"] = titleinfo.get("country", "")[:-3]
-										for genre in item.get("genre_ids", []):
-											if aelGlobals.TMDB_GENRES[genre] not in titleinfo.get("genre", {}):
-												titleinfo["genre"] = f"{titleinfo.get('genre', '')}{aelGlobals.TMDB_GENRES[genre]}-{_('series')}"
+										if not titleinfo.get("cover_url") and loadImages:
+											titleinfo["cover_url"] = f"{tmdburl}{still_path}" if still_path else ""
+										if not titleinfo.get("country"):
+											for country in item.get("origin_country", {}):  # e.g. ['HR', 'FR', 'DE']
+												titleinfo["country"] = f"{titleinfo.get('country', '')}{country} | "
+											titleinfo["country"] = titleinfo.get("country", "")[:-3]
+										if not titleinfo.get("genre"):
+											for genre in item.get("genre_ids", []):
+												if aelGlobals.TMDB_GENRES[genre] not in titleinfo.get("genre", {}):
+													titleinfo["genre"] = f"{titleinfo.get('genre', '')}{aelGlobals.TMDB_GENRES[genre]}-{_('series')}"
 								else:
 									backdrop_path = item.get("backdrop_path", "")  # e.g. '/pEuxDvQMBoiHbf1MsVQ8LWu0ERD.jpg'
 									genre_ids = item.get("genre_ids", [])  #  e.g. [12, 10751, 9648]
 									tmdbId = item.get("id", 0)
 									poster_path = item.get("poster_path", "")  # e.g. '/9pKuPigShOqh0MvkAKJEpP9iIXz.jpg'
-									for genrecode in genre_ids:
-										genre = aelGlobals.TMDB_GENRES.get(genrecode, "")
-										if genre and genre not in titleinfo.get("genre", {}):
-											titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}-{_('series')}"
+									if not titleinfo.get("genre"):
+										for genrecode in genre_ids:
+											genre = aelGlobals.TMDB_GENRES.get(genrecode, "")
+											if genre and genre not in titleinfo.get("genre", {}):
+												titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}-{_('series')}"
 									if tmdbId:
 										details = tmdb.TV(tmdbId)
 										if loadImages and details:
 											try:
-												for country in details.content_ratings(language=lang).get("results", []):
-													if country.get("iso_3166_1", "") == lang.upper():
-														titleinfo["fsk"] = country.get("rating", "0")
-														break
+												if not titleinfo.get("fsk"):
+													for country in details.content_ratings(language=lang).get("results", []):
+														if country.get("iso_3166_1", "") == lang.upper():
+															titleinfo["fsk"] = str(country.get("rating", ""))
+															break
 											except Exception as errmsg:
 												pass
-											if not titleinfo.get("poster_url", ""):
-												showings = ""
+											if not titleinfo.get("poster_url"):
 												try:  # mandatory because this could raise an unexpected error. Reason: unknown
 													showimgs = details.images(language=lang).get("posters", [])
 												except Exception:
 													showimgs = []
-												if showimgs:
+												if not titleinfo.get("poster_url") and showimgs:
 													titleinfo["poster_url"] = f"{tmdburl}{showimgs[0].get("file_path", "")}"
-											if not titleinfo.get("backdrop_url", ""):
+											if not titleinfo.get("cover_url"):
 												try:  # mandatory because this could raise an unexpected error. Reason: unknown
 													showimgs = details.images(language=lang).get("backdrops", [])
 												except Exception:
 													showimgs = ""
 												if showimgs:
-													titleinfo["backdrop_url"] = f"{tmdburl}{showimgs[0].get("file_path", "")}"
+													titleinfo["cover_url"] = f"{tmdburl}{showimgs[0].get("file_path", "")}"
 									if not titleinfo.get("year", ""):
 										titleinfo["year"] = item.get("first_air_date", "")[:4]
-									if not titleinfo.get("rating", "0.0"):
-										titleinfo["rating"] = item.get("vote_average", "0.0")
-									if not titleinfo.get("fsk", "0") and item.get("adult", False):
+									vote_average = item.get("vote_average")
+									if not titleinfo.get("rating") and vote_average:
+										titleinfo["rating"] = str(round(vote_average))
+									if not titleinfo.get("fsk") and item.get("adult", False):
 										titleinfo["fsk"] = "18"
-									for country in item.get("origin_country", {}):  # e.g. ['HR', 'FR', 'DE']
-										titleinfo["country"] = f"{titleinfo.get('country', '')}{country} | "
-									titleinfo["country"] = titleinfo.get("country", "")[:-3]
+									if not titleinfo.get("country"):
+										titleinfo["country"] = " | ".join(item.get("origin_country", []))  # e.g. ['HR', 'FR', 'DE']
 									original_name = item.get("original_name", "")  # e.g. 'Uzbuna na Zelenom Vrhu'
 								break
 			# TVDB dataserver
 			if not foundAsMovie and not foundAsSeries and config.plugins.AdvancedEventLibrary.tvdbUsage.value & 1:
-				aelGlobals.setStatus(f"{position}/{len(titles)}: thetvdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				aelGlobals.setStatus(f"{tindex + 1}/{len(titles)}: thetvdb - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
 				write_log(f"looking for '{title}' on thetvdb")
 				tvdb.KEYS.API_KEY = get_keys("tvdb")
 				search = tvdb.Search()
@@ -960,53 +967,55 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 							if episodeName.lower() == bestmatch[0] if bestmatch else title.lower():
 								foundEpisode = True
 								imdbId = episode.get("imdbId", "")
-								if not titleinfo.get("title", ""):
+								if not titleinfo.get("title"):
 									titleinfo["title"] = episodeName
-								if response:
+								if not titleinfo.get("genre") and response:
 									for genre in response.get("genre", {}):
 										titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}-{_('series')} "
 									titleinfo["genre"] = titleinfo.get("genre", "").replace("Documentary", "Dokumentation").replace("Children", "Kinder")
 								if loadImages:
-									if not titleinfo.get("poster_url", ""):
+									if not titleinfo.get("poster_url"):
 										poster = response.get("poster", "")
 										titleinfo["poster_url"] = f"{tvdburl}{poster}" if poster else ""
-									if not titleinfo.get("backdrop_url", ""):
+									if not titleinfo.get("cover_url"):
 										filename = episode.get("filename", "")
-										titleinfo["backdrop_url"] = f"{tvdburl}{filename}" if filename else ""
-								if not titleinfo.get("year", ""):
+										titleinfo["cover_url"] = f"{tvdburl}{filename}" if filename else ""
+								if not titleinfo.get("year"):
 									titleinfo["year"] = episode.get("firstAired", "")[:4]
-								if not titleinfo.get("rating", "0.0"):
-									titleinfo["rating"] = episode.get("siteRating", "0.0")
-								if not titleinfo.get("fsk", "0"):
-									titleinfo["fsk"] = aelGlobals.FSKDICT.get(episode.get("contentRating", "0"), "0")
+								rating = episode.get("siteRating", 0)
+								if not titleinfo.get("rating") and rating:
+									titleinfo["rating"] = str(round(rating, 1))
+								if not titleinfo.get("fsk"):
+									titleinfo["fsk"] = aelGlobals.FSKDICT.get(episode.get("contentRating", ""), "")
 								if not titleinfo.get("country", {}):
 									titleinfo["country"] = aelGlobals.NETWORKDICT.get(network, "")
 								break
 					if response and not foundEpisode:  # fallback and trying to piece together missing data
-						if not titleinfo.get("title", ""):
+						episode = dict(filter(lambda item: item[1], response.items()))  # remove all keys with value 'None'
+						if not titleinfo.get("title"):
 							titleinfo["title"] = response.get("seriesName", "")
-						if not titleinfo.get("genre", {}):
+						if not titleinfo.get("genre"):
 							for genre in response.get("genre", {}):
 								titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}-{_('series')}"
 						if loadImages:
-							if not titleinfo.get("poster_url", "") and not poster:
+							if not titleinfo.get("poster_url") and not poster:
 								poster = response.get("poster", "")
 								titleinfo["poster_url"] = f"{tvdburl}{poster}" if poster else ""
-							if not titleinfo.get("backdrop_url", ""):
+							if not titleinfo.get("cover_url"):
 								image = response.get("image", "")
-								titleinfo["backdrop_url"] = f"{tvdburl}{image}" if image else ""
-						if not titleinfo.get("year", ""):
+								titleinfo["cover_url"] = f"{tvdburl}{image}" if image else ""
+						if not titleinfo.get("year"):
 							titleinfo["year"] = response.get("firstAired", "")[:4]
-						if not titleinfo.get("rating", "0.0"):
-							titleinfo["rating"] = response.get("siteRating", "0.0")
-						if not titleinfo.get("fsk", "0"):
-							titleinfo["fsk"] = response.get("rating", "0")
+						rating = response.get("siteRating", 0)
+						if not titleinfo.get("rating") and rating:
+							titleinfo["rating"] = str(round(rating, 1))
+						if not titleinfo.get("fsk"):
+							titleinfo["fsk"] = response.get("rating", "")
 						if not titleinfo.get("country", {}):
 							titleinfo["country"] = aelGlobals.NETWORKDICT.get(network, "")
-
-			# TVMASZE dataserver
+			# TVMAZE dataserver
 			if not foundAsMovie and config.plugins.AdvancedEventLibrary.tvmaszeUsage.value & 1:
-				aelGlobals.setStatus(f"{position}/{len(titles)}: maze.tv - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				aelGlobals.setStatus(f"{tindex + 1}/{len(titles)}: maze.tv - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
 				write_log(f"looking for '{title}' on maze.tv")
 				tvmazeurl = b64decode(b"aHR0cDovL2FwaS50dm1hemUuY29tL3NlYXJjaC9zaG93cw==5"[:-1]).decode()
 				errmsg, response = getAPIdata(tvmazeurl, params={"q": f"{original_name or title}"})
@@ -1022,26 +1031,27 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					for item in response:
 						show = dict(filter(lambda item: item[1], item.get("show", {}).items()))  # remove all keys with value 'None'
 						if titleinfo and show.get("name", "").lower() == bestmatch[0]:
-							if not titleinfo.get("country", {}):
+							if not titleinfo.get("country"):
 								titleinfo["country"] = show.get("network", {}).get("country", {}).get("code", "")
-							if not titleinfo.get("year", ""):
+							if not titleinfo.get("year"):
 								titleinfo["year"] = show.get("premiered", "")[:4]
-							if not titleinfo.get("genre", {}):
+							if not titleinfo.get("genre"):
 								for genre in show.get("genres", []):
 									if genre not in titleinfo.get("genre", {}):
 										titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}-{_('series')}"
 								titleinfo["genre"] = titleinfo.get("genre", "").replace("Documentary", "Dokumentation").replace("Children", "Kinder")
 							if loadImages:
-								if not titleinfo.get("poster_url", ""):
+								if not titleinfo.get("poster_url"):
 									titleinfo["poster_url"] = show.get("image", {}).get("original", "")  # e.g. 'https://static.tvmaze.com/uploads/images/original_untouched/109/274423.jpg'
-								if not titleinfo.get("rating", "0.0"):
-									titleinfo["rating"] = show.get("rating", {}).get("average", "0.0")
+								rating = show.get("rating", {}).get("average", 0)
+								if not titleinfo.get("rating") and rating:
+									titleinfo["rating"] = str(round(rating, 1))
 							if imdbId:
 								imdbId = show.get("externals", {}).get("imdb", "")
 							break
 			# OMDB dataserver
 			if not foundAsMovie and not foundAsSeries and config.plugins.AdvancedEventLibrary.omdbUsage.value & 1:
-				aelGlobals.setStatus(f"{position}/{len(titles)} : omdb - {title} ({posters}|{covers}|{entrys}|{blentrys})")
+				aelGlobals.setStatus(f"{tindex + 1}/{len(titles)} : omdb - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
 				write_log(f"looking for '{title}' on omdb")
 				omdburl = b64decode(b"aHR0cDovL3d3dy5vbWRiYXBpLmNvbQ==b"[:-1]).decode()
 				params = {"apikey": get_keys("omdb")}
@@ -1070,72 +1080,77 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 					write_log(f"API download error in module 'get_titleInfo: OMDB call #2': {errmsg}")
 				if response and response.get("Response", "False") == "True":
 					response = dict(filter(lambda item: item[1] != "N/A", response.items()))  # remove all keys with value 'N/A'
-					if not titleinfo.get("year", ""):
+					if not titleinfo.get("year"):
 						titleinfo["year"] = response.get("Year", "")[:4]
-					if not titleinfo.get("genre", {}):
+					if not titleinfo.get("genre"):
 						stype = "-Serie" if response.get("Type", "") == "series" else " "
 						genres = response.get("Genre", "").split(", ")
 						for genre in genres:
 							if genre not in titleinfo.get("genre", {}):
 								titleinfo["genre"] = f"{titleinfo.get('genre', '')}{genre}{stype}".replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-					if loadImages and not titleinfo.get("poster_url", ""):
+					if not titleinfo.get("poster_url") and loadImages:
 						titleinfo["poster_url"] = response.get("Poster", "")  # e.g. "https://m.media-amazon.com/images/M/MV5BZmEzMWYzN2QtMjNiNC00ODE2LWJkZmEtMDA0MjI1NjA4ZDc5XkEyXkFqcGc@._V1_SX300.jpg"
-					if not titleinfo.get("rating", "0.0"):
-						titleinfo["rating"] = response.get("imdbRating", "0.0")
-					if response.get("Country", "") and not titleinfo.get("country", {}):
+					if not titleinfo.get("rating"):
+						titleinfo["rating"] = response.get("imdbRating", "")
+					if not titleinfo.get("country") and response.get("Country", ""):
 						countries = ""
 						for country in response.get("Country", "").split(", "):
 							countries = f"{countries}{country} | "
 						titleinfo["country"] = countries[:-2].replace("West Germany", lang).replace("East Germany", lang).replace("Germany", lang).replace("France", "FR").replace("Canada", "CA").replace("Austria", "AT").replace("Switzerland", "S").replace("Belgium", "B").replace("Spain", "ESP").replace("Poland", "PL").replace("Russia", "RU").replace("Czech Republic", "CZ").replace("Netherlands", "NL").replace("Italy", "IT")
-					imdb_ID = response.get("imdbID", "")
-					imdbId = imdb_ID if imdb_ID != "N/A" and not imdbId else ""
-					titleinfo["imdbID"] = imdbId
-					titleinfo["fsk"] = aelGlobals.FSKDICT.get(response.get("Rated", "0"), "0")
-			# fill up database
+					if not titleinfo.get("imdbId"):
+						titleinfo["imdbID"] = response.get("imdbID", "")
+					if not titleinfo.get("fsk"):
+						titleinfo["fsk"] = aelGlobals.FSKDICT.get(response.get("Rated", ""), "")
+			# download covers and posters
 			if db and titleinfo.get("title", "").strip():
+				posterfile = titleinfo.get("poster_url", "").split("/")[-1]
+				coverfile = titleinfo.get("cover_url", "").split("/")[-1]
+				if loadImages:
+					if titleinfo.get("poster_url", ""):
+						if downloadImage(titleinfo.get("poster_url", ""), join(aelGlobals.POSTERPATH, f"{research if research else posterfile}")):
+							try:  # mandatory because file could be corrupt
+								img = Image.open(join(aelGlobals.POSTERPATH, posterfile))
+								w, h = img.size
+								if w > h:  # transfer poster to cover
+									move(join(aelGlobals.POSTERPATH, posterfile), join(aelGlobals.COVERPATH, posterfile))
+									coverfile, posterfile = posterfile, coverfile
+									covers += 1
+								else:
+									posters += 1
+							except Exception as errmsg:
+								posterfile = ""
+								write_log(f"ERROR in module 'get_titleInfo'-poster': {posterfile} - {errmsg}")
+
+						else:
+							posterfile = ""
+					if titleinfo.get("cover_url"):
+						if downloadImage(titleinfo.get("cover_url", ""), join(aelGlobals.COVERPATH, research if research else coverfile)):
+							covers += 1
+						else:
+							coverfile = ""
+
+				# fill up database
 				checkdict = titleinfo.copy()
 				checkdict.pop("title")
-				if not any(item for item in checkdict.values()):  # was not even a single entry found?
-					blentrys += 1
-					# TODO: Nur für Testzwecke deaktiviert. Muß später wieder rein...
-					# db.addblackList(title)
-					# aelGlobals.setStatus(f"{_('Title')} '{titleinfo.get('title', '')}' {_('not found')} ({tindex}/{len(titles)}). {_('Extend blacklist...')}")
-					# write_log(f"no titles found for '{titleinfo.get('title', '')}'")
+# TODO: Nur für Testzwecke deaktiviert. Muß später wieder rein...
+#				if not any(item for item in checkdict.values()):  # was not even a single entry found?
+#					blentrys += 1
+#					db.addblackList(title)
+#					aelGlobals.setStatus(f"{_('Title')} '{titleinfo.get('title', '')}' {_('not found')} ({tindex}/{len(titles)}). {_('Extend blacklist...')}")
+#					write_log(f"no titles found for '{titleinfo.get('title', '')}'")
 				checkdict.pop("poster_url")
-				checkdict.pop("backdrop_url")
+				checkdict.pop("cover_url")
 				if any(item for item in checkdict.values()):  # at least one of the remaining values entries has a content?
 					entrys += 1
 					if research:
 						if db.checkTitle(research):
-							db.updateTitleInfo(titleinfo.get("title", ""), titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", "0.0"), titleinfo.get("fsk", "0"), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), titleinfo.get("trailer_url", ""), research)
+							db.updateTitleInfo(titleinfo.get("title", ""), titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""), research)
 						else:
-							db.addTitleInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", "0.0"), titleinfo.get("fsk", "0"), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), titleinfo.get("trailer_url", ""))
+							db.addTitleInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""))
 					else:
-						db.addTitleInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", "0.0"), titleinfo.get("fsk", "0"), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), titleinfo.get("trailer_url", ""))
+						db.addTitleInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""))
 					aelGlobals.setStatus(f"{_('found data for')} '{titleinfo.get('title', '')}'")
 					write_log(f"found data for '{titleinfo.get("title", "")}'")
-				if loadImages:
-					if not titleinfo.get("year", ""):
-						year = titleinfo.get("year", "")
-						titleinfo["poster_url"] = get_Picture(f"{title} ({year})", what="Poster", lang=lang) if year else get_Picture(title, what="Poster", lang=lang)
-					if titleinfo.get("poster_url", ""):
-						posters += 1
-						filename = titleinfo.get("poster_url", "").split("/")[-1]
-						downloadImage(titleinfo.get("poster_url", ""), join(aelGlobals.POSTERPATH, f"{research if research else filename}"))
-						if titleinfo.get("poster_url", ""):
-							try:  # mandatory because file could be corrupt
-								img = Image.open(join(aelGlobals.POSTERPATH, filename))
-								w, h = img.size
-								if w > h:
-									move(join(aelGlobals.POSTERPATH, filename), join(aelGlobals.COVERPATH, filename))
-							except Exception as errmsg:
-								write_log(f"ERROR in module 'get_titleInfo'-poster': {filename} - {errmsg}")
-					if not titleinfo.get("backdrop_url", ""):
-						titleinfo["backdrop_url"] = get_Picture(f"{title} ({titleinfo.get("year", "")})", what="Cover", lang=lang) if titleinfo.get("year", "") else get_Picture(title, what="Cover", lang=lang)
-					if titleinfo.get("backdrop_url", ""):
-						covers += 1
-						filename = titleinfo.get("backdrop_url", "").split("/")[-1]
-						downloadImage(titleinfo.get("backdrop_url", ""), join(aelGlobals.COVERPATH, research if research else filename))
 	write_log(f"set {entrys} on eventInfo")
 	write_log(f"set {blentrys} on Blacklist")
 	if db:
@@ -1174,7 +1189,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		write_log("looking for missing meta-Info")
 		createMovieInfo(db, lang)
 	createStatistics(db)
-	if config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value:
+	if config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value:  # TODO: kann dann weg
 		write_log("create MovieWall data")
 		try:
 			itype = ""
@@ -1210,14 +1225,14 @@ def getTVSpielfilm(db):
 				curDate = db.getMinAirtimeforUpdate(sref)
 				while (int(curDate) - 86400) <= int(maxDate) + 86400:  # while int(curDate) <= int(maxDate) + 86400:
 					curDatefmt = datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")
-					aelGlobals.setStatus(f"({sindex + 1}/{len(aelGlobals.TVS_REFDICT)}) {_('search')} '{aelGlobals.TVS_REFDICT[sref][1]}' {_('for the')} {curDatefmt} {_('on TV-Spielfilm')} ({found}/{tcount} | images: {coverscount})")
+					aelGlobals.setStatus(f"{_('Search channel')} '{aelGlobals.TVS_REFDICT[sref][1]}' ({sindex + 1}/{len(aelGlobals.TVS_REFDICT)}) {_('for')} {curDatefmt} {_('on TV-Spielfilm')} ({found}/{tcount} | images: {coverscount})")
 					errmsg, response = getAPIdata(f"{tvsurl}{aelGlobals.TVS_REFDICT[sref][0].upper()}/{curDatefmt}")
 					if errmsg:
 						write_log(f"API download error in module 'getTVSpielfilm': {errmsg}")
 					if response:
 						lastImage = ""
 						for event in response:
-							airtime = event.get("timestart", 0)
+							airtime = int(event.get("timestart", 0))
 							providerId = event.get("id", "")
 							title = event.get("title", "")
 							subtitle = event.get("episodeTitle", "")
@@ -1244,17 +1259,16 @@ def getTVSpielfilm(db):
 							rating = str(round(float(ratingPoints / ratingAmount), 1)) if ratingAmount else "0"
 							imdbId = ""  # hint: imdb is not supported by TVS
 							trailer_url = event.get("videos", [{}])[0].get("video", [{}])[0].get("url", "")  # e.g. 'https://media.delight.video/5556f0b9a1c4e9817e98126f4bfc49ed56ad8057/d358c5cd5b0b98e547c37be2c510e231f8ad9c5b/MEDIA/v0/HD/media.mp4'
-							if trailer_url and db.checkTitle(title):
-								db.updateTrailer(trailer_url, title)
+							coverfile = coverurl.split("/")[-1]
+							posterfile = ""  # hint: posters are not supported by TVS
 							if not db.checkTitle(title) and categoryName == "Spielfilm":
-								db.addTitleInfo(title, genre, year, rating, fsk, country, imdbId, trailer_url)
+								db.addTitleInfo(title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
 							if db.checkTitle(title):
 								data = db.getTitleInfo(title)
 								for item in [("genre", genre), ("year", year), ("rating", rating), ("fsk", fsk), ("country", country)]:
-									if item[1] and not data[2]:
+									if item[1] and data and not data[2]:
 										db.updateSingleEventInfo(item[0], item[1], title[0])
 							success = found
-							coverfile = coverurl.split("/")[-1]
 							db.updateliveTVS(providerId, title, genre, year, rating, fsk, country, airtime, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, sref)
 							found = tcount - db.getUpdateCount()
 							if found == success:
@@ -1288,7 +1302,7 @@ def getTVMovie(db, secondRun=False):
 	for title in tvnames:
 		evt += 1
 		tvname = title[0] if not secondRun else convertTitle2(title[0])
-		aelGlobals.setStatus(f"({evt}/{lentvnames}) {_('search on TV-Movie for')} {tvname} ({found}/{tcount} | covers: {coverscount})")
+		aelGlobals.setStatus(f"({evt}/{lentvnames}) {_('search on TV-Movie for')} '{tvname}' ({found}/{tcount} | covers: {coverscount})")
 		tvmovieurl = b64decode(b"aHR0cDovL2NhcGkudHZtb3ZpZS5kZS92MS9icm9hZGNhc3RzL3NlYXJjaA==2"[:-1]).decode()
 		errmsg, response = getAPIdata(tvmovieurl, params={"q": tvname, "page": 1, "rows": 400})
 		if errmsg:
@@ -1330,8 +1344,9 @@ def getTVMovie(db, secondRun=False):
 						rating = str(round(event.get("movieStarValue", 0) * 2))
 						imdbId = event.get("imdbId", "")
 						trailer_url = ""  # TODO: Wird das womöglich doch geliefert?
+						posterfile = ""  # hint: posters are not supported by TMovie
 						if not db.checkTitle(title[0]) and categoryName == "Spielfilm":
-							db.addTitleInfo(title[0], genre, year, rating, fsk, country, imdbId, trailer_url)
+							db.addTitleInfo(title[0], genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
 						if db.checkTitle(title[0]):
 							data = db.getTitleInfo(title[0])
 							for item in [("genre", genre), ("year", year), ("rating", rating), ("fsk", fsk), ("country", country)]:
@@ -1816,24 +1831,14 @@ def get_size(path):
 
 
 def createStatistics(db):
-	DIR = f"{aelGlobals.POSTERPATH}"
-	posterCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	posterSize = check_output(["du", "-sh", DIR]).decode().split()[0]
-	DIR = f"{aelGlobals.COVERPATH}"
-	coverCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	coverSize = check_output(["du", "-sh", DIR]).decode().split()[0]
-	DIR = f"{aelGlobals.PREVIEWPATH}"
-	previewCount = len([name for name in listdir(DIR) if fileExists(join(DIR, name))])
-	previewSize = check_output(["du", "-sh", DIR]).decode().split()[0]
 	inodes = check_output(["df", "-i", aelGlobals.HDDPATH]).decode().split()
-	nodestr = f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}"
-	db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(posterCount))
-	db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(coverCount))
-	db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(previewCount))
-	db.parameter(aelGlobals.PARAMETER_SET, "posterSize", str(posterSize))
-	db.parameter(aelGlobals.PARAMETER_SET, "coverSize", str(coverSize))
-	db.parameter(aelGlobals.PARAMETER_SET, "previewSize", str(previewSize))
-	db.parameter(aelGlobals.PARAMETER_SET, "usedInodes", nodestr)
+	db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if fileExists(join(aelGlobals.POSTERPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if fileExists(join(aelGlobals.COVERPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if fileExists(join(aelGlobals.PREVIEWPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "posterSize", str(check_output(["du", "-sh", aelGlobals.POSTERPATH]).decode().split()[0]))
+	db.parameter(aelGlobals.PARAMETER_SET, "coverSize", str(check_output(["du", "-sh", aelGlobals.COVERPATH]).decode().split()[0]))
+	db.parameter(aelGlobals.PARAMETER_SET, "previewSize", str(check_output(["du", "-sh", aelGlobals.PREVIEWPATH]).decode().split()[0]))
+	db.parameter(aelGlobals.PARAMETER_SET, "usedInodes", f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}")
 
 
 def get_PictureList(title, what="Cover", count=20, lang="de", bingOption=""):
@@ -2157,7 +2162,7 @@ def get_searchResults(title, lang):
 								details = tmdb.TV(item.get("id", ""))
 								for country in details.content_ratings(language=lang).get("results", []):
 									if country.get("iso_3166_1", "") == lang.upper():
-										fsk = country.get("rating", "0.0")
+										fsk = country.get("rating", "")
 										break
 						else:
 							desc = item.get("overview", "")
@@ -2173,7 +2178,7 @@ def get_searchResults(title, lang):
 							details = tmdb.TV(item.get("id", ""))
 							for country in details.content_ratings(language=lang).get("results", []):
 								if country.get("iso_3166_1", "") == lang.upper():
-									fsk = country.get("rating", "0.0")
+									fsk = country.get("rating", "")
 									break
 					except Exception:
 						continue
@@ -2208,7 +2213,7 @@ def get_searchResults(title, lang):
 								fsk = country.get("certification", "")
 								break
 						for country in details.info(language=lang).get("production_countries", []):
-							countries = countries + country.get("iso_3166_1", "") + " | "
+							countries = f"{countries}{country.get('iso_3166_1', '')} | "
 						countries = countries[:-3]
 					except Exception:
 						continue
@@ -2280,7 +2285,7 @@ def get_searchResults(title, lang):
 							for genre in response.get("genre", {}):
 								genres = f"{genres}{genre}-{_('series')}"
 							genres = genres.replace("Documentary", "Dokumentation").replace("Children", "Kinder")
-							rating = aelGlobals.FSKDICT.get(response.get("rating", "0.0"), "")
+							rating = aelGlobals.FSKDICT.get(response.get("rating", ""), "")
 							itm = [seriesName, countries, year, genres, rating, fsk, "The TVDB", desc]
 							resultList.append((itm,))
 	# TVMAZE data server
@@ -2485,7 +2490,7 @@ class DB_Functions(object):
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='eventInfo';"
 		cur.execute(query)
 		if not cur.fetchall():
-			query = "CREATE TABLE [eventInfo] ([title] TEXT NOT NULL, [genre] TEXT NULL, [year] TEXT NULL, [rating] TEXT NULL, [fsk] TEXT NULL, [country] TEXT NULL, [airtime] TEXT NOT NULL, [imdbId] TEXT, [trailer_url] TEXT DEFAULT NULL,PRIMARY KEY ([title]))"
+			query = "CREATE TABLE [eventInfo] ([creationdate] INTEGER NOT NULL, [title] TEXT NOT NULL, [genre] TEXT NULL, [year] TEXT NULL, [rating] TEXT NULL, [fsk] TEXT NULL, [country] TEXT NULL, [imdbId] TEXT NULL, [coverfile] TEXT NULL, [posterfile] TEXT NULL, [trailer_url] TEXT NULL, PRIMARY KEY ([title]))"
 			cur.execute(query)
 			self.conn.commit()
 			write_log("Tabelle 'eventInfo' hinzugefügt")
@@ -2537,19 +2542,6 @@ class DB_Functions(object):
 			cur.execute(query)
 			self.conn.commit()
 			write_log("Table 'parameters' added")
-		#append columns eventInfo
-		query = "PRAGMA table_info('eventInfo');"
-		cur.execute(query)
-		rows = cur.fetchall()
-		found = False
-		for row in rows:
-			if "trailer_url" in row[1]:
-				found = True
-				break
-		if found is False:
-			query = "ALTER TABLE 'eventInfo' ADD COLUMN 'trailer_url' TEXT DEFAULT NULL"
-			cur.execute(query)
-			self.conn.commit()
 
 	def releaseDB(self):
 		self.conn.close()
@@ -2571,11 +2563,11 @@ class DB_Functions(object):
 			self.conn.commit()
 			return value
 
-	def addTitleInfo(self, title, genre, year, rating, fsk, country, imdbId, trailer_url):
-		now = datetime.now().timestamp()
+	def addTitleInfo(self, title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url):
+		creationdate = round(datetime.now().timestamp())
 		cur = self.conn.cursor()
-		query = "insert or ignore into eventInfo (title,genre,year,rating,fsk,country,airtime,imdbId,trailer_url) values (?,?,?,?,?,?,?,?,?);"
-		cur.execute(query, (title, genre, year, rating, fsk, country, now, imdbId, trailer_url))
+		query = "insert or ignore into eventInfo (creationdate, title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url) values (?,?,?,?,?,?,?,?,?,?,?);"
+		cur.execute(query, (creationdate, title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url))
 		self.conn.commit()
 
 	def addliveTV(self, records):
@@ -2585,11 +2577,11 @@ class DB_Functions(object):
 		self.conn.commit()
 		self.parameter(aelGlobals.PARAMETER_SET, "lastadditionalDataCount", str(cur.rowcount))
 
-	def updateTitleInfo(self, genre, year, rating, fsk, country, imdbId, trailer_url, title):
-		now = datetime.now().timestamp()
+	def updateTitleInfo(self, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url, title):
+		creationdate = round(datetime.now().timestamp())
 		cur = self.conn.cursor()
-		query = f"update eventInfo genre = ?, year = ?, rating = ?, fsk = ?, country = ?, imdbId = ?, trailer_url = ?, airtime = {now} where title = ?;"
-		cur.execute(query, (title, genre, year, rating, fsk, country, imdbId, trailer_url, title))
+		query = f"update eventInfo creationdate = {creationdate}, genre = ?, year = ?, rating = ?, fsk = ?, country = ?, imdbId = ?, coverfile= ?, posterfile = ?, trailer_url = ? where title = ?;"
+		cur.execute(query, (creationdate, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url, title))
 		self.conn.commit()
 
 	def updateSingleEventInfo(self, col, val, title):
@@ -2648,10 +2640,10 @@ class DB_Functions(object):
 
 	def getTitleInfo(self, title):
 		cur = self.conn.cursor()
-		query = "SELECT title,genre,year,rating,fsk,country,imdbId,trailer_url FROM eventInfo WHERE title = ?"
+		query = "SELECT title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url FROM eventInfo WHERE title = ?"
 		cur.execute(query, (title,))
 		row = cur.fetchall()
-		return [row[0][0], row[0][1], row[0][2], row[0][3], row[0][4], row[0][5], row[0][6], row[0][7]] if row else []
+		return row[0] if row else []
 
 	def getliveTV(self, e2eventId, name=None, beginTime=None):
 		tvname = ""
@@ -2783,13 +2775,12 @@ class DB_Functions(object):
 	def getUnusedTitles(self):
 		titleList = []
 		cur = self.conn.cursor()
-		query = "SELECT title FROM eventInfo ORDER BY airtime ASC LIMIT 100;"
+		query = "SELECT title, coverfile, posterfile FROM eventInfo ORDER BY creationdate ASC LIMIT 100;"
 		cur.execute(query)
 		rows = cur.fetchall()
 		if rows:
 			for row in rows:
-				itm = [row[0], row[1]]
-				titleList.append(itm)
+				titleList.append((row[0], row[1], row[2]))
 		return titleList
 
 	def checkTitle(self, title):
