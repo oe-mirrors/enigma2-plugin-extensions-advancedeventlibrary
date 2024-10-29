@@ -1189,7 +1189,7 @@ def get_titleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords
 		write_log("looking for missing meta-Info")
 		createMovieInfo(db, lang)
 	createStatistics(db)
-	if config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value:
+	if config.plugins.AdvancedEventLibrary.UpdateAELMovieWall.value:  # TODO: kann dann weg
 		write_log("create MovieWall data")
 		try:
 			itype = ""
@@ -1266,7 +1266,7 @@ def getTVSpielfilm(db):
 							if db.checkTitle(title):
 								data = db.getTitleInfo(title)
 								for item in [("genre", genre), ("year", year), ("rating", rating), ("fsk", fsk), ("country", country)]:
-									if item[1] and not data[2]:
+									if item[1] and data and not data[2]:
 										db.updateSingleEventInfo(item[0], item[1], title[0])
 							success = found
 							db.updateliveTVS(providerId, title, genre, year, rating, fsk, country, airtime, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, sref)
@@ -2643,7 +2643,7 @@ class DB_Functions(object):
 		query = "SELECT title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url FROM eventInfo WHERE title = ?"
 		cur.execute(query, (title,))
 		row = cur.fetchall()
-		return [x[1] for x in row]
+		return row[0] if row else []
 
 	def getliveTV(self, e2eventId, name=None, beginTime=None):
 		tvname = ""
