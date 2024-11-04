@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, setScanStopped, isScanStopped, PicLoader
 
 from . import _  # for localized messages
 
@@ -102,18 +102,22 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			"key_ok": self.key_ok_handler,
 		}, -1)
 		self.refreshStatus = eTimer()
-		self.refreshStatus.callback.append(self.getStatus)
+		self.refreshStatus.callback.append(self.updateStatus)
 		self.reload = eTimer()
 		self.reload.callback.append(self.goReload)
 		self.delayedStart = eTimer()
-		self.delayedStart.callback.append(self.readMandatoryFiles)  # unfortunately necessary, because self.session.open(MessageBox,...) returns a modal error
+		self.delayedStart.callback.append(self.readMandatoryFiles)  # unfortunately necessary, because 'self.session.open(MessageBox,...)' returns a modal error
 		self.onLayoutFinish.append(self.layoutFinished)
 
 	def layoutFinished(self):
 		self.delayedStart.start(250, True)
-		self.getStatus()
-		self.db = getDB()
+		setScanStopped(True)
+		self.updateStatistics()
+		self.updateStatus()
+
+	def updateStatistics(self):
 		confdir = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
+		self.db = getDB()
 		if isfile(confdir):
 			GET = aelGlobals.PARAMETER_GET
 			posterCount = self.db.parameter(GET, 'posterCount', None, 0)
@@ -215,7 +219,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		tabpos = "{0:<11} {1:<10} {2:<16} {3:<12} {4:<0}\n"
 		res = ""
 		for result in resultList:
-			result4 = f"{_('Flash')}:" if result[4] == '/' else f"{result[4]}:"
+			result4 = f"{_('Flash')}:" if result[4] == "/" else f"{result[4]}:"
 			res += tabpos.format(result4, getSizeStr(result[0]), f"{_('free')}: {getSizeStr(result[2])}", f"{_('occupied')}: {getSizeStr(result[1])}", f"({result[3]} %)")
 		return res
 
@@ -289,19 +293,41 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 				self.open_favourites()
 
 	def key_green_handler(self):
-		if exists(aelGlobals.TVS_REFFILE):
-			self["status"].setText(_("start search run..."))
-			createDirs(config.plugins.AdvancedEventLibrary.Location.value)
-			startUpdate(self.lang)
+		if isScanStopped():
+			if exists(aelGlobals.TVS_REFFILE):
+				setScanStopped(False)
+				self["status"].setText(_("start search run..."))
+				self["key_green"].setText(_("Stop scan"))
+				createDirs(config.plugins.AdvancedEventLibrary.Location.value)
+				startUpdate(self.lang, self.startUpdateCB)
+			else:
+				msg = _("The TVS reference file was not found.\nTV Spielfilm can therefore not be supported!\n\nShould a bouquets import be carried out now (recommended)?")
+				self.session.openWithCallback(self.key_green_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=5, default=False)
 		else:
-			msg = _("The TVS reference file was not found.\nTV Spielfilm can therefore not be supported!\n\nShould a bouquets import be carried out now (recommended)?")
-			self.session.openWithCallback(self.key_green_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=5, default=False)
+			msg = _("Should the search run really be canceled?")
+			self.session.openWithCallback(self.stopScan_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=5, default=False)
 
 	def key_green_answer(self, answer):
 		if answer is True:
 			self.key_blue_handler()
 		else:
-			startUpdate(self.lang)
+			setScanStopped(False)
+			self["status"].setText(_("start search run..."))
+			self["key_green"].setText(_("Stop scan"))
+			startUpdate(self.lang, self.startUpdateCB)
+
+	def stopScan_answer(self, answer):
+		if answer is True:
+			setScanStopped(True)
+			self["status"].setText(_("stop search run..."))
+			self["key_green"].setText(_("Start scan"))
+			write_log("### ...Update was stopped due to user request ###")
+
+	def startUpdateCB(self):
+		setScanStopped(True)
+		self.updateStatus()
+		self["key_green"].setText(_("Start scan"))
+		self.updateStatistics()
 
 	def key_yellow_handler(self):
 		callInThread(createBackup)
@@ -309,7 +335,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def key_blue_handler(self):
 		self.session.open(TVSmakeReferenceFile)
 
-	def getStatus(self):
+	def updateStatus(self):
 		self["status"].setText(aelGlobals.STATUS if aelGlobals.STATUS else _("No search is currently running."))
 		self.memInfo = f"\n{_('Memory allocation')} :\n{self.getDiskInfo('/')}"
 		self.memInfo += self.getMemInfo("Mem")
@@ -1183,15 +1209,15 @@ class Editor(Screen, ConfigListScreen):
 		if ret and ret[0] == self.ptr2:
 			self.ptr = self.ptr2
 			self.evt, self.e2eventId = "", ""
-		eventData = self.db.getTitleInfo(convertSearchName(self.ptr))
+		eventData = self.db.getEventInfo(convertSearchName(self.ptr))
 		if not eventData:
-			eventData = self.db.getTitleInfo(convertSearchName(convertTitle(self.ptr)))
+			eventData = self.db.getEventInfo(convertSearchName(convertTitle(self.ptr)))
 			if not eventData:
-				eventData = self.db.getTitleInfo(convertSearchName(convertTitle2(self.ptr)))
+				eventData = self.db.getEventInfo(convertSearchName(convertTitle2(self.ptr)))
 		if not eventData:
 			eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
 		if not self.db.checkTitle(self.ptr) and self.ptr != "nothing found":
-			self.db.addTitleInfo(convertSearchName(self.ptr), self.ptr, "", "", "", "", "")
+			self.db.addEventInfo(convertSearchName(self.ptr), self.ptr, "", "", "", "", "", "", "", "")
 		self.eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
 		if self.evt:  # genre
 			self.eventData[2] = self.evt[0][14] if len(str(self.evt[0][14]).strip()) > 0 else eventData[2]
@@ -1398,51 +1424,51 @@ class Editor(Screen, ConfigListScreen):
 		searchtext = f"{self.eventTitle.value} ({self.eventYear.value})" if self.eventYear.value and not ex else self.eventTitle.value
 		if poster:
 			if "Serie" in self.eventGenre.value:
-				self['pList'].setList(get_PictureList(searchtext, 'Poster', self.ImageCount, self.eventData[0], self.language, " Serie"))
+				self["pList"].setList(get_PictureList(searchtext, "Poster", self.ImageCount, self.language, " Serie"))  # Todo: searchtext oder self.eventData[0]?
 			else:
-				self['pList'].setList(get_PictureList(searchtext, 'Poster', self.ImageCount, self.eventData[0], self.language, " Film"))
+				self["pList"].setList(get_PictureList(searchtext, "Poster", self.ImageCount, self.language, " Film"))
 		if cover:
 			if "Serie" in self.eventGenre.value:
-				self['cList'].setList(get_PictureList(searchtext, 'Cover', self.ImageCount, self.eventData[0], self.language, " Serie"))
+				self["cList"].setList(get_PictureList(searchtext, "Cover", self.ImageCount, self.language, " Serie"))
 			else:
-				self['cList'].setList(get_PictureList(searchtext, 'Cover', self.ImageCount, self.eventData[0], self.language, " Film"))
+				self["cList"].setList(get_PictureList(searchtext, "Cover", self.ImageCount, self.language, " Film"))
 
 	def showPreview(self):
-		if self.ptr != 'nothing found':
+		if self.ptr != "nothing found":
 			self["poster"].hide()
 			self["cover"].hide()
-			if self.activeList == 'poster':
-				selection = self['pList'].l.getCurrentSelection()[0]
+			if self.activeList == "poster":
+				selection = self["pList"].l.getCurrentSelection()[0]
 				if selection:
 					size = self["poster"].instance.size()
 					picloader = PicLoader(size.width(), size.height())
 					if self.pSource == 1:
-						self["poster"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
+						self["poster"].instance.setPixmap(picloader.load("/tmp/" + selection[5]))
 					else:
 						self["poster"].instance.setPixmap(picloader.load(selection[3]))
 					picloader.destroy()
 					self["poster"].show()
-			elif self.activeList == 'cover':
-				selection = self['cList'].l.getCurrentSelection()[0]
+			elif self.activeList == "cover":
+				selection = self["cList"].l.getCurrentSelection()[0]
 				if selection:
 					size = self["cover"].instance.size()
 					picloader = PicLoader(size.width(), size.height())
 					if self.cSource == 1:
-						self["cover"].instance.setPixmap(picloader.load('/tmp/' + selection[5]))
+						self["cover"].instance.setPixmap(picloader.load("/tmp/" + selection[5]))
 					else:
 						self["cover"].instance.setPixmap(picloader.load(selection[3]))
 					picloader.destroy()
 					self["cover"].show()
 
 	def key_red_handler(self):
-		if self.ptr != 'nothing found':
+		if self.ptr != "nothing found":
 			if self.e2eventId:
 				self.db.updateliveTVInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.e2eventId)
 			if self.db.checkTitle(self.eventData[0]):
 				imdbId = trailer = "", ""  # not supported here
-				self.db.updateTitleInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, imdbId, trailer, self.eventData[0])
+				self.db.updateEventInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, "", "", imdbId, trailer, self.eventData[0])
 				if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
-					if self.fileName and not isfile(self.fileName.replace('.ts', '.eit').replace('.mkv', '.eit').replace('.avi', '.eit').replace('.mpg', '.eit').replace('.mp4', '.eit')):
+					if self.fileName and not isfile(self.fileName.replace(".ts", ".eit").replace(".mkv", ".eit").replace(".avi", ".eit").replace(".mpg", ".eit").replace(".mp4", ".eit")):
 						if self.eventOverview:
 							txt = open(self.fileName + ".txt", "w")
 							txt.write(self.eventOverview)
@@ -1457,7 +1483,7 @@ class Editor(Screen, ConfigListScreen):
 							minfo += f"{self.eventCountry}.value, "
 						if self.eventYear.value:
 							minfo += f"{self.eventYear.value}, "
-						if minfo.endswith(', '):
+						if minfo.endswith(", "):
 							minfo = minfo[:-2]
 						else:
 							minfo += "\n"
@@ -1467,26 +1493,26 @@ class Editor(Screen, ConfigListScreen):
 		self.doClose()
 
 	def key_green_handler(self):
-		if self.activeList != 'choiceBox':
+		if self.activeList != "choiceBox":
 			self["key_green"].setText("")
 			self["key_yellow"] = StaticText(_("Activate poster selection"))
 			self["key_blue"] = StaticText(_("Activate Cover selection"))
-			self.activeList = 'editor'
+			self.activeList = "editor"
 
 	def key_yellow_handler(self):
-		if self.activeList != 'choiceBox':
+		if self.activeList != "choiceBox":
 			self["key_green"].setText("Activate Editor")
 			self["key_yellow"].setText("")
 			self["key_blue"].setText("Activate Cover selection")
-			self.activeList = 'poster'
+			self.activeList = "poster"
 			self.showPreview()
 
 	def key_blue_handler(self):
-		if self.activeList != 'choiceBox':
+		if self.activeList != "choiceBox":
 			self["key_green"].setText("Activate Editor")
 			self["key_yellow"].setText("Activate poster selection")
 			self["key_blue"].setText("")
-			self.activeList = 'cover'
+			self.activeList = "cover"
 			self.showPreview()
 
 	def buildConfigList(self):
@@ -1508,12 +1534,12 @@ class Editor(Screen, ConfigListScreen):
 #			self["config"].updateConfigListView(cur)
 
 	def doClose(self):
-		if self.activeList == 'choiceBox':
+		if self.activeList == "choiceBox":
 			self["key_yellow"] = StaticText(_("Activate poster selection"))
 			self["key_blue"] = StaticText(_("Activate Cover selection"))
-			self['sList'].hide()
-			self['config'].show()
-			self.activeList = 'editor'
+			self["sList"].hide()
+			self["config"].show()
+			self.activeList = "editor"
 		else:
 			filelist = glob(join("/tmp/", "*.jpg"))
 			for f in filelist:

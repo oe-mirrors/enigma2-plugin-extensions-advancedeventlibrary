@@ -1,7 +1,7 @@
 from base64 import b64decode
 from json import loads
 from urllib.parse import urlencode
-from requests import post, get, exceptions
+from requests import post, exceptions
 
 
 class Auth:
@@ -15,14 +15,14 @@ class Auth:
 			response = post(url, headers=headers, json={"apikey": apikey}, timeout=(3.05, 3))
 			response.raise_for_status()
 			status = response.status_code
-			if status:
-				write_log(f"API server access ERROR, response code: {status}")
+			if status != 200:
+				write_log(f"API server access ERROR, response code: {status} - {response}")
+				return
 			jsondict = response.json()
 			if jsondict and jsondict.get("status", "failure") == "success":
 				self.token = jsondict.get("data", {}).get("token", "")
-				print("#####self.token:", self.token)
 			else:
-				self.token
+				self.token = ""
 				write_log(f"Response message from server: {jsondict.get('message', '')}")
 		except exceptions.RequestException as errmsg:
 			write_log(f"ERROR in module 'getAPIdata': {errmsg}")
@@ -32,19 +32,18 @@ class Auth:
 
 
 class Request:
-	def __init__(self, auth_token):  # get data from server
+	def __init__(self, token):  # get data from server
 		from .AdvancedEventLibrary import getAPIdata, write_log
 		self.getAPIdata = getAPIdata
 		self.write_log = write_log
-		self.auth_token = auth_token
+		self.token = token
 
 	def make_request(self, url):
-		errmsg, response = self.getAPIdata(url, headers={"Authorization": f"Bearer {self.auth_token}"})
+		errmsg, response = self.getAPIdata(url, headers={"Authorization": f"Bearer {self.token}"})
 		if errmsg:
 			self.write_log(f"API download error in module 'tvdb_api_v4: make_request': {errmsg}")
 		if response:
 			data = response.get("data", "")
-			print("#####data:", data)
 			if data and response.get("status", "failure") == "success":
 				return data
 
@@ -233,11 +232,11 @@ class TVDB:
 	def __init__(self, apikey="", pin=""):
 		self.url = Url()
 		self.auth = Auth(self.url.login_url(), apikey, pin)
-		self.auth_token = self.auth.get_token()
-		self.request = Request(self.auth_token)
+		self.token = self.auth.get_token()
+		self.request = Request(self.token)
 
 	def get_login_state(self):
-		return True if self.auth_token else False
+		return True if self.token else False
 
 	def get_artwork_statuses(self):  # -> list:
 		"""Returns a list of artwork statuses"""
