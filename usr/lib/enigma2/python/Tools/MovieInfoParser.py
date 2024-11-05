@@ -9,34 +9,32 @@ def getExtendedMovieDescription(ref):
 		evt = info.getEvent(ref)
 		if evt:
 			name = evt.getEventName()
-			extended_desc = evt.getExtendedDescription()
-			return (name, extended_desc)
-	name = ""
-	filename = ""
-	extended_desc = ""
-	extensions = ('.txt', '.info')
-	info_file = realpath(ref.getPath())
-	name = basename(info_file)
-	ext_pos = name.rfind('.')
-	name = name[:ext_pos].replace('_', ' ') if ext_pos > 0 else name.replace('_', ' ')
+			extendedDesc = evt.getExtendedDescription()
+			return (name, extendedDesc)
+	name, filename, extendedDesc = "", "", ""
+	extensions = (".txt", ".info")
+	infoFile = realpath(ref.getPath())
+	name = basename(infoFile)
+	extPos = name.rfind(".")
+	name = name[:extPos].replace("_", " ") if extPos > 0 else name.replace("_", " ")
 	for ext in extensions:
-		if exists(info_file + ext):
-			filename = info_file + ext
+		if exists(infoFile + ext):
+			filename = f"{infoFile}{ext}"
 			break
 	if not filename:
-		ext_pos = info_file.rfind('.')
-		name_len = len(info_file)
-		ext_len = name_len - ext_pos
-		if ext_len <= 5:
-			info_file = info_file[:ext_pos]
+		extPos = infoFile.rfind(".")
+		nameLen = len(infoFile)
+		extLen = nameLen - extPos
+		if extLen <= 5:
+			infoFile = infoFile[:extPos]
 			for ext in extensions:
-				if exists(info_file + ext):
-					filename = f"{info_file}{ext}"
+				if exists(infoFile + ext):
+					filename = f"{infoFile}{ext}"
 					break
 	if filename:
 		try:
-			with open(filename, 'r') as txtfile:
-				extended_desc = txtfile.read()
+			with open(filename, "r") as txtfile:
+				extendedDesc = txtfile.read()
 		except IOError:
 			pass
-	return (name, extended_desc)
+	return (name, extendedDesc)

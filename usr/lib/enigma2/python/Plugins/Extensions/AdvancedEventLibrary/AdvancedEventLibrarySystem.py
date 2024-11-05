@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, removeExtension, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, setScanStopped, isScanStopped, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, writeLog, removeExtension, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, getSearchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, getPictureList, clearMem, setScanStopped, isScanStopped, PicLoader
 
 from . import _  # for localized messages
 
@@ -65,7 +65,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def __init__(self, session):
 		self.session = session
 		Screen.__init__(self, session)
-		write_log("##### starting Advanced Event Library GUI #####")
+		writeLog("##### starting Advanced Event Library GUI #####")
 		self.skinName = 'Advanced-Event-Library-Menu'
 		self.title = f"{_('Advanced-Event-Library Menüauswahl')}: (R{aelGlobals.CURRENTVERSION})"
 		self.memInfo = ""
@@ -127,14 +127,14 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			previewCount = self.db.parameter(GET, 'previewCount', None, 0)
 			previewSize = str(self.db.parameter(GET, 'previewSize', None, 0))
 			usedInodes = self.db.parameter(GET, 'usedInodes', None, 0)
-			lastposterCount = self.db.parameter(GET, 'lastposterCount', None, 0)
-			lastcoverCount = self.db.parameter(GET, 'lastcoverCount', None, 0)
-			lasteventInfoCount = int(str(self.db.parameter(GET, 'lasteventInfoCount', None, 0)))
-			lasteventInfoCountSuccsess = int(str(self.db.parameter(GET, 'lasteventInfoCountSuccsess', None, 0)))
-			lastpreviewImageCount = int(str(self.db.parameter(GET, 'lastpreviewImageCount', None, 0)))
-			lastadditionalDataCount = int(str(self.db.parameter(GET, 'lastadditionalDataCount', None, 0)))
-			lastadditionalDataCountBlacklist = int(str(self.db.parameter(GET, 'lastadditionalDataCountSuccess', None, 0)))
-			lastadditionalDataCountSuccess = lastadditionalDataCount - lastadditionalDataCountBlacklist
+			lastPosterCount = self.db.parameter(GET, 'lastPosterCount', None, 0)
+			lastCoverCount = self.db.parameter(GET, 'lastCoverCount', None, 0)
+			lastEventInfoCount = int(str(self.db.parameter(GET, 'lastEventInfoCount', None, 0)))
+			lastEventInfoCountSuccsess = int(str(self.db.parameter(GET, 'lastEventInfoCountSuccsess', None, 0)))
+			lastPreviewImageCount = int(str(self.db.parameter(GET, 'lastPreviewImageCount', None, 0)))
+			lastAdditionalDataCount = int(str(self.db.parameter(GET, 'lastAdditionalDataCount', None, 0)))
+			lastAdditionalDataCountBlacklist = int(str(self.db.parameter(GET, 'lastAdditionalDataCountSuccess', None, 0)))
+			lastAdditionalDataCountSuccess = lastAdditionalDataCount - lastAdditionalDataCountBlacklist
 			lastUpdateStart, lastUpdateDuration = self.getlastUpdateInfo(self.db)
 			dbSize = getsize(confdir) / 1024.0
 			titleCount = self.db.getTitleInfoCount()
@@ -143,18 +143,18 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			liveTVtitleCount = self.db.getliveTVCount()
 			liveTVidtitleCount = self.db.getliveTVidCount()
 			percentTV = round(100 * liveTVidtitleCount / liveTVtitleCount) if (liveTVidtitleCount + liveTVtitleCount) > 0 else 0
-			percentlIC = round(100 * lasteventInfoCountSuccsess / lasteventInfoCount) if lasteventInfoCount > 0 else 0
-			percentlaC = round(100 * lastadditionalDataCountSuccess / lastadditionalDataCount) if lastadditionalDataCount > 0 else 0
+			percentlIC = round(100 * lastEventInfoCountSuccsess / lastEventInfoCount) if lastEventInfoCount > 0 else 0
+			percentlaC = round(100 * lastAdditionalDataCountSuccess / lastAdditionalDataCount) if lastAdditionalDataCount > 0 else 0
 			cpS = round(float(posterSize.replace('G', '')) * 1024.0, 2) if 'G' in posterSize else posterSize
 			ccS = round(float(coverSize.replace('G', '')) * 1024.0, 2) if 'G' in coverSize else coverSize
 			pcS = round(float(previewSize.replace('G', '')) * 1024.0, 2) if 'G' in previewSize else previewSize
-			trailers = self.db.getTrailerCount()
+			trailerCount = self.db.getTrailerCount()
 			size = int(float(str(cpS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(ccS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + float(str(pcS).replace('G', '').replace('M', '').replace('kB', '').replace('K', '')) + round(float(dbSize / 1024.0), 1))
 			tabpos = "{0:<22} {1:<17} {2:<0}\n"
 			statistic = f"{_('Statistics last search run:')}\n"
-			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastposterCount} | {lastcoverCount} | {lastpreviewImageCount}\n"
-			statistic += tabpos.format(f"{_('Event information:')}", lasteventInfoCount, f"found: {'{:5d}'.format(lasteventInfoCountSuccsess)} | {percentlIC} %")
-			statistic += tabpos.format(f"{_('Extra data sought:')}", lastadditionalDataCount, f"{_('found:')} {'{:5d}'.format(lastadditionalDataCountSuccess)} | {percentlaC} %")
+			statistic += f"{_('Number of posters | Cover | Preview images:')} {lastPosterCount} | {lastCoverCount} | {lastPreviewImageCount}\n"
+			statistic += tabpos.format(f"{_('Event information:')}", lastEventInfoCount, f"found: {'{:5d}'.format(lastEventInfoCountSuccsess)} | {percentlIC} %")
+			statistic += tabpos.format(f"{_('Extra data sought:')}", lastAdditionalDataCount, f"{_('found:')} {'{:5d}'.format(lastAdditionalDataCountSuccess)} | {percentlaC} %")
 			statistic += tabpos.format(f"{_('Executed on:')}", f"{lastUpdateStart} h", f"{_('Duration:')} {lastUpdateDuration} h")
 			statistic += f"\n{_('Total statistics:')}\n"
 			statistic += tabpos.format(f"{_('Entries')}:", f"{'{:5d}'.format(titleCount)} | {'{:5d}'.format(blackListCount)} | {percent} %", "")
@@ -162,7 +162,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			statistic += tabpos.format(f"{_('Number of posters')}:", posterCount, f"{_('Size')}: {posterSize}")
 			statistic += tabpos.format(f"{_('Number of covers')}:", coverCount, f"{_('Size')}: {coverSize}")
 			statistic += tabpos.format(f"{_('Number of previews')}:", previewCount, f"{_('Size')}: {previewSize}")
-			statistic += tabpos.format(f"{_('Number of trailers')}:", trailers, "")
+			statistic += tabpos.format(f"{_('Number of trailers')}:", trailerCount, "")
 			statistic += tabpos.format(f"{_('Database size')}:", f'{dbSize} KB', f"{_('Size')}: {coverSize}")
 			statistic += tabpos.format(f"{_('Storage space')}:", f"{size} / {int(config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0)} MB", f"{_('Inodes used:')} {usedInodes}")
 			self.statistic = statistic
@@ -242,25 +242,25 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			try:
 				with open(aelGlobals.NETWORKFILE, "r") as file:
 					aelGlobals.NETWORKDICT = loads(file.read())
-					write_log(f"AEL network file '{aelGlobals.NETWORKFILE}' successfully loaded.")
+					writeLog(f"AEL network file '{aelGlobals.NETWORKFILE}' successfully loaded.")
 			except Exception as errmsg:
-				write_log(f"Exception in module 'readMandatoryFiles' for AEL networks file '{aelGlobals.NETWORKFILE}': {errmsg}")
+				writeLog(f"Exception in module 'readMandatoryFiles' for AEL networks file '{aelGlobals.NETWORKFILE}': {errmsg}")
 				self.session.open(MessageBox, _("Exception error while reading AEL networks file '%s': %s\nCan't continue Advanced Event Library!" % (aelGlobals.NETWORKFILE, errmsg)), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 				self.do_close()
 		else:
-			write_log(f"Error in module 'readMandatoryFiles': AEL networks file '{aelGlobals.NETWORKFILE}' not found.")
+			writeLog(f"Error in module 'readMandatoryFiles': AEL networks file '{aelGlobals.NETWORKFILE}' not found.")
 			self.session.open(MessageBox, _("AEL networks file '%s' not found.\nCan't continue Advanced Event Library!" % aelGlobals.NETWORKFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.do_close()
 		if exists(aelGlobals.TVS_REFFILE):
 			try:
 				with open(aelGlobals.TVS_REFFILE, "r") as file:
 					aelGlobals.TVS_REFDICT = loads(file.read())
-					write_log(f"TV Spielfilm reference file '{aelGlobals.TVS_REFFILE}' successfully loaded.")
+					writeLog(f"TV Spielfilm reference file '{aelGlobals.TVS_REFFILE}' successfully loaded.")
 			except Exception as errmsg:
-				write_log(f"Exception in module 'readMandatoryFiles' for TVS reference file '{aelGlobals.TVS_REFFILE}': {errmsg}")
+				writeLog(f"Exception in module 'readMandatoryFiles' for TVS reference file '{aelGlobals.TVS_REFFILE}': {errmsg}")
 				self.session.open(MessageBox, _("Exception error while reading file '%s': %s\nTV Spielfilm services can't be supported at all!" % (aelGlobals.TVS_REFFILE, errmsg)), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 		else:
-			write_log(f"Error in module 'readMandatoryFiles': TVS reference file '{aelGlobals.TVS_REFFILE}' not found.")
+			writeLog(f"Error in module 'readMandatoryFiles': TVS reference file '{aelGlobals.TVS_REFFILE}' not found.")
 			msg = _("TV Spielfilm reference file '%s' not found.\nTV Spielfilm services can't be supported at all!\n\nDo you now want to create this reference file starting TVS import?" % aelGlobals.TVS_REFFILE)
 			self.session.openWithCallback(self.TVSimport_answer, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=10, default=True)
 
@@ -321,7 +321,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 			setScanStopped(True)
 			self["status"].setText(_("stop search run..."))
 			self["key_green"].setText(_("Start scan"))
-			write_log("### ...Update was stopped due to user request ###")
+			writeLog("### ...Update was stopped due to user request ###")
 
 	def startUpdateCB(self):
 		setScanStopped(True)
@@ -390,7 +390,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 
 	def goRestart(self, ret=None):
 #		if ret:
-#			write_log(f"return {ret}", DEFAULT_MODULE_NAME)
+#			writeLog(f"return {ret}", DEFAULT_MODULE_NAME)
 #			config.plugins.AdvancedEventLibrary.ViewType.value = ret
 #			config.plugins.AdvancedEventLibrary.ViewType.save()
 #		if self.viewType != config.plugins.AdvancedEventLibrary.ViewType.value:
@@ -606,7 +606,7 @@ class AdvancedEventLibrarySetup(Setup):
 #						self.configlist.append(getConfigListEntry("suche in Unterverzeichnissen von " + str(recdir), subpaths))
 #
 #		except Exception as ex:
-#			write_log(f"Error in buildConfigList : {ex}", DEFAULT_MODULE_NAME)
+#			writeLog(f"Error in buildConfigList : {ex}", DEFAULT_MODULE_NAME)
 
 
 #	def do_close(self):
@@ -618,7 +618,7 @@ class AdvancedEventLibrarySetup(Setup):
 #			for x in self["config"].list:
 #				if len(x) > 1:
 #					if "suche" not in x[0] and "Einstellungen" not in x[0] and x[0]:
-#						write_log(f"save : {x[0]} - {x[1].value}", DEFAULT_MODULE_NAME)
+#						writeLog(f"save : {x[0]} - {x[1].value}", DEFAULT_MODULE_NAME)
 #						x[1].save()
 #					else:
 #						if 'suche in Unterverzeichnissen von ' in str(x[0]):
@@ -686,7 +686,7 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 						if servicename not in self.senderlist:
 							self.senderlist.append(servicename)
 						self.senderdict[serviceref] = servicename
-#		tvslist = self.get_tvsRefList()  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
+#		tvslist = self.getTVSrefList()  # TODO: Schlecht: nicht alle möglichen TVS-Sender abklappern sondern nur die importieren (neue Funktionalität nutzen)
 #		self.tvsRefList = tvslist[0] # TODO: entfernen nach Umbau auf neues TVS-System
 #		self.tvsKeys = tvslist[1]  # TODO: entfernen nach Umbau auf neues TVS-System
 		self.configlist = []
@@ -724,14 +724,14 @@ class TVSSetup(Screen, ConfigListScreen):  # TODO: Erstmal so belassen
 			data = file.read().replace('null', '""')
 		return eval(data)
 
-	def get_tvsRefList(self):  # TODO: Das mit TVS muss noch sauber durchdacht werden, derzeit ist es Kuddelmuddel
+	def getTVSrefList(self):  # TODO: Das mit TVS muss noch sauber durchdacht werden, derzeit ist es Kuddelmuddel
 		refList = {}
 		keyList = []
 		# TODO: Hier holt er sich alle verfügbaren TVS-Sender, das wird später nur zum Check der "tvs_mapping.txt" verwendet, ob alle nötigen Regex vorhanden sind
 		tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9jb250ZW50L2NoYW5uZWwtbGlzdC9saXZldHY=k"[:-1]).decode()
 		errmsg, results = getAPIdata(tvsurl)
 		if errmsg:
-			write_log("API download error in module 'get_tvsRefList", DEFAULT_MODULE_NAME)
+			writeLog("API download error in module 'getTVSrefList", DEFAULT_MODULE_NAME)
 		if results:
 			for service in results:
 				if "id" in service.items() and "name" in service:
@@ -845,7 +845,7 @@ class Editor(Screen, ConfigListScreen):
 				if ptr:
 					self.ptr = ptr.getEventName()
 					self.ptr2 = self.ptr
-					write_log(f"{ptr.getEventName()} {self.ptr}", DEFAULT_MODULE_NAME)
+					writeLog(f"{ptr.getEventName()} {self.ptr}", DEFAULT_MODULE_NAME)
 					self.evt = self.db.getliveTV(ptr.getEventId(), str(self.ptr))
 					if self.evt:
 						self.e2eventId = self.evt[0][0]
@@ -866,8 +866,8 @@ class Editor(Screen, ConfigListScreen):
 		self.ptr = removeExtension(convertDateInFileName(self.ptr))
 		if self.ptr2:
 			self.ptr2 = removeExtension(convertDateInFileName(self.ptr2))
-			write_log(f"found second name : {self.ptr2}", DEFAULT_MODULE_NAME)
-		write_log(f"search name : {self.ptr}", DEFAULT_MODULE_NAME)
+			writeLog(f"found second name : {self.ptr2}", DEFAULT_MODULE_NAME)
+		writeLog(f"search name : {self.ptr}", DEFAULT_MODULE_NAME)
 		self["key_red"] = StaticText(_("Activate"))
 		self["key_green"] = StaticText("")
 		self["key_yellow"] = StaticText(_("Activate poster selection"))
@@ -954,7 +954,7 @@ class Editor(Screen, ConfigListScreen):
 				if selection:
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.pSource == 1:
-							write_log(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
+							writeLog(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
 							fileName = f"/tmp/{selection[5]}"  # NOSONAR
 							createSingleThumbnail(fileName, selection[4])
 							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
@@ -967,7 +967,7 @@ class Editor(Screen, ConfigListScreen):
 					if str(selection[0]) != "Keine Ergebnisse gefunden" and str(selection[0]) != _("load data, please wait..."):
 						if self.cSource == 1:
 							fileName = f"/tmp/{selection[5]}"  # NOSONAR
-							write_log(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
+							writeLog(f"Selection to move : {selection}", DEFAULT_MODULE_NAME)
 							createSingleThumbnail(fileName, selection[4])
 							if int(getsize(fileName) / 1024.0) > config.plugins.AdvancedEventLibrary.MaxImageSize.value:
 								reduceSigleImageSize(fileName, selection[4])
@@ -1023,7 +1023,7 @@ class Editor(Screen, ConfigListScreen):
 			callInThread(self.searchAll)
 
 	def searchAll(self):
-		self['sList'].setList(get_searchResults(self.text, self.language))
+		self['sList'].setList(getSearchResults(self.text, self.language))
 
 	def key_menu_handler(self):
 		if self.ptr != 'nothing found':
@@ -1052,7 +1052,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/cover/", "/cover/thumbnails/"))
 						except Exception as ex:
-							write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							writeLog(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				if self.pSource == 0:
 					for file in self["pList"].getList():
@@ -1060,7 +1060,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/poster/", "/poster/thumbnails/"))
 						except Exception as ex:
-							write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							writeLog(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				self.eventCountry.value = ""
 				self.eventFSK.value = ""
@@ -1078,7 +1078,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/cover/", "/cover/thumbnails/"))
 						except Exception as ex:
-							write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							writeLog(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				if self.pSource == 0:
 					for file in self["pList"].getList():
@@ -1086,7 +1086,7 @@ class Editor(Screen, ConfigListScreen):
 							remove(file[0][3])
 							remove(file[0][3].replace("/poster/", "/poster/thumbnails/"))
 						except Exception as ex:
-							write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+							writeLog(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 							continue
 				self.eventCountry.value = ""
 				self.eventFSK.value = ""
@@ -1102,7 +1102,7 @@ class Editor(Screen, ConfigListScreen):
 						remove(selection[3].replace("/poster/", "/poster/thumbnails/"))
 						self.afterInit(True, False)
 				except Exception as ex:
-					write_log(f"remove images : {ex}", DEFAULT_MODULE_NAME)
+					writeLog(f"remove images : {ex}", DEFAULT_MODULE_NAME)
 			elif ret[0] == _("Delete cover"):
 				try:
 					selection = self["cList"].l.getCurrentSelection()[0]
@@ -1111,7 +1111,7 @@ class Editor(Screen, ConfigListScreen):
 						remove(selection[3].replace("/cover/", "/cover/thumbnails/").replace("/preview/", "/preview/thumbnails/"))
 						self.afterInit(False, True)
 				except Exception as ex:
-					write_log(f"remove image : {ex}", DEFAULT_MODULE_NAME)
+					writeLog(f"remove image : {ex}", DEFAULT_MODULE_NAME)
 			elif ret[0] == _("Delete BlackList"):
 				self.db.cleanblackList()
 			elif ret[0] == _("Delete thumbnails"):
@@ -1148,11 +1148,11 @@ class Editor(Screen, ConfigListScreen):
 				elif "cover" in ret[0].lower():
 					self.activeList = "screenshot cover"
 				self.hide()
-			write_log(f"Menü : {ret[0]} - {self.ptr}", DEFAULT_MODULE_NAME)
+			writeLog(f"Menü : {ret[0]} - {self.ptr}", DEFAULT_MODULE_NAME)
 
 	def languageCallBack(self, ret=None):
 		if ret:
-			write_log(f"current language: {ret[0]}", DEFAULT_MODULE_NAME)
+			writeLog(f"current language: {ret[0]}", DEFAULT_MODULE_NAME)
 			self.language = str(ret[1])
 
 	def key_up_handler(self):
@@ -1282,23 +1282,23 @@ class Editor(Screen, ConfigListScreen):
 				pName1 = f"{self.ptr}.jpg"
 				pName2 = f"{convertTitle(self.ptr)}.jpg"
 				pName3 = f"{convertTitle2(self.ptr)}.jpg"
-				write_log(f"1. possible picture name : {self.ptr} as {pName1}", DEFAULT_MODULE_NAME)
+				writeLog(f"1. possible picture name : {self.ptr} as {pName1}", DEFAULT_MODULE_NAME)
 				if pName1 != pName2:
-					write_log(f"2. possible picture name : {convertTitle(self.ptr)} as {pName2}", DEFAULT_MODULE_NAME)
+					writeLog(f"2. possible picture name : {convertTitle(self.ptr)} as {pName2}", DEFAULT_MODULE_NAME)
 				if pName2 != pName3:
-					write_log(f"3. possible picture name : {convertTitle2(self.ptr)} as {pName3}", DEFAULT_MODULE_NAME)
+					writeLog(f"3. possible picture name : {convertTitle2(self.ptr)} as {pName3}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.COVERPATH, pName1)):
-					write_log(f"found 1. possible cover : {pName1}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 1. possible cover : {pName1}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.COVERPATH, pName2)) and pName1 != pName2:
-					write_log(f"found 2. possible cover : {pName2}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 2. possible cover : {pName2}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.COVERPATH, pName3)) and pName2 != pName3:
-					write_log(f"found 3. possible cover : {pName3}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 3. possible cover : {pName3}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.POSTERPATH, pName1)):
-					write_log(f"found 1. possible poster : {pName1}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 1. possible poster : {pName1}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.POSTERPATH, pName2)) and pName1 != pName2:
-					write_log(f"found 2. possible poster : {pName2}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 2. possible poster : {pName2}", DEFAULT_MODULE_NAME)
 				if isfile(join(aelGlobals.POSTERPATH, pName3)) and pName2 != pName3:
-					write_log(f"found 3. possible poster : {pName3}", DEFAULT_MODULE_NAME)
+					writeLog(f"found 3. possible poster : {pName3}", DEFAULT_MODULE_NAME)
 			self.coverList = []
 			self.posterList = []
 			waitList = []
@@ -1424,14 +1424,14 @@ class Editor(Screen, ConfigListScreen):
 		searchtext = f"{self.eventTitle.value} ({self.eventYear.value})" if self.eventYear.value and not ex else self.eventTitle.value
 		if poster:
 			if "Serie" in self.eventGenre.value:
-				self["pList"].setList(get_PictureList(searchtext, "Poster", self.ImageCount, self.language, " Serie"))  # Todo: searchtext oder self.eventData[0]?
+				self["pList"].setList(getPictureList(searchtext, "Poster", self.ImageCount, self.language, " Serie"))  # Todo: searchtext oder self.eventData[0]?
 			else:
-				self["pList"].setList(get_PictureList(searchtext, "Poster", self.ImageCount, self.language, " Film"))
+				self["pList"].setList(getPictureList(searchtext, "Poster", self.ImageCount, self.language, " Film"))
 		if cover:
 			if "Serie" in self.eventGenre.value:
-				self["cList"].setList(get_PictureList(searchtext, "Cover", self.ImageCount, self.language, " Serie"))
+				self["cList"].setList(getPictureList(searchtext, "Cover", self.ImageCount, self.language, " Serie"))
 			else:
-				self["cList"].setList(get_PictureList(searchtext, "Cover", self.ImageCount, self.language, " Film"))
+				self["cList"].setList(getPictureList(searchtext, "Cover", self.ImageCount, self.language, " Film"))
 
 	def showPreview(self):
 		if self.ptr != "nothing found":
@@ -1586,7 +1586,7 @@ class TVSmakeReferenceFile(Screen):
 
 	def layoutFinished(self):
 		if not exists(aelGlobals.TVS_MAPFILE):
-			write_log(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{aelGlobals.TVS_MAPFILE}' not found.")
+			writeLog(f"Error in module 'TVSmakeReferenceFile:onShownFinished': file '{aelGlobals.TVS_MAPFILE}' not found.")
 			self.session.open(MessageBox, _("File '%s' not found.\nTV Spielfilm import function can't be supported" % aelGlobals.TVS_MAPFILE), MessageBox.TYPE_ERROR, timeout=10, close_on_any_key=True)
 			self.keyExit()
 		self.getAllBouquets()
@@ -1703,7 +1703,7 @@ class TVSmakeReferenceFile(Screen):
 						if items:
 							maplist.append((items[0], items[1]))
 			except Exception as error:
-				write_log(f"Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
+				writeLog(f"Exception error class 'TVSmakeReferenceFile:readMappingList' in {line}: {error}")
 		return maplist
 
 	def appendImportLog(self, bouquetname, totalfound, importlist, dupeslist, unsupported):  # append last import results to logfile
@@ -1729,7 +1729,7 @@ class TVSmakeReferenceFile(Screen):
 		tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9jb250ZW50L2NoYW5uZWwtbGlzdC9saXZldHY=u"[:-1]).decode()
 		errmsg, results = getAPIdata(tvsurl)
 		if errmsg:
-			write_log("API download error in module 'checkMappingList", DEFAULT_MODULE_NAME)
+			writeLog("API download error in module 'checkMappingList", DEFAULT_MODULE_NAME)
 		if results:
 			reskeys = [x.get("id", _("n/a")).lower() for x in results]
 			tabpos = "{0:<10} {1:<0}\n"

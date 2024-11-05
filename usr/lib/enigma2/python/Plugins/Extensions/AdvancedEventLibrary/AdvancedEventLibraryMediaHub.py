@@ -26,7 +26,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, write_log, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, writeLog, getDB, getImageFile, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -534,7 +534,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			# ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
 			ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.channelParameter[20][0], self.channelParameter[20][1], self.channelParameter[20][2], self.channelParameter[20][3], self.channelParameter[20][5], self.channelParameter[20][5], self.channelListFontOrientation, title, parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()))
 		return ret
-#		write_log("error in entrys : " + str(entrys), DEFAULT_MODULE_NAME)
+#		writeLog("error in entrys : " + str(entrys), DEFAULT_MODULE_NAME)
 #		return [entrys,
 #							(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.channelParameter[6]).argb(), parseColor(self.channelParameter[7]).argb()),
 
@@ -962,7 +962,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 						movie_len = cue[0] / 90000
 						return movie_len
 			except Exception as ex:
-				write_log("getMovieLen : " + str(ex), DEFAULT_MODULE_NAME)
+				writeLog("getMovieLen : " + str(ex), DEFAULT_MODULE_NAME)
 		return 0
 
 	def getProgress(self, moviename, movie_len):
@@ -982,7 +982,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 					cut_list.append(cue)
 			except Exception as ex:
 				movie_len = -1
-				write_log(ex, DEFAULT_MODULE_NAME)
+				writeLog(ex, DEFAULT_MODULE_NAME)
 
 		last_end_point = None
 

@@ -52,15 +52,6 @@ def debugPrint(str, level=0):
 		print("[DataBase] " + str)
 
 
-def encodeDVBTXT(txt):
-	return txt
-# TODO
-	for r in ("\xc2\x8a", "\xc2\x85", "\xc2\x86", "\xc2\x87"):
-		txt = txt.replace(r, "\n")
-	txt = txt.decode("utf-8")
-	return txt
-
-
 def prepareStringIN(txt):
 #	ret = ""
 #	try:
@@ -162,6 +153,7 @@ class DatabaseState(object):
 			self.unlockDB()
 
 	def lockFileCleanUp(self):
+		content = ""
 		if exists(self.lockfile):
 			try:
 				with open(self.lockfile, "r") as f:
@@ -299,51 +291,53 @@ class CommonDataBase():
 		if not hasattr(self, "db"):
 			txt = "not opened --> skip committing"
 			debugPrint(txt, LOGLEVEL.ERROR)
-		has_error = True
+		hasError = True
 		try:
 			lock.acquire(True)
 			if self.db:
 				self.db.commit()
-			has_error = False
-		except ProgrammingError as er:
+			hasError = False
+		except ProgrammingError as errmsg:
 			txt = _("ERROR at committing database changes: ProgrammingError")
-		except OperationalError as er:
+		except OperationalError as errmsg:
 			txt = _("ERROR at committing database changes: OperationalError")
 		finally:
+			errmsg = ""
 			lock.release()
-		if has_error:
+		if hasError:
 			txt += "\n"
-			txt += str(er.message)
+			txt += str(errmsg)
 			debugPrint(txt, LOGLEVEL.ERROR)
 			txt = _("Error during committing changes")
 			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id="db_error")
-		return not has_error
+		return not hasError
 
 	def closeDB(self):
 		txt = ""
 		if not hasattr(self, "db"):
 			txt = "not opened --> skip  closing"
 			debugPrint(txt, LOGLEVEL.ERROR)
-		has_error = True
+		hasError = True
 		try:
 			lock.acquire(True)
 			self.c = None
 			if self.db:
 				self.db.close()
-			has_error = False
-		except ProgrammingError as er:
+			hasError = False
+		except ProgrammingError as errmsg:
 			txt = _("Programming ERROR at closing database")
-		except OperationalError as er:
+		except OperationalError as errmsg:
 			txt = _("Operational ERROR at closing database")
 		finally:
+			errmsg = ""
 			lock.release()
-		if has_error:
+		if hasError:
 			txt += "\n"
-			txt += str(er.message)
+			txt += str(errmsg)
 			debugPrint(txt, LOGLEVEL.ERROR)
 			txt = _("Error at closing database")
 			AddPopup(text=txt, type=MessageBox.TYPE_ERROR, timeout=0, id="db_error")
-		return not has_error
+		return not hasError
 
 	def executeSQL(self, sqlcmd, args=[], readonly=False):
 		if self.connectDataBase(readonly):
@@ -355,50 +349,50 @@ class CommonDataBase():
 			debugPrint("SQL arguments: " + txt, LOGLEVEL.ALL)
 			if not readonly:
 				self.locked = True
-			has_error = True
+			hasError = True
 			try:
 				lock.acquire(True)
 				if self.c:
 					self.c.execute(sqlcmd, args)
 					ret = self.c.fetchall()
-				has_error = False
-			except ProgrammingError as er:
+				hasError = False
+			except ProgrammingError as errmsg:
 				txt = f"Programming ERROR at SQL command: {sqlcmd}"
 				if len(args):
 					txt += "\n"
 					for arg in args:
-						txt += arg + "\n"
-			except DatabaseError as er:
+						txt += f"{arg}\n"
+			except DatabaseError as errmsg:
 				txt = f"Database ERROR at SQL command: {sqlcmd}"
 				if len(args):
 					txt += "\n"
 					for arg in args:
-						txt += arg + "\n"
+						txt += f"{arg}\n"
 				try:
 					self.closeDB()
 				except OSError:
 					pass
-				if er.message.find("malformed") != -1:
+				if str(errmsg).find("malformed") != -1:
 					txt += "\n---> try to delete malformed database"
 					try:
 						remove(self.db_file)
 					except OSError:
 						pass
 					self.is_initiated = False
-			except Exception as er:
+			except Exception as errmsg:
 				txt = f"Database ERROR at SQL command: {sqlcmd}"
 			finally:
+				errmsg = ""
 				lock.release()
-			if has_error:
-				success = False
+			if hasError:
 				txt += "\n"
-				txt += str(er.message)
+				txt += str(errmsg)
 				debugPrint(txt, LOGLEVEL.ERROR)
 				self.disconnectDataBase()
 				txt = _("Error during database transaction")
 			if not readonly:  # AddPopup(text = txt, type = MessageBox.TYPE_ERROR, timeout = 0, id = "db_error")
 				self.locked = False
-			return (not has_error, ret)
+			return (not hasError, ret)
 
 	def disconnectDataBase(self, readonly=False):
 		if self.c is not None:
@@ -1356,8 +1350,8 @@ class MovieDataBase(CommonDataBase):
 		m_db_evt = info.getEvent(serviceref)
 		m_db_shortDesc = ''
 		if m_db_evt is not None:
-			m_db_shortDesc = encodeDVBTXT(m_db_evt.getShortDescription())
-			m_db_extDesc = encodeDVBTXT(m_db_evt.getExtendedDescription())
+			m_db_shortDesc = m_db_evt.getShortDescription()
+			m_db_extDesc = m_db_evt.getExtendedDescription()
 		else:
 			m_db_title, m_db_extDesc = getExtendedMovieDescription(serviceref)
 		m_db_ref = serviceref.toString().replace(serviceref.getPath(), '')
@@ -1366,8 +1360,7 @@ class MovieDataBase(CommonDataBase):
 			rec_file_c = []
 			with open(file_path + '.rec') as f:
 				rec_file_c = f.readlines()
-			if len(rec_file_c) >= 1:
-				ret = str(rec_file_c[0])
+			ret = str(rec_file_c[0]) if len(rec_file_c) >= 1 else ""
 			ret = ret.strip()
 			m_db_f_size = int(ret)
 		else:
