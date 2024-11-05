@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, convertSearchName, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, setScanStopped, isScanStopped, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, write_log, removeExtension, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, get_searchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, get_PictureList, clearMem, setScanStopped, isScanStopped, PicLoader
 
 from . import _  # for localized messages
 
@@ -863,9 +863,9 @@ class Editor(Screen, ConfigListScreen):
 							self.ptr = str(name[:-3])
 		if not self.ptr:
 			self.ptr = "nothing found"
-		self.ptr = convertSearchName(convertDateInFileName(self.ptr))
+		self.ptr = removeExtension(convertDateInFileName(self.ptr))
 		if self.ptr2:
-			self.ptr2 = convertSearchName(convertDateInFileName(self.ptr2))
+			self.ptr2 = removeExtension(convertDateInFileName(self.ptr2))
 			write_log(f"found second name : {self.ptr2}", DEFAULT_MODULE_NAME)
 		write_log(f"search name : {self.ptr}", DEFAULT_MODULE_NAME)
 		self["key_red"] = StaticText(_("Activate"))
@@ -974,7 +974,7 @@ class Editor(Screen, ConfigListScreen):
 							else:
 								copy(fileName, selection[4])
 			elif "screenshot" in self.activeList.lower():
-				fname = f"{convertSearchName(self.removeExtension(self.ptr))}.jpg"
+				fname = f"{removeExtension(self.removeExtension(self.ptr))}.jpg"
 				cmd = f"grab -v -j 100 /tmp/{fname}"
 				ret = system(cmd)
 				if ret == 0:
@@ -1043,7 +1043,7 @@ class Editor(Screen, ConfigListScreen):
 				keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 				self.session.openWithCallback(self.languageCallBack, ChoiceBox, title=_("Language used for search"), keys=keys, list=choices, selection=idx)
 			if ret[0] == _("Delete entry"):
-				self.db.cleanDB(convertSearchName(self.ptr))
+				self.db.cleanDB(removeExtension(self.ptr))
 				if self.e2eventId:
 					self.db.cleanliveTVEntry(self.e2eventId)
 				if self.cSource == 0:
@@ -1069,7 +1069,7 @@ class Editor(Screen, ConfigListScreen):
 				self.eventYear.value = ""
 				self.eventOverview = None
 			elif ret[0] == _("Delete entry and set to blacklist"):
-				self.db.cleanNadd2BlackList(convertSearchName(self.ptr))
+				self.db.cleanNadd2BlackList(removeExtension(self.ptr))
 				if self.e2eventId:
 					self.db.cleanliveTVEntry(self.e2eventId)
 				if self.cSource == 0:
@@ -1209,16 +1209,16 @@ class Editor(Screen, ConfigListScreen):
 		if ret and ret[0] == self.ptr2:
 			self.ptr = self.ptr2
 			self.evt, self.e2eventId = "", ""
-		eventData = self.db.getEventInfo(convertSearchName(self.ptr))
+		eventData = self.db.getEventInfo(removeExtension(self.ptr))
 		if not eventData:
-			eventData = self.db.getEventInfo(convertSearchName(convertTitle(self.ptr)))
+			eventData = self.db.getEventInfo(removeExtension(convertTitle(self.ptr)))
 			if not eventData:
-				eventData = self.db.getEventInfo(convertSearchName(convertTitle2(self.ptr)))
+				eventData = self.db.getEventInfo(removeExtension(convertTitle2(self.ptr)))
 		if not eventData:
-			eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
+			eventData = [removeExtension(self.ptr), self.ptr, "", "", "", "", ""]
 		if not self.db.checkTitle(self.ptr) and self.ptr != "nothing found":
-			self.db.addEventInfo(convertSearchName(self.ptr), self.ptr, "", "", "", "", "", "", "", "")
-		self.eventData = [convertSearchName(self.ptr), self.ptr, "", "", "", "", ""]
+			self.db.addEventInfo(removeExtension(self.ptr), self.ptr, "", "", "", "", "", "", "", "")
+		self.eventData = [removeExtension(self.ptr), self.ptr, "", "", "", "", ""]
 		if self.evt:  # genre
 			self.eventData[2] = self.evt[0][14] if len(str(self.evt[0][14]).strip()) > 0 else eventData[2]
 		else:

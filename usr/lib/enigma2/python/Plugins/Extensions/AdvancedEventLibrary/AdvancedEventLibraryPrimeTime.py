@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertDateInFileName, convertTitle, convertTitle2, convertSearchName, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, write_log, convertDateInFileName, convertTitle, convertTitle2, removeExtension, getDB, getImageFile, clearMem, aelGlobals
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
@@ -710,7 +710,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			val = self.db.getliveTV(eit, name, begin)
 			if val and len(str(val[0][11]).strip()) > 0:
 				return str(val[0][11]).strip()
-			eventName = convertDateInFileName(convertSearchName(name))
+			eventName = convertDateInFileName(removeExtension(name))
 			dbData = self.db.getTitleInfo(eventName)
 			if not dbData:
 				dbData = self.db.getTitleInfo(convertTitle(eventName))
