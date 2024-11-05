@@ -82,7 +82,7 @@ class MovieEntry():
 		return '{%s}' % str(', '.join('%s : %s' % (k, repr(v)) for (k, v) in self.__dict__.keys()))
 
 
-def write_log(svalue, logging=True):
+def writeLog(svalue, logging=True):
 	if logging:
 		t = localtime()
 		logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
@@ -190,7 +190,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			else:
 #				self.close('Listenansicht')
 #		except Exception as ex:
-#			write_log('infoKeyPressed : ' + str(ex))
+#			writeLog('infoKeyPressed : ' + str(ex))
 
 	def getFontOrientation(self, flag):
 		fontOrientation = 0
@@ -226,7 +226,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						movie_len = cue[0] / 90000
 						return movie_len
 			except Exception as ex:
-				write_log("getMovieLen : " + str(ex))
+				writeLog("getMovieLen : " + str(ex))
 		return 0
 
 	def getProgress(self, moviename, movie_len):
@@ -246,7 +246,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 					cut_list.append(cue)
 			except Exception as ex:
 				movie_len = -1
-				write_log(ex)
+				writeLog(ex)
 
 		last_end_point = None
 
@@ -301,12 +301,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self.currentFolder = goToFolder
 
 	def save_pickle(self, data, filename):
-		write_log('save data : ' + str(filename))
+		writeLog('save data : ' + str(filename))
 		with open(filename, 'wb') as f:
 			pickle.dump(data, f)
 
 	def load_pickle(self, filename):
-		write_log('load : ' + str(filename))
+		writeLog('load : ' + str(filename))
 		with open(filename, 'rb') as f:
 			data = pickle.load(f)
 		return data
@@ -405,7 +405,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			if self.lastFolder:
 				itm = MovieEntry([self.lastFolder[0], self.lastFolder[1]], 0, 'Error...', eServiceReference('1:0:0:0:0:0:0:0:0:0:' + self.lastFolder[1].split('/')[-1]), self.folderImage, True, 0, "")
 				currentList.append((itm,))
-			write_log("getMovieList : " + str(ex))
+			writeLog("getMovieList : " + str(ex))
 		try:
 			if hasElements:
 				self.listlen = len(currentList)
@@ -419,7 +419,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.lastFolder = self.currentFolder
 				del currentList
 		except Exception as ex:
-			write_log("getMovieList : " + str(ex))
+			writeLog("getMovieList : " + str(ex))
 
 	def findEpisode(self, title):
 		try:
@@ -502,7 +502,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				#									(eWallPythonMultiContent.TYPE_PIXMAP_ALPHABLEND, eWallPythonMultiContent.SHOW_ALWAYS, 0, textBegin, 0, textBegin, 100, textHeight, 100, textHeight, self.shaper, None, None, BT_SCALE),
 				#									(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, textBegin, 2, textBegin, 96, textHeight, 96, textHeight, 0, 0, self.fontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 				#									]
-				write_log("error in entrys : " + str(entrys))
+				writeLog("error in entrys : " + str(entrys))
 				#return [entrys,
 				#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, self.fontOrientation, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 				#					]
@@ -546,7 +546,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				return res
 
 		except Exception as ex:
-			write_log("setMovieEntry : " + str(ex))
+			writeLog("setMovieEntry : " + str(ex))
 			if self.viewType == 0:  # 'Wallansicht'
 				pass
 				#return [entrys,
@@ -664,14 +664,14 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
-				write_log('move folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
+				writeLog('move folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
 #				shutil.move(cs.filename[1], self.destination)
 				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, False, f"{_('move folder')} : {cs.filename[1]}"))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
-					write_log('move file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
+					writeLog('move file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
 #					shutil.move(file, os.path.join(self.destination, os.path.basename(file)))
 					job_manager.AddJob(FileTransferJob(file, self.destination, False, False, f"{_('move file')} : {file}"))
 				self.openTasklist()
@@ -698,13 +698,13 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
-				write_log('copy folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
+				writeLog('copy folder : ' + str(cs.filename[1]) + ' to ' + str(self.destination))
 				job_manager.AddJob(FileTransferJob(cs.filename[1], self.destination, True, True, f"{_('copy folder')} : {cs.filename[1]}"))
 				self.openTasklist()
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
-					write_log('copy file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
+					writeLog('copy file : ' + str(file) + ' to ' + str(os.path.join(self.destination, os.path.basename(file))))
 					job_manager.AddJob(FileTransferJob(file, self.destination, False, True, f"{_('copy file')} : {file}"))
 				self.openTasklist()
 				del files
@@ -743,17 +743,17 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #			else:
 #				cs = self['moviewall'].getcurrentselection()
 			if cs.isFolder:
-				write_log('delete folder : ' + str(cs.filename[1]))
+				writeLog('delete folder : ' + str(cs.filename[1]))
 				shutil.rmtree(cs.filename[1], ignore_errors=True)
 				self.getList(None, True)
 			else:
 				files = glob(self.removeExtension(cs.filename) + '.*')
 				for file in files:
 					try:
-						write_log('delete file : ' + str(file))
+						writeLog('delete file : ' + str(file))
 						os.remove(file)
 					except Exception as ex:
-						write_log('Fehler beim löschen : ' + str(ex))
+						writeLog('Fehler beim löschen : ' + str(ex))
 						continue
 				del files
 				self.getList(self.currentFolder, True)
@@ -788,12 +788,12 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 #				cs = self['moviewall'].getcurrentselection()
 			if cs:
 				if str(cs.trailer).endswith('mp4'):
-					write_log('Trailer: ' + str(cs.name) + ' URL: ' + str(cs.trailer))
+					writeLog('Trailer: ' + str(cs.name) + ' URL: ' + str(cs.trailer))
 					sRef = eServiceReference(4097, 0, str(cs.trailer))
 					sRef.setName(str(cs.name))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			write_log("key_play : " + str(ex))
+			writeLog("key_play : " + str(ex))
 
 	def key_pvr_handler(self):
 		if self.currentFolder[0] != 'root':
@@ -837,7 +837,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				self.getMovieList(self.sortType)
 				self.sel_changed()
 		except Exception as ex:
-			write_log('key ok handler : ' + str(ex))
+			writeLog('key ok handler : ' + str(ex))
 
 	def return_from_player(self):
 		mlen = 0
@@ -871,7 +871,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				ptr = LoadPixmap(os.path.join(imgpath, "play.png"))
 				self["trailer"].instance.setPixmap(ptr)
 		except Exception as ex:
-			write_log("refreshAll : " + str(ex))
+			writeLog("refreshAll : " + str(ex))
 
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple, EventViewMovieEvent
@@ -895,7 +895,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 						name, ext_desc = self.getExtendedMovieDescription(cs.service)
 						self.session.open(EventViewMovieEvent, name=name, ext_desc=ext_desc, dur=mlen, service=cs.service)
 			except Exception as ex:
-				write_log("call EventView : " + str(ex))
+				writeLog("call EventView : " + str(ex))
 
 	def getExtendedMovieDescription(self, ref):
 		extended_desc = ""
@@ -1077,7 +1077,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 				else:
 					self["trailer"].hide()
 		except Exception as ex:
-			write_log("sel_changed : " + str(ex))
+			writeLog("sel_changed : " + str(ex))
 
 	def removeExtension(self, ext):
 		ext = ext.replace('.wmv', '').replace('.mpeg2', '').replace('.ts', '').replace('.m2ts', '').replace('.mkv', '').replace('.avi', '').replace('.mpeg', '').replace('.mpg', '').replace('.iso', '').replace('.mp4', '')
@@ -1118,7 +1118,7 @@ def getMovieLen(moviename):
 					movie_len = cue[0] / 90000
 					return movie_len
 		except Exception as ex:
-			write_log("getMovieLen : " + str(ex))
+			writeLog("getMovieLen : " + str(ex))
 	return 0
 
 
@@ -1220,7 +1220,7 @@ def saveList(imageType):
 													if mlen <= 0:
 														mlen = getMovieLen(os.path.join(root, filename))
 												except Exception as ex:
-													write_log(ex)
+													writeLog(ex)
 												itm = (str(os.path.join(root, filename)), date, removeExtension(name), s_service, mlen, image, desc, trailer)
 												if itm not in movielist:
 													movielist.append(itm)
@@ -1243,7 +1243,7 @@ def saveList(imageType):
 		aelGlobals.saving = False
 		aelGlobals.setStatus()
 	except Exception as ex:
-		write_log('saveList : ' + str(ex))
+		writeLog('saveList : ' + str(ex))
 		aelGlobals.setStatus()
 		aelGlobals.saving = False
 
@@ -1293,7 +1293,7 @@ class MySetup(Screen, ConfigListScreen):
 			self.configlist.append(getConfigListEntry("zeige Fortschritt gesehen", self.showProgress))
 			#self.configlist.append(getConfigListEntry("Ansicht", self.viewType))
 		except Exception as ex:
-			write_log("Error in buildConfigList : " + str(ex))
+			writeLog("Error in buildConfigList : " + str(ex))
 
 	def changedEntry(self):
 		self.buildConfigList()

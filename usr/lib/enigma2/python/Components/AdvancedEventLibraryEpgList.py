@@ -9,7 +9,7 @@ from ServiceReference import ServiceReference
 from Tools.AdvancedEventLibrary import PicLoader, getImageFile, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
-
+from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
 
 EPG_TYPE_SINGLE = 0
 EPG_TYPE_MULTI = 1
@@ -72,11 +72,11 @@ class AEL_EPGList(GUIComponent):
 			self.l.setFont(1, gFont("Regular", 22))
 			self.l.setBuildFunc(self.buildSimilarEntry)
 		self.epgcache = eEPGCache.getInstance()
-		self.clock_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock.png"))
-		self.clock_add_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_add.png"))
-		self.clock_pre_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_pre.png"))
-		self.clock_post_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_post.png"))
-		self.clock_prepost_pixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_prepost.png"))
+		self.clockPixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock.png"))
+		self.clockAddPixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_add.png"))
+		self.clockPrePixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_pre.png"))
+		self.clockPostPixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_post.png"))
+		self.clockPrepostPixmap = LoadPixmap(cached=True, path=join(aelGlobals.SKINPATH, "skin_default/icons/epgclock_prepost.png"))
 
 	def getEventFromId(self, service, eventid):
 		event = None
@@ -139,49 +139,49 @@ class AEL_EPGList(GUIComponent):
 		if self.type == EPG_TYPE_MULTI:
 			xpos = 0
 			w = width / 10 * 3
-			self.service_rect = Rect(xpos, 0, w - 10, height)
+			self.serviceRect = Rect(xpos, 0, w - 10, height)
 			xpos += w
 			w = width / 10 * 2
-			self.start_end_rect = Rect(xpos, 0, w - 10, height)
+			self.startEndRect = Rect(xpos, 0, w - 10, height)
 			self.progress_rect = Rect(xpos, 4, w - 10, height - 8)
 			xpos += w
 			w = width / 10 * 5
-			self.descr_rect = Rect(xpos, 0, width, height)
+			self.descrRect = Rect(xpos, 0, width, height)
 		else:  # EPG_TYPE_SIMILAR
-			self.weekday_rect = Rect(0, 0, width / 20 * 2 - 10, height)
-			self.datetime_rect = Rect(width / 20 * 2, 0, width / 20 * 5 - 15, height)
-			self.service_rect = Rect(width / 20 * 7, 0, width / 20 * 13, height)
+			self.weekdayRect = Rect(0, 0, width / 20 * 2 - 10, height)
+			self.datetimeRect = Rect(width / 20 * 2, 0, width / 20 * 5 - 15, height)
+			self.serviceRect = Rect(width / 20 * 7, 0, width / 20 * 13, height)
 
 	def getClockPixmap(self, refstr, beginTime, duration, eventId):
-		pre_clock = 1
-		post_clock = 2
-		clock_type = 0
-		endTime = beginTime + duration
+		preClock = 1
+		postClock = 2
+		clockType = 0
+		endTime = f"{beginTime}{duration}"
 		if self.timer:
 			for x in self.timer.timer_list:
 				if x.service_ref.ref.toString() == refstr:
 					if x.eit == eventId:
-						return self.clock_pixmap
+						return self.clockPixmap
 					beg = x.begin
 					end = x.end
 					if beginTime > beg and beginTime < end and endTime > end:
-						clock_type |= pre_clock
+						clockType |= preClock
 					elif beginTime < beg and endTime > beg and endTime < end:
-						clock_type |= post_clock
-		if clock_type == 0:
-			return self.clock_add_pixmap
-		elif clock_type == pre_clock:
-			return self.clock_pre_pixmap
-		elif clock_type == post_clock:
-			return self.clock_post_pixmap
+						clockType |= postClock
+		if clockType == 0:
+			return self.clockAddPixmap
+		elif clockType == preClock:
+			return self.clockPrePixmap
+		elif clockType == postClock:
+			return self.clockPostPixmap
 		else:
-			return self.clock_prepost_pixmap
+			return self.clockPrepostPixmap
 
 	def getPixmapForEntry(self, service, eventId, beginTime, duration):
 		if self.timer:
 			rec = beginTime and (self.timer.isInTimer(eventId, beginTime, duration, service))
-			clock_pic = self.getClockPixmap(service, beginTime, duration, eventId) if rec else None
-			return (clock_pic, rec)
+			clockPic = self.getClockPixmap(service, beginTime, duration, eventId) if rec else ""
+			return (clockPic, rec)
 
 	def correctweekdays(self, itm):
 		_itm = str(itm)
@@ -189,7 +189,7 @@ class AEL_EPGList(GUIComponent):
 		return _itm
 
 	def buildSingleEntry(self, service, eventId, beginTime, duration, EventName):
-		(clock_pic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
+		(clockPic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
 
 		xp, yp, wp, hp = parameters.get("EventLibraryEPGSingleListImagePosition", (10, 5, 100, 60))
 		xrp, yrp, wrp, hrp = parameters.get("EventLibraryEPGSingleListRecordPiconPosition", (130, 5, 55, 30))
@@ -223,7 +223,7 @@ class AEL_EPGList(GUIComponent):
 			rec = None
 			picon = None
 		if rec:
-			res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic))
+			res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clockPic))
 			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
 		else:
 			res.append((eListboxPythonMultiContent.TYPE_TEXT, x1, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, self.correctweekdays(_time) + _timeend + str(dauer), parseColor(flc).argb(), parseColor(flcs).argb()))
@@ -231,11 +231,11 @@ class AEL_EPGList(GUIComponent):
 		res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xp, yp, wp, hp, picon))
 		return res
 
-	def buildSimilarEntry(self, service, eventId, beginTime, service_name, duration):
-		(clock_pic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
-		r1 = self.weekday_rect
-		r2 = self.datetime_rect
-		r3 = self.service_rect
+	def buildSimilarEntry(self, service, eventId, beginTime, serviceName, duration):
+		(clockPic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
+		r1 = self.weekdayRect
+		r2 = self.datetimeRect
+		r3 = self.serviceRect
 		t = localtime(beginTime)
 		res = [
 			None,  # no private data needed
@@ -244,14 +244,14 @@ class AEL_EPGList(GUIComponent):
 		]
 		if rec:
 			res.extend((
-				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, r3.x, r3.y, 21, 21, clock_pic),
-				(eListboxPythonMultiContent.TYPE_TEXT, r3.x + 25, r3.y, r3.w, r3.h, 0, RT_HALIGN_LEFT, service_name)
+				(eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, r3.x, r3.y, 21, 21, clockPic),
+				(eListboxPythonMultiContent.TYPE_TEXT, r3.x + 25, r3.y, r3.w, r3.h, 0, RT_HALIGN_LEFT, serviceName)
 			))
 		else:
-			res.append((eListboxPythonMultiContent.TYPE_TEXT, r3.x, r3.y, r3.w, r3.h, 0, RT_HALIGN_LEFT, service_name))
+			res.append((eListboxPythonMultiContent.TYPE_TEXT, r3.x, r3.y, r3.w, r3.h, 0, RT_HALIGN_LEFT, serviceName))
 		return res
 
-	def buildMultiEntry(self, changecount, service, eventId, beginTime, duration, EventName, nowTime, service_name):
+	def buildMultiEntry(self, changecount, service, eventId, beginTime, duration, EventName, nowTime, serviceName):
 		xp, yp, wp, hp = parameters.get("EventLibraryEPGMultiListImagePosition", (10, 5, 100, 60))
 		xrp, yrp, wrp, hrp = parameters.get("EventLibraryEPGMultiListRecordPiconPosition", (130, 5, 55, 30))
 		xpr, ypr, wpr, hpr = parameters.get("EventLibraryEPGMultiListProgressPosition", (10, 40, 55, 20))
@@ -267,7 +267,7 @@ class AEL_EPGList(GUIComponent):
 		if "EventLibraryListsSecondLineColorSelected" in skin.colorNames:
 			slcs = "#00{:03x}".format(parseColor("EventLibraryListsSecondLineColorSelected").argb())
 		if beginTime is not None and duration is not None and eventId is not None:
-			(clock_pic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
+			(clockPic, rec) = self.getPixmapForEntry(service, eventId, beginTime, duration)
 			timeobj = datetime.fromtimestamp(beginTime)
 			_time = timeobj.strftime("%a   %d.%m.%Y   %H:%M")
 			timeobj = datetime.fromtimestamp(beginTime + duration)
@@ -285,7 +285,7 @@ class AEL_EPGList(GUIComponent):
 			picon = None
 		res = [None]  # no private data needed
 		if rec:
-			res.extend(((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clock_pic),
+			res.extend(((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, xrp, yrp, wrp, hrp, clockPic),
 						(eListboxPythonMultiContent.TYPE_TEXT, x1 + wrp + 20, y1, w1, h1, 0, RT_HALIGN_LEFT | RT_VALIGN_TOP, f"{self.correctweekdays(_time)}{_timeend}{dauer}", parseColor(flc).argb(), parseColor(flcs).argb())
 						))
 		else:
@@ -295,11 +295,11 @@ class AEL_EPGList(GUIComponent):
 			if nowTime < beginTime:
 				begin = localtime(beginTime)
 				end = localtime(beginTime + duration)
-				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{service_name} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb()))
+				res.append((eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{serviceName} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb()))
 			else:
 				percent = (nowTime - beginTime) * 100 / duration
 				res.extend(((eListboxPythonMultiContent.TYPE_PROGRESS, xpr, ypr, wpr, hpr, percent),
-							(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{service_name} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb())
+							(eListboxPythonMultiContent.TYPE_TEXT, x2, y2, w2, h2, 1, RT_HALIGN_LEFT, f"{serviceName} - {EventName}", parseColor(slc).argb(), parseColor(slcs).argb())
 							))
 		return res
 
@@ -337,16 +337,16 @@ class AEL_EPGList(GUIComponent):
 		self.selectionChanged()
 
 	def sortSingleEPG(self, type):
-		list = self.list
-		if list:
-			event_id = self.getSelectedEventId()
+		elist = self.list
+		if elist:
+			eventId = self.getSelectedEventId()
 			if type == 1:
-				list.sort(key=lambda x: (x[4] and x[4].lower(), x[2]))
+				elist.sort(key=lambda x: (x[4] and x[4].lower(), x[2]))
 			else:
 				assert (type == 0)
-				list.sort(key=lambda x: x[2])
+				elist.sort(key=lambda x: x[2])
 			self.l.invalidate()
-			self.moveToEventId(event_id)
+			self.moveToEventId(eventId)
 
 	def getSelectedEventId(self):
 		x = self.l.getCurrentSelection()
@@ -373,10 +373,10 @@ class AEL_EPGList(GUIComponent):
 				break
 			index += 1
 
-	def fillSimilarList(self, refstr, event_id):
-		if event_id is None:  # search similar broadcastings
+	def fillSimilarList(self, refstr, eventId):
+		if eventId is None:  # search similar broadcastings
 			return
-		ln = self.epgcache.search(("RIBND", 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, event_id))
+		ln = self.epgcache.search(("RIBND", 1024, eEPGCache.SIMILAR_BROADCASTINGS_SEARCH, refstr, eventId))
 		if ln and len(ln):
 			ln.sort(key=lambda x: x[2])
 		self.l.setList(ln)
@@ -387,13 +387,13 @@ class AEL_EPGList(GUIComponent):
 
 	def reload(self):
 		self.timer = NavigationInstance.instance.RecordTimer
-		event_id = self.getSelectedEventId()
+		eventId = self.getSelectedEventId()
 		cur = self.getCurrent()
 		if cur[1]:
 			if self.type == EPG_TYPE_SINGLE or self.type == EPG_TYPE_INFOBAR:
 				self.fillSingleEPG(cur[1])
-				if event_id:
-					self.moveToEventId(event_id)
+				if eventId:
+					self.moveToEventId(eventId)
 			elif self.type == EPG_TYPE_MULTI:
 				self.fillMultiEPG([cur[1]])
 

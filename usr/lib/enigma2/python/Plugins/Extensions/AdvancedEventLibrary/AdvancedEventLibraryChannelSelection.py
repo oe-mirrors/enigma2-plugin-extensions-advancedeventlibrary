@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, getImageFile, clearMem, aelGlobals
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -250,7 +250,6 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			root = eServiceReference(str(bouquet[0]))
 			serviceHandler = eServiceCenter.getInstance()
 			ret = serviceHandler.list(root).getContent("SN", True)
-
 			for (serviceref, servicename) in ret:
 				if "::" not in serviceref:
 					if serviceref == self.current_service_ref:
@@ -365,7 +364,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#print(ret)
 			return ret
 		except Exception as ex:
-			write_log('Error in buildChannelList : ' + str(ex), DEFAULT_MODULE_NAME)
+			writeLog('Error in buildChannelList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def buildEventList(self, entrys):
 		try:
@@ -391,7 +390,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][5], self.eventParameter[20][5], self.eventListFontOrientation, str(self.correctweekdays(entrys.timespan)), skin.parseColor(self.eventParameter[6]).argb(), skin.parseColor(self.eventParameter[7]).argb()))
 			return ret
 		except Exception as ex:
-			write_log('Error in buildEventList : ' + str(ex), DEFAULT_MODULE_NAME)
+			writeLog('Error in buildEventList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
@@ -437,9 +436,9 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self["eventList"].refresh()
 
 	def key_menu_handler(self):
-		self.session.openWithCallback(self.return_from_setup, MySetup)
+		self.session.openWithCallback(self.returnFromSetup, MySetup)
 
-	def return_from_setup(self):
+	def returnFromSetup(self):
 		pass
 
 	def key_play_handler(self):
@@ -457,7 +456,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					sRef.setName(str(selected_element.title))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			write_log("key_play : " + str(ex), DEFAULT_MODULE_NAME)
+			writeLog("key_play : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def key_ok_handler(self):
 		selection = self["channelList"].getcurrentselection()
@@ -692,7 +691,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : " + str(ex), DEFAULT_MODULE_NAME)
+			writeLog("addtimer : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -799,7 +798,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				self["eventList"].refresh()
 				self["eventsInfo"].setText(str(self["eventList"].getCurrentIndex() + 1) + '/' + str(self.eventListLen))
 		except Exception as ex:
-			write_log("channel_changed : " + str(ex), DEFAULT_MODULE_NAME)
+			writeLog("channel_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def event_changed(self):
@@ -816,7 +815,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				else:
 					self["trailer"].hide()
 		except Exception as ex:
-			write_log("event_changed : " + str(ex), DEFAULT_MODULE_NAME)
+			writeLog("event_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def key_info_handler(self):

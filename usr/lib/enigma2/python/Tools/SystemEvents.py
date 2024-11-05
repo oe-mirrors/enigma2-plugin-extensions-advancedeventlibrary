@@ -2,6 +2,8 @@ from os import makedirs, chmod
 from os.path import exists, join
 from enigma import eConsoleAppContainer
 from Tools.AdvancedEventLibrary import aelGlobals
+from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
+
 
 class SystemEvents:
 	STANDBY_ENTER = "STANDBY_ENTER"
@@ -27,7 +29,7 @@ class SystemEvents:
 	DBTASK_FINISH = "DBTASK_FINISH"
 
 	def __init__(self):
-		self.event_ids = {self.STANDBY_ENTER: _("Standby"),
+		self.eventIds = {self.STANDBY_ENTER: _("Standby"),
 						self.STANDBY_LEAVE: _("Leave Standby"),
 						self.RECORD_START: _("Start record timer"),
 						self.RECORD_STOP: _("Record timer finished"),
@@ -48,33 +50,33 @@ class SystemEvents:
 						self.DBTASK_START: _("Database Task started"),
 						self.DBTASK_FINISH: _("Database Task stopped"),
 						self.DBTASK_CANCEL: _("Database Task cancelled"),
-					}
-		self.event_list = {}
-		self.ignore_script_exec = []
-		self.cmd_path = join(aelGlobals.CONFIGPATH, "events/")
-		self.cmd_filetype = '.sh'
-		dummy_txt = "#!/bin/sh\n\n"
-		dummy_txt += "# this script will be executed when script is modified and given event hook will be called\n"
-		dummy_txt += "# PLEASE NOTE !!!!\n"
-		dummy_txt += "# Event hook calls can have some command-line arguments, which can be accessed via $1, $2 ...\n\n"
-		dummy_txt += "exit 0\n"
-		for evt in self.event_ids:
-			self.event_list[evt] = []
-		if not exists(self.cmd_path):
+						}
+		self.eventList = {}
+		self.ignoreScriptExec = []
+		self.cmdPath = join(aelGlobals.CONFIGPATH, "events/")
+		self.cmdFiletype = ".sh"
+		dummyText = "#!/bin/sh\n\n"
+		dummyText += "# this script will be executed when script is modified and given event hook will be called\n"
+		dummyText += "# PLEASE NOTE !!!!\n"
+		dummyText += "# Event hook calls can have some command-line arguments, which can be accessed via $1, $2 ...\n\n"
+		dummyText += "exit 0\n"
+		for evt in self.eventIds:
+			self.eventList[evt] = []
+		if not exists(self.cmdPath):
 			try:
-				makedirs(self.cmd_path)
+				makedirs(self.cmdPath)
 			except OSError:
 				pass
-		for key in self.event_list:
-			script_file = self.cmd_path + key + self.cmd_filetype
+		for key in self.eventList:
+			script_file = f"{self.cmdPath}{key}{self.cmdFiletype}"
 			if not exists(script_file):
 				try:
 					with open(script_file, "w") as f:
-						f.write(dummy_txt)
+						f.write(dummyText)
 					chmod(script_file, 0o0775)
 				except Exception:
 					pass
-				self.ignore_script_exec.append(key)
+				self.ignoreScriptExec.append(key)
 			else:
 				t = ""
 				try:
@@ -82,64 +84,55 @@ class SystemEvents:
 						t = f.read()
 				except Exception:
 					pass
-				if t == dummy_txt or t == "":
-					self.ignore_script_exec.append(key)
+				if t or t == dummyText:
+					self.ignoreScriptExec.append(key)
 
 	def getfriendlyName(self, evt):
-		if evt in self.event_ids:
-			return self.event_ids[evt]
-		else:
-			return ""
+		return self.eventIds[evt] if evt in self.eventIds else ""
 
 	def getSystemEvents(self):
-		event_list = []
-		for key in self.event_list:
-			event_list.append(key)
-		return event_list
+		eventList = []
+		for key in self.eventList:
+			eventList.append(key)
+		return eventList
 
 	def callEventHook(self, what, *eventargs):
-		if what in self.event_list:
-			e_a = ""
-			for a in eventargs:
-				e_a += a + ", "
-			if e_a.endswith(', '):
-				e_a = e_a[:-2]
-			print("[SystemEvent] " + what + " " + e_a)
-			for hook in self.event_list[what]:
+		if what in self.eventList and eventargs:
+			print(f"[SystemEvent] {what} {', '.join(eventargs)}")
+			for hook in self.eventList[what]:
 				args = []
 				for arg in range(2, len(hook)):
 					args.append(hook[arg])
 				for eventarg in eventargs:
 					args.append(eventarg)
 				hook[0](*args)
-			if what not in self.ignore_script_exec:
-				cmd = self.cmd_path + what + self.cmd_filetype
+			if what not in self.ignoreScriptExec:
+				cmd = self.cmdPath + what + self.cmdFiletype
 				for eventarg in eventargs:
-					cmd += ' "' + eventarg + '"'
+					cmd += f' "{eventarg}"'
 				appContainer = eConsoleAppContainer()
 				appContainer.execute(cmd)
 
 	def addEventHook(self, what, fnc, name, *args):
-		if what in self.event_list:
+		if what in self.eventList:
 			hook = [fnc, name]
 			for arg in args:
 				hook.append(arg)
-			if hook not in self.event_list[what]:
-				self.event_list[what].append(hook)
+			if hook not in self.eventList[what]:
+				self.eventList[what].append(hook)
 
 	def removeEventHook(self, what, fnc, name):
-		if what in self.event_list:
-			fncs = self.event_list[what]
-			fncs_new = self.event_list[what]
+		if what in self.eventList:
+			fncs = self.eventList[what]
+			fncs_new = self.eventList[what]
 			fnc_to_del = []
-			i = 0
 			for f in fncs:
 				if f[0] == fnc and f[1] == name:
 					fnc_to_del.append(f)
 			for f in fnc_to_del:
 				if f in fncs_new:
 					fncs_new.remove(f)
-			self.event_list[what] = fncs_new
+			self.eventList[what] = fncs_new
 
 
 systemevents = SystemEvents()

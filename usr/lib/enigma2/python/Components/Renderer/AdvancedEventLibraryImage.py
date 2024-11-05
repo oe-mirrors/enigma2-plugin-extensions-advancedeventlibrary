@@ -21,7 +21,7 @@ from skin import parseColor
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.AdvancedEventLibrary import write_log, getDB, convertDateInFileName, convertSearchName, clearMem, getImageFile, aelGlobals
+from Tools.AdvancedEventLibrary import write_log, getDB, convertDateInFileName, removeExtension, clearMem, getImageFile, aelGlobals
 from Tools.BoundFunction import boundFunction
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -136,25 +136,25 @@ class AdvancedEventLibraryImage(Renderer):
 				else:
 					attribs.append((attrib, value))
 			self.skinAttributes = attribs
-		if self.frameImage and self.image and self.imageframe:
+		if self.frameImage and self.pixmap and self.imageframe:
 			#==== geaendert (#5) =====
-			#self.image.resize(eSize(self.WCover-20, self.HCover-20))
-			self.image.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
+			#self.pixmap.resize(eSize(self.WCover-20, self.HCover-20))
+			self.pixmap.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
 			# ==========================
 			self.imageframe.resize(eSize(self.WCover, self.HCover))
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
 			#==== geaendert (#5) =====
-			#self.image.move(ePoint(10, 10))
-			self.image.move(ePoint(self.frameSize, self.frameSize))
+			#self.pixmap.move(ePoint(10, 10))
+			self.pixmap.move(ePoint(self.frameSize, self.frameSize))
 			# ==========================
-		elif self.image:
-			self.image.resize(eSize(self.WCover, self.HCover))
+		elif self.pixmap:
+			self.pixmap.resize(eSize(self.WCover, self.HCover))
 			#==== hinzugefuegt (#5) =====
 			self.frameSize = 0
 			# ==========================
-		if self.image:
-			self.image.setScale(self.scalertype)
+		if self.pixmap:
+			self.pixmap.setScale(self.scalertype)
 			#=========== hinzugefuegt (#6) =========
 			self.hideimage()
 			# ==========================
@@ -233,9 +233,9 @@ class AdvancedEventLibraryImage(Renderer):
 #						name += self.evt[0][2] + ' - '
 #					self.ptr = str(name[:-3])
 			if self.ptr:
-				self.ptr = convertDateInFileName(convertSearchName(self.ptr))
+				self.ptr = convertDateInFileName(removeExtension(self.ptr))
 			if self.ptr2:
-				self.ptr2 = convertDateInFileName(convertSearchName(self.ptr2))
+				self.ptr2 = convertDateInFileName(removeExtension(self.ptr2))
 			eventName = (self.ptr, self.ptr2)
 			if self.lastName != eventName:
 				callInThread(self.setthePixmap, (eventName,))
@@ -250,13 +250,13 @@ class AdvancedEventLibraryImage(Renderer):
 		#====== hinzugefuegt (#5) ========
 		self.imageframe.hide()
 		# ================================
-		self.image = ePixmap(self.instance)
+		self.pixmap = ePixmap(self.instance)
 		if self.imageframe and self.frameImage:
 			self.imageframe.setPixmap(loadPNG(self.frameImage))
 
 	def GUIdelete(self):
 		self.imageframe = None
-		self.image = None
+		self.pixmap = None
 		self.instance = None
 		clearMem(self.screenName)
 
@@ -265,16 +265,16 @@ class AdvancedEventLibraryImage(Renderer):
 			self.instance.show()
 		if self.imageframe:
 			self.imageframe.show()
-		if self.image:
-			self.image.show()
+		if self.pixmap:
+			self.pixmap.show()
 		self.ishide = False
 
 	#======= geaendert (#4) =======
 	#def hideimage(self):
 	def hideimage(self, isSizeSwitch=False):
 	# ==============================
-		if self.image:
-			self.image.hide()
+		if self.pixmap:
+			self.pixmap.hide()
 		if self.imageframe:
 			self.imageframe.hide()
 		if self.instance:
@@ -430,34 +430,34 @@ class AdvancedEventLibraryImage(Renderer):
 		if how == 'Poster' and self.instance:
 			self.instance.move(ePoint(self.x, self.y))
 			self.instance.resize(eSize(self.WCover, self.HCover))
-			if self.image and self.imageframe:
+			if self.pixmap and self.imageframe:
 				#======= geaendert (#5) =======
-				#self.image.resize(eSize(self.WCover-20, self.HCover-20))
-				self.image.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
+				#self.pixmap.resize(eSize(self.WCover-20, self.HCover-20))
+				self.pixmap.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
 				# ==============================
 				self.imageframe.resize(eSize(self.WCover, self.HCover))
-			elif self.image:
-				self.image.resize(eSize(self.WCover, self.HCover))
+			elif self.pixmap:
+				self.pixmap.resize(eSize(self.WCover, self.HCover))
 		elif self.instance and how == 'Image':
 			if self.rotate == "left":
 				self.instance.move(ePoint(self.x - self.HCover + self.WCover, self.y - self.WCover + self.HCover))
 			self.instance.resize(eSize(self.HCover, self.WCover))
-			if self.image and self.imageframe:
+			if self.pixmap and self.imageframe:
 				#======= geaendert (#5) =======
-				#self.image.resize(eSize(self.HCover-20, self.WCover-20))
-				self.image.resize(eSize(self.HCover - (2 * self.frameSize), self.WCover - (2 * self.frameSize)))
+				#self.pixmap.resize(eSize(self.HCover-20, self.WCover-20))
+				self.pixmap.resize(eSize(self.HCover - (2 * self.frameSize), self.WCover - (2 * self.frameSize)))
 				# ==============================
 				self.imageframe.resize(eSize(self.HCover, self.WCover))
-			elif self.image:
-				self.image.resize(eSize(self.HCover, self.WCover))
+			elif self.pixmap:
+				self.pixmap.resize(eSize(self.HCover, self.WCover))
 		else:
 			return
-		if self.image and self.imageframe:
+		if self.pixmap and self.imageframe:
 			self.imageframe.setScale(1)
 			self.imageframe.setAlphatest(1)
 			#======= geaendert (#5) =======
-			#self.image.move(ePoint(10, 10))
-			self.image.move(ePoint(self.frameSize, self.frameSize))
+			#self.pixmap.move(ePoint(10, 10))
+			self.pixmap.move(ePoint(self.frameSize, self.frameSize))
 			# ==============================
 		return
 
@@ -465,7 +465,7 @@ class AdvancedEventLibraryImage(Renderer):
 	def prepareImg(self, peparetype, fileName):
 		if self.preferType.startswith(peparetype) and fileName and exists(fileName):
 			try:
-				if self.image and self.instance and self.preferType == "PI_Top":
+				if self.pixmap and self.instance and self.preferType == "PI_Top":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -474,13 +474,13 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgW / (w * 1.0)
 					newH = int(imgH / scale)
-					self.image.resize(eSize(w, newH))
+					self.pixmap.resize(eSize(w, newH))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
 					self.instance.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "PI_Center":
+				elif self.pixmap and self.instance and self.preferType == "PI_Center":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -489,14 +489,14 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgW / (w * 1.0)
 					newH = int(imgH / scale)
-					self.image.resize(eSize(w, newH))
+					self.pixmap.resize(eSize(w, newH))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
 					self.instance.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
 					self.instance.move(ePoint(self.x, self.y + int((self.HCover - newH - (2 * self.frameSize)) / 2)))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "PI_Bottom":
+				elif self.pixmap and self.instance and self.preferType == "PI_Bottom":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -505,7 +505,7 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgW / (w * 1.0)
 					newH = int(imgH / scale)
-					self.image.resize(eSize(w, newH))
+					self.pixmap.resize(eSize(w, newH))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
 					self.instance.resize(eSize(self.WCover, newH + (2 * self.frameSize)))
@@ -538,7 +538,7 @@ class AdvancedEventLibraryImage(Renderer):
 					img.save(self.preferImgPath)
 					self.loadPic(self.preferImgPath)
 
-				elif self.image and self.instance and self.preferType == "PI_FreeCover_LB":
+				elif self.pixmap and self.instance and self.preferType == "PI_FreeCover_LB":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -552,14 +552,14 @@ class AdvancedEventLibraryImage(Renderer):
 						newW = self.HCover - (2 * self.frameSize)
 						scale = imgW / (newW * 1.0)
 						newH = int(imgH / scale)
-					self.image.resize(eSize(newW, newH))
+					self.pixmap.resize(eSize(newW, newH))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(newW + (2 * self.frameSize), newH + (2 * self.frameSize)))
 					self.instance.resize(eSize(newW + (2 * self.frameSize), newH + (2 * self.frameSize)))
 					self.instance.move(ePoint(self.x, self.y + self.HCover - newH - (2 * self.frameSize)))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "PI_FreeCover_RB":
+				elif self.pixmap and self.instance and self.preferType == "PI_FreeCover_RB":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -573,14 +573,14 @@ class AdvancedEventLibraryImage(Renderer):
 						newW = self.HCover - (2 * self.frameSize)
 						scale = imgW / (newW * 1.0)
 						newH = int(imgH / scale)
-					self.image.resize(eSize(newW, newH))
+					self.pixmap.resize(eSize(newW, newH))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(newW + (2 * self.frameSize), newH + (2 * self.frameSize)))
 					self.instance.resize(eSize(newW + (2 * self.frameSize), newH + (2 * self.frameSize)))
 					self.instance.move(ePoint(self.x - (newW + (2 * self.frameSize) - self.WCover), self.y + self.HCover - newH - (2 * self.frameSize)))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "IP_Left":
+				elif self.pixmap and self.instance and self.preferType == "IP_Left":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -589,13 +589,13 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgH / (h * 1.0)
 					newW = int(imgW / scale)
-					self.image.resize(eSize(newW, h))
+					self.pixmap.resize(eSize(newW, h))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.instance.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "IP_Center":
+				elif self.pixmap and self.instance and self.preferType == "IP_Center":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -604,14 +604,14 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgH / (h * 1.0)
 					newW = int(imgW / scale)
-					self.image.resize(eSize(newW, h))
+					self.pixmap.resize(eSize(newW, h))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.instance.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.instance.move(ePoint(self.x + int((self.WCover - newW - (2 * self.frameSize)) / 2), self.y))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "IP_Right":
+				elif self.pixmap and self.instance and self.preferType == "IP_Right":
 					self.hideimage(True)
 					img = Image.open(fileName)
 					imgW = int(img.size[0])
@@ -620,14 +620,14 @@ class AdvancedEventLibraryImage(Renderer):
 					h = self.HCover - (2 * self.frameSize)
 					scale = imgH / (h * 1.0)
 					newW = int(imgW / scale)
-					self.image.resize(eSize(newW, h))
+					self.pixmap.resize(eSize(newW, h))
 					if self.frameImage and self.imageframe:
 						self.imageframe.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.instance.resize(eSize(newW + (2 * self.frameSize), self.HCover))
 					self.instance.move(ePoint(self.x + self.WCover - newW - (2 * self.frameSize), self.y))
 					self.loadPic(fileName)
 
-				elif self.image and self.instance and self.preferType == "IP_Stacked":
+				elif self.pixmap and self.instance and self.preferType == "IP_Stacked":
 					margin = 2
 					w = self.WCover - (2 * self.frameSize)
 					h = self.HCover - (2 * self.frameSize)
@@ -643,11 +643,11 @@ class AdvancedEventLibraryImage(Renderer):
 			except Exception as e:
 				write_log(f"========= AdvancedEventLibraryImage - Error - prepareImg: {e}", DEFAULT_MODULE_NAME)
 		#II,PP
-		elif self.frameImage and self.instance and self.image and self.imageframe:
+		elif self.frameImage and self.instance and self.pixmap and self.imageframe:
 			if self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover:
 				self.hideimage(True)
-				self.image.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
-				self.image.move(ePoint(self.frameSize, self.frameSize))
+				self.pixmap.resize(eSize(self.WCover - (2 * self.frameSize), self.HCover - (2 * self.frameSize)))
+				self.pixmap.move(ePoint(self.frameSize, self.frameSize))
 				self.imageframe.resize(eSize(self.WCover, self.HCover))
 				self.imageframe.move(ePoint(0, 0))
 				self.instance.resize(eSize(self.WCover, self.HCover))
@@ -655,10 +655,10 @@ class AdvancedEventLibraryImage(Renderer):
 			if fileName and exists(fileName):
 					self.loadPic(fileName)
 		else:
-			if self.instance and self.image and (self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover):
+			if self.instance and self.pixmap and (self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover):
 				self.hideimage(True)
-				self.image.resize(eSize(self.WCover, self.HCover))
-				self.image.move(ePoint(0, 0))
+				self.pixmap.resize(eSize(self.WCover, self.HCover))
+				self.pixmap.move(ePoint(0, 0))
 				self.instance.resize(eSize(self.WCover, self.HCover))
 				self.instance.move(ePoint(self.x, self.y))
 			if fileName and exists(fileName):
@@ -670,8 +670,8 @@ class AdvancedEventLibraryImage(Renderer):
 		return ext
 
 	def loadPic(self, picname):
-		if self.image and picname != "":
-			size = self.image.size()
+		if self.pixmap and picname != "":
+			size = self.pixmap.size()
 			self.picload = ePicLoad()
 			#======= geaendert (#7) =======
 			#self.picload.PictureData.get().append(self.showCallback)
@@ -690,7 +690,7 @@ class AdvancedEventLibraryImage(Renderer):
 				#======== geaendert (#1) =======
 				#ptr = self.picload.getData()
 				#if ptr != None:
-				#	self.image.setPixmap(ptr)
+				#	self.pixmap.setPixmap(ptr)
 				#	if self.ishide:
 				#		self.showimage()
 				#del self.picload
@@ -699,9 +699,9 @@ class AdvancedEventLibraryImage(Renderer):
 				ptr = picload.getData()
 				#======= geaendert (#7) =======
 				#if ptr != None:
-				if ptr is not None and requestNr >= self.requestNr and self.image:
+				if ptr is not None and requestNr >= self.requestNr and self.pixmap:
 				# =**=*========*=========*=====
-					self.image.setPixmap(ptr)
+					self.pixmap.setPixmap(ptr)
 					if self.ishide:
 						self.showimage()
 				del picload

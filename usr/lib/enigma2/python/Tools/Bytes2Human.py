@@ -1,10 +1,10 @@
-def bytes2human(n, digits=2):
-	symbols = ('KB', 'MB', 'GB', 'TB', 'PB')
+def bytes2human(number, digits=2):
+	symbols = ("KB", "MB", "GB", "TB", "PB")
 	prefix = {}
-	for i, s in enumerate(symbols):
-		prefix[s] = 1 << (i + 1) * 10
+	for idx, symbol in enumerate(symbols):
+		prefix[symbol] = 1 << (idx + 1) * 10
 	for s in reversed(symbols):
-		if n >= prefix[s]:
-			value = round(float(n) / prefix[s], digits) if digits > 0 else n / prefix[s]
+		if number >= prefix[s]:
+			value = round(float(number) / prefix[s], digits) if digits > 0 else number / prefix[s]
 			return f"{value} {s}"
-	return f"{n} B"
+	return f"{number} B"

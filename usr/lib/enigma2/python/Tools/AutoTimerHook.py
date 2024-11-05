@@ -1,3 +1,5 @@
+from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
+
 addAutotimerFromEvent = None
 AutoTimerOverView = None
 AUTOTIMER_OK = False
@@ -19,8 +21,4 @@ def initAutoTimerGlobals():
 
 
 def getChoiceList():
-	choices = [(_('Add timer'), 'default'),
-	 (_('AutoTimer'), 'autotimer'),
-	 (_('View AutoTimers'), 'show_autotimer'),
-	 (_('show timer list'), 'show_timerlist')]
-	return choices
+	return [(_("Add timer"), "default"), (_("AutoTimer"), "autotimer"), (_("View AutoTimers"), "show_autotimer"), (_("show timer list"), "show_timerlist")]

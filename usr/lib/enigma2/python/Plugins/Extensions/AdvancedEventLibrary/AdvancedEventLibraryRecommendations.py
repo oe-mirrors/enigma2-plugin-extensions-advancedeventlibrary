@@ -24,7 +24,7 @@ import NavigationInstance
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, write_log, convertTitle, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, getImageFile, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -39,7 +39,7 @@ global active
 active = False
 
 
-def write_log(svalue):
+def writeLog(svalue):
 	t = localtime()
 	logtime = '%02d:%02d:%02d' % (t.tm_hour, t.tm_min, t.tm_sec)
 	AdvancedEventLibrary_log = open(log, "a")
@@ -262,7 +262,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 #			else:
 #				self.close('Listenansicht')
 #		except Exception as ex:
-#			write_log('infoKeyPressed : ' + str(ex))
+#			writeLog('infoKeyPressed : ' + str(ex))
 
 	def key_red_handler(self):
 		clearMem("Favoriten-Planer")
@@ -381,7 +381,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					sRef.setName(str(selected_element.name))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			write_log("key_play : " + str(ex))
+			writeLog("key_play : " + str(ex))
 
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple
@@ -398,7 +398,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
 
 		except Exception as ex:
-			write_log("call EventView : " + str(ex))
+			writeLog("call EventView : " + str(ex))
 
 	def addtimer(self):
 		try:
@@ -457,7 +457,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			write_log("addtimer : " + str(ex))
+			writeLog("addtimer : " + str(ex))
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -523,7 +523,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					self["ServiceRef"].setText(sRef)
 					self["ServiceName"].setText(selected_element.sname)
 		except Exception as ex:
-			write_log("sel_changed : " + str(ex))
+			writeLog("sel_changed : " + str(ex))
 			self["Content"].setText("Keine Sendetermine im EPG gefunden\n" + str(ex))
 			self["Event"].newEvent(None)
 
@@ -542,7 +542,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 		except Exception as ex:
 			self["Content"].setText("Keine Sendetermine im EPG gefunden")
-			write_log("menu_sel_changed : " + str(ex))
+			writeLog("menu_sel_changed : " + str(ex))
 
 	def getSimilarEvents(self, id, ref):
 		epgcache = eEPGCache.getInstance()
@@ -613,7 +613,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						itm = (name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
 						sList.append(itm)
 				except Exception as ex:
-					write_log("getEPGdata : " + str(ex))
+					writeLog("getEPGdata : " + str(ex))
 					continue
 
 			eList = []
@@ -634,7 +634,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				eList.append((itm,))
 			return eList
 		except Exception as ex:
-			write_log("getEPGdata : " + str(ex))
+			writeLog("getEPGdata : " + str(ex))
 			return []
 
 	def seteventEntry(self, entrys):
@@ -676,12 +676,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()))
 			return ret
 
-			write_log("error in entrys : " + str(entrys))
+			writeLog("error in entrys : " + str(entrys))
 			#return [entrys,
 			#					(eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', skin.parseColor(self.parameter[6]).argb(), skin.parseColor(self.parameter[7]).argb()),
 			#					]
 		except Exception as ex:
-			write_log('Error in seteventEntry : ' + str(ex))
+			writeLog('Error in seteventEntry : ' + str(ex))
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
