@@ -14,10 +14,9 @@
 			<item level="0" text="Use AEL image server:" description="---benutze AEL Image-Server---">config.plugins.AdvancedEventLibrary.UseAELIS</item>
 			<item level="0" text="Load preview pictures:" description="---lade Previewbilder---">config.plugins.AdvancedEventLibrary.UsePreviewImages</item>
 			<item level="0" text="Delete old preview images during the search run:" description="---lösche alte Previewbilder beim Suchlauf---">config.plugins.AdvancedEventLibrary.DelPreviewImages</item>
-			<item level="0" text="Maximum resolution of the covers:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverQuality</item>
-			<item level="0" text="Maximum resolution of the posters:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterQuality</item>
-			<item level="0" text="Maximum memory size per image:" description="---maximale Speichergröße pro Bild---">config.plugins.AdvancedEventLibrary.MaxImageSize</item>
-			<item level="0" text="Minimum JPEG quality (%):" description="---minimale JPEG-Qualität (%)---">config.plugins.AdvancedEventLibrary.MaxCompression</item>
+			<item level="0" text="Maximum resolution of the covers:" description="---maximale Auflösung der Cover---">config.plugins.AdvancedEventLibrary.coverResolution</item>
+			<item level="0" text="Maximum resolution of the posters:" description="---maximale Auflösung der Poster---">config.plugins.AdvancedEventLibrary.posterResolution</item>
+			<item level="0" text="JPEG quality (%):" description="---JPEG Qualität (%)---">config.plugins.AdvancedEventLibrary.JPEGquality</item>
 			<item level="0" text="Number of preview images in the editor:" description="---Anzahl Vorschaubilder im Editor---">config.plugins.AdvancedEventLibrary.PreviewCount</item>
 		</if>
 			<item level="0" text="-----EPG and MovieWall settings---------------------------------------------"/>
@@ -42,27 +41,26 @@
 		# hier "suche in Unterverzeichnissen von " + str(dir), subpaths)
 		# siehe AdvancedEventLibrarySystem Zeile 700...
 		<item level="0" text="Start bouquet:" description="---Startbouquet---">config.plugins.AdvancedEventLibrary.StartBouquet</item>
-		<item level="0" text="Search HD channels only:" description="---nur HD Sender durchsuchen---">config.plugins.AdvancedEventLibrary.HDonly</item>
 		<item level="0" text="Starter genre:" description="---Startgenre---">config.plugins.AdvancedEventLibrary.Genres</item>
 		<item level="0" text="Prime-Time Start:" description="---Prime-Time Start---">config.plugins.AdvancedEventLibrary.StartTime</item>
 		<item level="0" text="Prime time Duration (minutes):" description="---Prime-Time Dauer (Minuten)---">config.plugins.AdvancedEventLibrary.Duration</item>
 		<item level="0" text="-----Usage of servers---------------------------------------------------------"/>
-		<item level="0" text="TMDb - The Movie Database:" description="Choose how to use the server of TMdb - The Movie Database">config.plugins.AdvancedEventLibrary.tmdbUsage</item>
+		<item level="0" text="TMDb - The Movie Database (Multilingual):" description="Choose how to use the server of TMdb - The Movie Database. TMDb supports 185 different languages.">config.plugins.AdvancedEventLibrary.tmdbUsage</item>
 		<if conditional="config.plugins.AdvancedEventLibrary.tmdbUsage.value">
 			<item level="0" text="TMDB API key used:" description="---verwendeter TMDb API-Key---">config.plugins.AdvancedEventLibrary.tmdbKey</item>
 		</if>
-		<item level="0" text="TVDb - TV Database:" description="Choose how to use the server of TVDb - TV Database">config.plugins.AdvancedEventLibrary.tvdbUsage</item>
+		<item level="0" text="TVDb - TV Database (Multilingual):" description="Choose how to use the server of TVDb - TV Database. TVDb supports ??? different languages.">config.plugins.AdvancedEventLibrary.tvdbUsage</item>
 		<if conditional="config.plugins.AdvancedEventLibrary.tvdbUsage.value">
 			<item level="0" text="TVDb API V4 user pin used:" description="---verwendeter TVDb API-V4-User-Pin---">config.plugins.AdvancedEventLibrary.tvdbV4Key</item>
 			<item level="0" text="TVDb API key used:" description="---verwendeter TVDb API-Key---">config.plugins.AdvancedEventLibrary.tvdbKey</item>
 		</if>
-		<item level="0" text="OMDb - Open Media Database:" description="Choose how to use the server of OMDb - Open Media Database">config.plugins.AdvancedEventLibrary.omdbUsage</item>
+		<item level="0" text="OMDb - Open Media Database (EN only):" description="Choose how to use the server of OMDb - Open Media Database. OMDb supports only English language.">config.plugins.AdvancedEventLibrary.omdbUsage</item>
 		<if conditional="config.plugins.AdvancedEventLibrary.omdbUsage.value">
 			<item level="0" text="OMDB API key used:" description="---verwendeter OMDB API-Key---">config.plugins.AdvancedEventLibrary.omdbKey</item>
 		</if>
-		<item level="0" text="TVmaze - TVMAZE Database:" description="Choose how to use the server of TVmaze - TVMAZE Database">config.plugins.AdvancedEventLibrary.tvmaszeUsage</item>
+		<item level="0" text="TVmaze - TVMAZE Database (EN only):" description="Choose how to use the server of TVmaze - TVMAZE Database. TVmaze supports only English language.">config.plugins.AdvancedEventLibrary.tvmaszeUsage</item>
 		<if conditional="config.plugins.AdvancedEventLibrary.tvmaszeUsage.value">
-			<item level="0" text="TVS - TV Spielfilm Database:" description="Choose how to use the server of TVS - TV Spielfilm Database">config.plugins.AdvancedEventLibrary.tvsUsage</item>
+			<item level="0" text="TVS - TV Spielfilm Database (DE only):" description="Choose how to use the server of TVS - TV Spielfilm Database. TVS supports only German language.">config.plugins.AdvancedEventLibrary.tvsUsage</item>
 		</if>
 		<item level="0" text="TVmovie - TV Movie Database:" description="Choose how to use the server of TVmovie - TV Movie Database">config.plugins.AdvancedEventLibrary.tvmovieUsage</item>
 		<item level="0" text="Bing - Microsoft Bing Database:" description="Choose how to use the server of Bing - Microsoft Bing Databas">config.plugins.AdvancedEventLibrary.bingUsage</item>

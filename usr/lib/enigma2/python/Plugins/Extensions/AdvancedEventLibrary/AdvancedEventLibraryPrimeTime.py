@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertDateInFileName, convertTitle, convertTitle2, removeExtension, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertDateInFileName, convertTitle, convertTitle2, removeExtension, getDB, clearMem, aelGlobals
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
@@ -614,9 +614,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						else:
 							image = None
 							if self.imageType == "cover" and evt and evt[0][3] != '':
-								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', evt[0][3])
+								image = join(f"{aelGlobals.HDDPATH}{self.imageType}/", evt[0][3])
 							if image is None:
-								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', name)
+								image = join(f"{aelGlobals.HDDPATH}{self.imageType}/", name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, service_name, image, hasTrailer)
 						if 'Spielfilm' in eventGenre:
 							self.movielist.append((itm,))

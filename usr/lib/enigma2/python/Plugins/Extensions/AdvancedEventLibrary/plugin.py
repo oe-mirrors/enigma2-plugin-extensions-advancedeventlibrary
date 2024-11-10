@@ -13,7 +13,7 @@ from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations
-from Tools.AdvancedEventLibrary import writeLog, getDB, getallEventsfromEPG, createBackup, aelGlobals
+from Tools.AdvancedEventLibrary import setRequestLoggingLevel, writeLog, getDB, getallEventsfromEPG, createBackup, aelGlobals
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 gSession = None
@@ -31,6 +31,7 @@ def sessionstart(reason, **kwargs):
 		gSession = kwargs["session"]
 		foundTimer = False
 		foundBackup = False
+		setRequestLoggingLevel()
 		fTimers = functionTimer.get()
 		for fTimer in fTimers:
 			if 'AdvancedEventLibraryUpdate' in fTimer:
@@ -41,7 +42,6 @@ def sessionstart(reason, **kwargs):
 			functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "fnc": getallEventsfromEPG}))
 		if not foundBackup:
 			functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "fnc": createBackup}))
-
 #			for evt in systemevents.getSystemEvents():
 			#	writeLog('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt), DEFAULT_MODULE_NAME)
 #				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):

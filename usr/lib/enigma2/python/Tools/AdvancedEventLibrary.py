@@ -2,8 +2,8 @@ from base64 import b64decode
 from datetime import datetime
 from difflib import get_close_matches
 from glob import glob
-from io import StringIO
 from linecache import getline
+from logging import basicConfig, getLogger, WARNING
 from os import makedirs, system, remove, walk, access, stat, listdir, W_OK
 from os.path import join, exists, basename, getmtime, isdir, getsize
 from PIL import Image
@@ -20,7 +20,7 @@ from skin import parameters
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
 from Screens.ChannelSelection import service_types_tv
 from Tools.Bytes2Human import bytes2human
-from Tools.Directories import resolveFilename, defaultRecordingLocation, fileExists, SCOPE_CURRENT_PLUGIN, SCOPE_CONFIG, SCOPE_SKIN_IMAGE, SCOPE_CURRENT_SKIN
+from Tools.Directories import resolveFilename, defaultRecordingLocation, SCOPE_CURRENT_PLUGIN, SCOPE_CONFIG, SCOPE_SKIN_IMAGE, SCOPE_CURRENT_SKIN
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
 from . import TVDbApiV4
 import tmdbsimple as tmdb
@@ -34,14 +34,13 @@ config.plugins.AdvancedEventLibrary.MaxSize = ConfigInteger(default=1, limits=(1
 config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, limits=(20, 95))
 config.plugins.AdvancedEventLibrary.CloseMenu = ConfigYesNo(default=True)  # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
 config.plugins.AdvancedEventLibrary.Log = ConfigYesNo(default=False)
-config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default=0, choices=[(0, _("Extra data and images")), (1, _("Extra data only"))])
+config.plugins.AdvancedEventLibrary.SearchFor = ConfigSelection(default=1, choices=[(0, _("Extra data only")), (1, _("Extra data and images"))])
 config.plugins.AdvancedEventLibrary.UseAELIS = ConfigYesNo(default=True)  # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
 config.plugins.AdvancedEventLibrary.UsePreviewImages = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.DelPreviewImages = ConfigYesNo(default=True)
-config.plugins.AdvancedEventLibrary.coverQuality = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
-config.plugins.AdvancedEventLibrary.posterQuality = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
-config.plugins.AdvancedEventLibrary.MaxImageSize = ConfigSelection(default=200, choices=[(100, "100kB"), (150, "150kB"), (200, "200kB"), (300, "300kB"), (400, "400kB"), (500, "500kB"), (750, "750kB"), (1024, "1024kB"), (1000000, "unbegrenzt")])
-config.plugins.AdvancedEventLibrary.MaxCompression = ConfigInteger(default=50, limits=(10, 90))
+config.plugins.AdvancedEventLibrary.coverResolution = ConfigSelection(default="w1280", choices=[("w300", "300x169"), ("w780", "780x439"), ("w1280", "1280x720"), ("w1920", "1920x1080")])
+config.plugins.AdvancedEventLibrary.posterResolution = ConfigSelection(default="w780", choices=[("w185", "185x280"), ("w342", "342x513"), ("w500", "500x750"), ("w780", "780x1170")])
+config.plugins.AdvancedEventLibrary.JPEGquality = ConfigSelection(default=50, choices=list(range(10, 95, 5)))  # 95 is optimum, not 100
 config.plugins.AdvancedEventLibrary.PreviewCount = ConfigInteger(default=20, limits=(1, 50))  # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
 config.plugins.AdvancedEventLibrary.UseAELEPGLists = ConfigYesNo(default=False)  # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
 config.plugins.AdvancedEventLibrary.ShowInEPG = ConfigYesNo(default=False)    # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
@@ -69,7 +68,6 @@ config.plugins.AdvancedEventLibrary.tvsUsage = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.tvmovieUsage = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.bingUsage = ConfigYesNo(default=True)
 # TODO: unused in 'AdvancedEventLibrary.py'. Maybe no more needed?
-config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.searchPlaces = ConfigText(default="")
 config.plugins.AdvancedEventLibrary.ViewType = ConfigSelection(default=0, choices=[(0, _("Wall view")), (1, _("List view"))])
 config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14, limits=(5, 90))
@@ -118,18 +116,24 @@ def writeLog(svalue, module=DEFAULT_MODULE_NAME):
 		file.write(f"{datetime.now().strftime('%T')} : [{module}] - {svalue}\n")
 
 
+def setRequestLoggingLevel():  # Set the level of the debug loggin for library 'request'
+		basicConfig()
+		getLogger().setLevel(WARNING)  # possible parameters: DEBUG, INFO, WARNING, ERROR, CRITICAL
+		requestsLog = getLogger("urllib3")
+		requestsLog.setLevel(WARNING)
+		requestsLog.propagate = True
+
+
 def getAPIdata(url, headers=None, params=None):
 	try:
 		if not headers:
 			headers = {}
 		headers["User-Agent"] = choice(aelGlobals.AGENTS)
 		response = get(url, params=params, headers=headers, timeout=(3.05, 6))
-		response.raise_for_status()
-		status = response.status_code
-		if status == 200:
+		if response.ok:
 			errmsg, jsondict = "", response.json()
 		else:
-			errmsg, jsondict = f"API server access ERROR, response code: {status}", {}
+			errmsg, jsondict = f"API server access ERROR, response code: {response.raise_for_status()}", {}
 		del response
 		return errmsg, jsondict
 	except exceptions.RequestException as errmsg:
@@ -216,7 +220,7 @@ def createBackup():
 		if not exists(currpath):
 			makedirs(currpath)
 	dbpath = aelGlobals.CONFIGPATH if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else aelGlobals.HDDPATH
-	if fileExists(dbpath):
+	if exists(dbpath):
 		copy2(join(dbpath, aelGlobals.LIBFILE), join(backuppath, aelGlobals.LIBFILE))
 	files = glob(f"{aelGlobals.POSTERPATH}*.*")
 	progress = 0
@@ -225,7 +229,7 @@ def createBackup():
 	for filename in files:
 		progress += 1
 		target = join(f"{backuppath}poster/", basename(filename))
-		if not fileExists(target) or getmtime(filename) > (getmtime(target) + 7200):
+		if not exists(target) or getmtime(filename) > (getmtime(target) + 7200):
 			copy2(filename, target)
 			setStatus(f"({progress}/{pics} {_('save poster:')} {filename}")
 			copied += 1
@@ -238,7 +242,7 @@ def createBackup():
 	for filename in files:
 		progress += 1
 		target = join(f"{backuppath}cover/", basename(filename))
-		if not fileExists(target) or getmtime(filename) > getmtime(target):
+		if not exists(target) or getmtime(filename) > getmtime(target):
 			copy2(filename, target)
 			setStatus(f"({progress}/{pics}) {_('save cover')}: {filename}")
 			copied += 1
@@ -252,7 +256,7 @@ def createBackup():
 def checkUsedSpace(db=None):
 	recordings = getRecordings()
 	dbpath = aelGlobals.CONFIGPATH if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else aelGlobals.HDDPATH
-	if fileExists(join(dbpath, aelGlobals.LIBFILE)) and db:
+	if exists(join(dbpath, aelGlobals.LIBFILE)) and db:
 		maxSize = 1 * 1024.0 * 1024.0 if "/etc" in aelGlobals.HDDPATH else config.plugins.AdvancedEventLibrary.MaxSize.value * 1024.0 * 1024.0
 		posterSize = float(check_output(["du", "-sk", aelGlobals.POSTERPATH]).decode().split()[0])
 		coverSize = float(check_output(["du", "-sk", aelGlobals.COVERPATH]).decode().split()[0])
@@ -269,7 +273,7 @@ def checkUsedSpace(db=None):
 			while i < 100:
 				titles = db.getUnusedTitles()
 				if titles:
-					setStatus(f"{_('Cleaning up the storage space')} #{(i + 1)}")
+					setStatus(f"{_('Cleaning up the storage space: step')} #{(i + 1)}")
 					writeLog(f"Cleaning up the storage space #{(i + 1)}")
 					for title in titles:
 						if title[0] not in recordings:
@@ -288,7 +292,7 @@ def checkUsedSpace(db=None):
 
 
 def removeLogs():
-	if fileExists(aelGlobals.LOGFILE):
+	if exists(aelGlobals.LOGFILE):
 		remove(aelGlobals.LOGFILE)
 
 
@@ -303,9 +307,10 @@ def createMovieInfo(db, lang):
 						if not access(join(root, filename), W_OK):
 							continue
 						foundAsMovie, foundOnTMDbTV, foundOnTVDb = False, False, False
+						# TODO: filename kann title nicht mehr erzeugen, title muß geholt werden
 						if filename.endswith(".ts") or filename.endswith(".mkv") or filename.endswith(".avi") or filename.endswith(".mpg") or filename.endswith(".mp4") or filename.endswith(".iso") or filename.endswith(".mpeg2"):
-							if not db.getblackListImage(filename) and not fileExists(join(root, f"{filename}.meta")):
-								title = removeExtension(convertDateInFileName(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("__", " ").replace("_", " ")))
+							if not db.getblackListImage(filename) and not exists(join(root, f"{filename}.meta")):
+								title = convertDateInFileName(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("__", " ").replace("_", " "))
 								mtitle = title
 								titleNyear = convertYearInTitle(title)
 								title = titleNyear[0]
@@ -315,7 +320,7 @@ def createMovieInfo(db, lang):
 									titleinfo = {"title": mtitle, "genre": "", "year": "", "country": "", "overview": ""}
 									setStatus(f"{_('search meta information for')} '{title}'")
 									search = tmdb.Search()
-									response = callLibrary(search.movie, "", query=title, language=lang, year=jahr) if jahr != "" else callLibrary(search.movie, "", query=title, language=lang)
+									response = callLibrary(search.movie, "", query=title, language=lang, year=jahr) if jahr else callLibrary(search.movie, "", query=title, language=lang)
 									if response and response.get("results", []):
 										reslist = []
 										for item in response.get("results", []):
@@ -452,9 +457,8 @@ def createMovieInfo(db, lang):
 													titleinfo["country"] = aelGlobals.NETWORKDICT.get(response.get("network", ""), "")
 													titleinfo["overview"] = response.get("overview", "")
 									if titleinfo.get("overview", ""):
-										txt = open(join(root, f"{removeExtension(filename)}.txt"), "w")
-										txt.write(titleinfo.get("overview", ""))
-										txt.close()
+										with open(join(root, f"{removeExtension(filename)}.txt"), "w") as txt:
+											txt.write(titleinfo.get("overview", ""))
 										writeLog(f"createMovieInfo for '{filename}'")
 									if foundAsMovie or foundOnTMDbTV or foundOnTVDb:
 										if titleinfo.get("year", "") or titleinfo.get("genre", {}) or titleinfo.get("country", {}):
@@ -492,32 +496,32 @@ def getAllRecords(db):
 					if str(root) in aelGlobals.SPDICT and aelGlobals.SPDICT[root]:
 						for filename in files:
 							if (filename.endswith(".ts") or filename.endswith(".mkv") or filename.endswith(".avi") or filename.endswith(".mpg") or filename.endswith(".mp4") or filename.endswith(".iso") or filename.endswith(".mpeg2")) and doPics:
-								if fileExists(join(root, f"{filename}.meta")):
+								if exists(join(root, f"{filename}.meta")):
 									filename = convertDateInFileName(getline(join(root, f"{filename}.meta"), 2).replace("\n", ""))
 								else:
 									filename = convertDateInFileName(removeExtension(convertTitle(((filename.split("/")[-1]).rsplit(".", 3)[0]).replace("_", " "))))
-								if (fileExists(join(root, filename)) and not fileExists(join(aelGlobals.POSTERPATH, filename))):
+								if (exists(join(root, filename)) and not exists(join(aelGlobals.POSTERPATH, filename))):
 									writeLog(f"copy poster {filename} nach {filename}")
 									copy2(join(root, filename), join(aelGlobals.POSTERPATH, filename))
 								filename = f"{removeExtension(filename)}.bdp.jpg"  # TODO: was genau soll das? Gilt das auch für PNG und GIF?
-								if (fileExists(join(root, filename)) and not fileExists(join(aelGlobals.COVERPATH, filename))):
+								if (exists(join(root, filename)) and not exists(join(aelGlobals.COVERPATH, filename))):
 									writeLog(f"copy cover {filename} nach {filename}")
 									copy2(join(root, filename), join(aelGlobals.COVERPATH, filename))
 								filename = f"{removeExtension(filename)}.bdp.jpg"  # TODO: was genau soll das? Gilt das auch für PNG und GIF?
-								if (fileExists(join(root, filename)) and not fileExists(join(aelGlobals.COVERPATH, filename))):
+								if (exists(join(root, filename)) and not exists(join(aelGlobals.COVERPATH, filename))):
 									writeLog(f"copy cover {filename} nach {filename}")
 									copy2(join(root, filename), join(aelGlobals.COVERPATH, filename))
 							if filename.endswith(".meta"):
 								fileCount += 1
 								foundInBl = False
 								filename = convertDateInFileName(getline(join(root, filename), 2).replace("\n", ""))
-								if db.getblackList(filename):
+								if db.getblackListTitle(filename):
 									filename = convertDateInFileName(convertTitle(getline(join(root, filename), 2).replace("\n", "")))
-									if db.getblackList(filename):
+									if db.getblackListTitle(filename):
 										filename = convertDateInFileName(convertTitle2(getline(join(root, filename), 2).replace("\n", "")))
-										if db.getblackList(filename):
+										if db.getblackListTitle(filename):
 											foundInBl = True
-								if not db.checkTitle(filename) and not foundInBl and filename:
+								if not db.checkEventTitle(filename) and not foundInBl and filename:
 									names.add(filename)
 							if (filename.endswith(".ts") or filename.endswith(".mkv") or filename.endswith(".avi") or filename.endswith(".mpg") or filename.endswith(".mp4") or filename.endswith(".iso") or filename.endswith(".mpeg2")) and doPics:
 								foundInBl = False
@@ -529,13 +533,13 @@ def getAllRecords(db):
 										filename = convertDateInFileName(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("__", " ").replace("_", " "))
 								else:
 									filename = convertDateInFileName(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("__", " ").replace("_", " "))
-								if db.getblackList(filename):
+								if db.getblackListTitle(filename):
 									filename = convertDateInFileName(convertTitle(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("__", " ").replace("_", " ")))
-									if db.getblackList(filename):
+									if db.getblackListTitle(filename):
 										filename = convertDateInFileName(convertTitle2(((filename.split("/")[-1]).rsplit(".", 1)[0]).replace("_", " ")))
-										if db.getblackList(filename):
+										if db.getblackListTitle(filename):
 											foundInBl = True
-								if not db.checkTitle(filename) and not foundInBl and filename:
+								if not db.checkEventTitle(filename) and not foundInBl and filename:
 									names.add(filename)
 						writeLog(f"check {fileCount} meta Files in {root}")
 				else:
@@ -550,7 +554,7 @@ def getAllRecords(db):
 		#		doIt = True
 		#else:
 		#	doIt = True
-		#if (fileExists(vtidb_loc) and doIt):
+		#if (exists(vtidb_loc) and doIt):
 		#	setStatus("durchsuche VTI-DB...")
 		#	vtidb_conn = connect(vtidb_loc, check_same_thread=False)
 		#	cur = vtidb_conn.cursor()
@@ -561,14 +565,14 @@ def getAllRecords(db):
 		#		writeLog("check " + str(len(rows)) + " titles tidb")
 		#		for row in rows:
 		#			try:
-		#				if row[0] and row[0] != "" and row[0] != " ":
+		#				if row[0] and row[0] and row[0] != " ":
 		#					foundInBl = False
 		#					name = convertTitle(row[0])
-		#					if db.getblackList(convert2base64(name)):
+		#					if db.getblackListTitle(convert2base64(name)):
 		#						name = convertTitle2(row[0])
-		#						if db.getblackList(convert2base64(name)):
+		#						if db.getblackListTitle(convert2base64(name)):
 		#							foundInBl = True
-		#					if not db.checkTitle(convert2base64(name)) and not foundInBl:
+		#					if not db.checkEventTitle(convert2base64(name)) and not foundInBl:
 		#						names.add(name)
 		#			except Exception as ex:
 		#				writeLog("ERROR in getAllRecords vtidb: " + str(row[0]) + " - " + str(ex))
@@ -614,19 +618,18 @@ def cleanPreviewImages(db):
 	for image in prevImages:
 		if image not in recImages:
 			imgfile = join(aelGlobals.PREVIEWPATH, image)
-			if fileExists(imgfile):
+			if exists(imgfile):
 				remove(imgfile)
 				ic += 1
 			imgfile = join(f"{aelGlobals.PREVIEWPATH}thumbnails", image)
-			if fileExists(imgfile):
+			if exists(imgfile):
 				remove(imgfile)
 				it += 1
 		else:
 			writeLog(f"can't remove {image}, because it's a record")
 	writeLog(f"have removed {ic} preview images")
 	writeLog(f"have removed {it} preview thumbnails")
-	del recImages
-	del prevImages
+	del recImages, prevImages
 
 
 def startUpdate(lang, callback):
@@ -653,9 +656,10 @@ def getallEventsfromEPG(lang, callback):
 	mask = (eServiceReference.isMarker | eServiceReference.isDirectory)
 	root = eServiceReference(f'{service_types_tv} FROM BOUQUET "bouquets.tv" ORDER BY bouquet')
 	serviceHandler = eServiceCenter.getInstance()
-	tvbouquets = serviceHandler.list(root).getContent("SN", True)
-	for bouquet in tvbouquets:
-		root = eServiceReference(str(bouquet[0]))
+	bouquets = serviceHandler.list(root).getContent("SN", True)
+	if bouquets:  # TODO: war mal 'for bouquet in bouquets:', aber LASTSCANNED ist hier sicher keine gute Idee...
+		bouquet = bouquets[0]  # TODO: diese Zeile kann weg wenn FOR-Schleife aktiviert wurde
+		root = eServiceReference(bouquet[0])
 		serviceHandler = eServiceCenter.getInstance()
 		ret = serviceHandler.list(root).getContent("SN", True)
 		isInsPDict = bouquet[1] in aelGlobals.SPDICT
@@ -671,7 +675,7 @@ def getallEventsfromEPG(lang, callback):
 	test = ["RITB", 0]
 	for line in lines:
 		test.append((line[0], 0, int(datetime.now().timestamp() + 1000), -1))
-	# writeLog(f"debug test: {test}")
+	writeLog(f"debug test: {test}")
 	epgcache = eEPGCache.getInstance()
 	allevents = epgcache.lookupEvent(test) or []
 	writeLog(f"found {len(allevents)} Events in EPG")
@@ -698,20 +702,17 @@ def getallEventsfromEPG(lang, callback):
 					liveTVRecords.append(record)
 		foundInBl = False
 		name = convertTitle(name)
-		if db.getblackList(name):
+		if db.getblackListTitle(name):
 			name = convertTitle2(name)
-			if db.getblackList(name):
+			if db.getblackListTitle(name):
 				foundInBl = True
-		if not db.checkTitle(name) and not foundInBl:
+		if not db.checkEventTitle(name) and not foundInBl:
 			names.add(name)
 	writeLog(f"check {len(names)} new events")
-	loadimgs = config.plugins.AdvancedEventLibrary.SearchFor.value == 0  # "Extra data and images"
+	loadimgs = config.plugins.AdvancedEventLibrary.SearchFor.value  # "Extra data and images"
 	getTitleInfo(names, None, loadimgs, db, liveTVRecords, lang)
 	setStatus()
-	del names
-	del lines
-	del allevents
-	del liveTVRecords
+	del names, lines, allevents, liveTVRecords
 	callback()
 
 
@@ -728,10 +729,9 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 			return
 		if title and title != " " and "BL:" not in title:
 			titleinfo = {"title": "", "genre": "", "year": "", "rating": "", "fsk": "", "country": "", "airtime": "", "imdbId": "", "cover_url": "", "poster_url": "", "trailer_url": ""}
-			titleinfo["title"] = removeExtension(title)
+			titleinfo["title"] = title
 			titleNyear = convertYearInTitle(title)
-			title = removeExtension(titleNyear[0])
-			jahr = titleNyear[1]
+			title, jahr = titleNyear[0], titleNyear[1]
 			original_name, imdbId = "", ""
 			foundAsMovie, foundAsSeries = False, False
 			# TMDBmovie dataserver
@@ -805,7 +805,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 								original_name = original_title
 							if not titleinfo.get("fsk") and item.get("adult"):
 								titleinfo["fsk"] = "18"
-							break
+							break  # hint: trailers are not supported by TMDBmovie
 				else:
 					apiErrorIncrease("TMDB")
 					if tooManyApiErrors("TMDB"):
@@ -908,7 +908,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 									if not titleinfo.get("country"):
 										titleinfo["country"] = " | ".join(item.get("origin_country", []))  # e.g. ['HR', 'FR', 'DE']
 									original_name = item.get("original_name", "")  # e.g. 'Uzbuna na Zelenom Vrhu'
-								break
+								break  # hint: trailers are not supported by TMDBtv
 					else:
 						apiErrorIncrease("TMDB")
 						if tooManyApiErrors("TMDB"):
@@ -1019,6 +1019,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 							titleinfo["fsk"] = response.get("rating", "")
 						if not titleinfo.get("country", {}):
 							titleinfo["country"] = aelGlobals.NETWORKDICT.get(network, "")
+						# hint: trailers are not supported by TVDB
 			# TVMAZE dataserver
 			if not foundAsMovie and config.plugins.AdvancedEventLibrary.tvmaszeUsage.value and not tooManyApiErrors("TVMAZE"):
 				setStatus(f"{tindex + 1}/{len(titles)}: tvmaze - '{title}' ({posters}|{covers}|{entrys}|{blentrys})")
@@ -1029,7 +1030,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 					writeLog(f"API download error in module 'getTitleInfo: TVMAZE call': {errmsg}")
 					apiErrorIncrease("TVMAZE")
 					if tooManyApiErrors("TVMAZE"):
-						writeLog("Too many access errors with API server 'tvmaze' (maybe daily quota of the API key is fulfilled?). Access is therefore stopped")
+						writeLog("Too many access errors with API server 'tvmaze'. Access is therefore stopped")
 				if response:
 					reslist = []
 					for item in response:
@@ -1060,7 +1061,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 									titleinfo["rating"] = str(round(rating, 1))
 							if imdbId:
 								imdbId = show.get("externals", {}).get("imdb", "")
-							break
+							break  # hint: trailers are not supported by TVMAZE
 			# OMDB dataserver
 			if not foundAsMovie and not foundAsSeries and config.plugins.AdvancedEventLibrary.omdbUsage.value and not tooManyApiErrors("OMDB"):
 				if isScanStopped():
@@ -1149,20 +1150,22 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 							covers += 1
 						else:
 							coverfile = ""
+				# hint: trailers are not supported by OMDB
+
 				# fill up database
 				checkdict = titleinfo.copy()
 				checkdict.pop("title")
-				if not any(item for item in checkdict.values()):  # was not even a single entry found?
-					blentrys += 1
-					db.addblackList(title)
-					setStatus(f"{_('Title')} '{titleinfo.get('title', '')}' {_('not found')} ({tindex}/{len(titles)}). {_('Extend blacklist...')}")
-					writeLog(f"no titles found for '{titleinfo.get('title', '')}'")
+#				if not any(item for item in checkdict.values()):  # was not even a single entry found?
+#					blentrys += 1
+#					db.addblackListTitle(title)
+#					setStatus(f"{_('Title')} '{titleinfo.get('title', '')}' {_('not found')} ({tindex}/{len(titles)}). {_('Extend blacklist...')}")
+#					writeLog(f"no titles found for '{titleinfo.get('title', '')}'")
 				checkdict.pop("poster_url")
 				checkdict.pop("cover_url")
 				if any(item for item in checkdict.values()):  # at least one of the remaining values entries has a content?
 					entrys += 1
 					if research:
-						if db.checkTitle(research):
+						if db.checkEventTitle(research):
 							db.updateEventInfo(titleinfo.get("title", ""), titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""), research)
 						else:
 							db.addEventInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""))
@@ -1170,6 +1173,7 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 						db.addEventInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""))
 					setStatus(f"{_('found data for')} '{titleinfo.get('title', '')}'")
 					writeLog(f"found data for '{titleinfo.get("title", "")}'")
+		createStatistics(db)
 	writeLog(f"set {entrys} on eventInfo")
 	writeLog(f"set {blentrys} on Blacklist")
 	if db:
@@ -1197,9 +1201,9 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 		db.parameter(aelGlobals.PARAMETER_SET, "lastCoverCount", covers)
 		writeLog(f"found {posters} posters")
 		writeLog(f"found {covers} covers")
-	reduceImageSize(aelGlobals.COVERPATH, db)
-	reduceImageSize(aelGlobals.PREVIEWPATH, db)
-	reduceImageSize(aelGlobals.POSTERPATH, db)
+	reduceImagesSize(aelGlobals.COVERPATH, db)
+	reduceImagesSize(aelGlobals.PREVIEWPATH, db)
+	reduceImagesSize(aelGlobals.POSTERPATH, db)
 	writeLog("create thumbnails for cover")
 	createThumbnails(aelGlobals.COVERPATH, _("cover"))
 	writeLog("create thumbnails for preview images")
@@ -1221,28 +1225,28 @@ def getTitleInfo(titles, research=None, loadImages=True, db=None, liveTVRecords=
 
 
 def getTVSpielfilm(db):
-	found, coverscount, trailers = 0, 0, 0
+	found, ccount, tcount = 0, 0, 0
 	refs = db.getSrefsforUpdate()
-	tcount = db.getUpdateCount()
+	ucount = db.getUpdateCount()
 	if refs:
 		fullgenres = {"U": _("Entertainment"), "SE": _("Series"), "SPO": _("Sport"), "SP": _("Movie"), "KIN": _("Children"), "RE": _("Reportage"), "AND": _("Other")}
 		tvsurl = b64decode(b"aHR0cHM6Ly9saXZlLnR2c3BpZWxmaWxtLmRlL3N0YXRpYy9icm9hZGNhc3QvbGlzdC8=7"[:-1]).decode()
 		for index, sref in enumerate(refs):
 			if sref in aelGlobals.TVS_REFDICT and not tooManyApiErrors("TVS"):
-				if isScanStopped():
-					setStatus()
-					return
 				maxDate = db.getMaxAirtimeforUpdate(sref)
 				curDate = db.getMinAirtimeforUpdate(sref)
 				curDatefmt = datetime.fromtimestamp(curDate).strftime("%Y-%m-%d")
 				while int(curDate) - 86400 <= int(maxDate) + 86400:  # while int(curDate) <= int(maxDate) + 86400:
-					setStatus(f"{_('Search channel')} '{aelGlobals.TVS_REFDICT[sref][1]}' ({index + 1}/{len(aelGlobals.TVS_REFDICT)}) {_('for')} {curDatefmt} {_('on TV-Spielfilm')} ({found}/{tcount} | images: {coverscount})")
+					if isScanStopped():
+						setStatus()
+						return
+					setStatus(f"{_('Search channel')} '{aelGlobals.TVS_REFDICT[sref][1]}' ({index + 1}/{len(aelGlobals.TVS_REFDICT)}) {_('for')} {curDatefmt} {_('on TV-Spielfilm')} ({found}/{ucount} | images: {ccount} | trailers: {tcount})")
 					errmsg, response = getAPIdata(f"{tvsurl}{aelGlobals.TVS_REFDICT[sref][0].upper()}/{curDatefmt}")
 					if errmsg:
 						apiErrorIncrease("TVS")
 						writeLog(f"API download error in module 'getTVSpielfilm': {errmsg}")
 						if tooManyApiErrors("TVS"):
-							writeLog("Too many access errors with API server 'tvspielfilm' (maybe daily quota of the API key is fulfilled?). Access is therefore stopped.")
+							writeLog("Too many access errors with API server 'tvspielfilm'. Access is therefore stopped.")
 					if response:
 						lastImage = ""
 						for event in response:
@@ -1275,35 +1279,40 @@ def getTVSpielfilm(db):
 							coverfile = coverurl.split("/")[-1]
 							imdbId = ""  # hint: imdbId is not supported by TVS
 							posterfile = ""  # hint: posters are not supported by TVS
-							if not db.checkTitle(title) and categoryName == "Spielfilm":
-								db.addEventInfo(title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
-							if db.checkTitle(title):
+							if db.checkEventTitle(title):
 								datas = db.getEventInfo(title)  # datas = creationdate, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url
 								if datas:
 									for idx, item in enumerate([("genre", genre), ("year", year), ("rating", rating), ("fsk", fsk), ("country", country), ("imdbId", imdbId), ("coverfile", coverfile), ("posterfile", posterfile), ("trailer_url", trailer_url)]):
-										if datas[idx + 1] and item[1]:
+										if item[1] and not datas[idx + 1]:
+											print("#####TVS: updateEvent:", f"{item[0]}, {item[1]}, {title}")
 											db.updateSingleEventInfo(item[0], item[1], title)  # only fill up what is still missing
+							elif categoryName == "Spielfilm":
+								print("#####TVS: lege neuen Eventinfo Datensatz an...")
+								db.addEventInfo(title, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
 							success = found
-							db.updateliveTVS(providerId, title, genre, year, rating, fsk, country, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, sref, airtime)
-							found = tcount - db.getUpdateCount()
+							found = ucount - db.getUpdateCount()
 							if found == success:
 								writeLog(f"no matches found for '{title}' on '{aelGlobals.TVS_REFDICT[sref][1]}' at '{datetime.fromtimestamp(airtime).strftime("%d.%m.%Y %H:%M:%S")}' with TV-Spielfilm")
 							if found > success:
-								trailers += 1
-							if found > success and coverurl and config.plugins.AdvancedEventLibrary.SearchFor.value == 0 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and coverfile != lastImage:
+								tcount = found - success
+							if found > success and coverurl and config.plugins.AdvancedEventLibrary.SearchFor.value and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and coverfile != lastImage:
 								if downloadImage(coverurl, join(aelGlobals.COVERPATH, coverfile)):
-									coverscount += 1
 									lastImage = coverfile
+									ccount += 1
+								else:
+									coverurl = ""
+							db.updateliveTVS(providerId, title, genre, year, rating, fsk, country, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, sref, airtime)
 					curDate += 86400
+					createStatistics(db)
 	writeLog(f"have updated {found} events from TV-Spielfilm")
-	writeLog(f"have downloaded {coverscount} images from TV-Spielfilm")
-	writeLog(f"have found {trailers} trailers on TV-Spielfilm")
-	db.parameter(aelGlobals.PARAMETER_SET, f"lastPreviewImageCount {coverscount}")
+	writeLog(f"have downloaded {ccount} images from TV-Spielfilm")
+	writeLog(f"have found {tcount} trailers on TV-Spielfilm")
+	db.parameter(aelGlobals.PARAMETER_SET, f"lastPreviewImageCount {ccount}")
 
 
 def getTVMovie(db, secondRun=False):
-	found, coverscount = 0, 0
-	tcount = db.getUpdateCount()
+	found, ccount = 0, 0
+	ucount = db.getUpdateCount()
 	if not secondRun:
 		tvnames = db.getTitlesforUpdate()
 		writeLog(f"check {len(tvnames)} {_('titles on TV-Movie')}")
@@ -1313,14 +1322,14 @@ def getTVMovie(db, secondRun=False):
 	lentvnames = len(tvnames)
 	for index, title in enumerate(tvnames):
 		tvname = title[0] if not secondRun else convertTitle2(title[0])
-		setStatus(f"({index + 1}/{lentvnames}) {_('search on TV-Movie for')} '{tvname}' ({found}/{tcount} | covers: {coverscount})")
+		setStatus(f"({index + 1}/{lentvnames}) {_('search on TV-Movie for')} '{tvname}' ({found}/{ucount} | covers: {ccount})")
 		tvmovieurl = b64decode(b"aHR0cDovL2NhcGkudHZtb3ZpZS5kZS92MS9icm9hZGNhc3RzL3NlYXJjaA==2"[:-1]).decode()
 		errmsg, response = getAPIdata(tvmovieurl, params={"q": tvname, "page": 1, "rows": 400})
 		if errmsg:
 			writeLog(f"API download error in module 'getTVMovie' {errmsg}")
 			apiErrorIncrease("TVMOVIE")
 			if tooManyApiErrors("TVMOVIE"):
-				writeLog("Too many access errors with API server 'tvmovie' (maybe daily quota of the API key is fulfilled?). Access is therefore stopped")
+				writeLog("Too many access errors with API server 'tvmovie'. Access is therefore stopped")
 		if response and not tooManyApiErrors("TVS"):
 			if isScanStopped():
 				setStatus()
@@ -1362,33 +1371,37 @@ def getTVMovie(db, secondRun=False):
 						imdbId = event.get("imdbId", "")
 						trailer_url = ""  # hint: trailers are not supported by TVMovie
 						posterfile = ""  # hint: posters are not supported by TVMovie
-						if not db.checkTitle(title[0]) and categoryName == "Spielfilm":
-							db.addEventInfo(title[0], genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
-						if db.checkTitle(title[0]):
+						if db.checkEventTitle(title[0]):
 							datas = db.getEventInfo(title[0])  # datas = creationdate, genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url
 							if datas:
 								for idx, item in enumerate([("genre", genre), ("year", year), ("rating", rating), ("fsk", fsk), ("country", country), ("imdbId", imdbId), ("coverfile", coverfile), ("posterfile", posterfile), ("trailer_url", trailer_url)]):
-									if datas[idx + 1] and item[1]:
+									if item[1] and not datas[idx + 1]:
+										print("#####TVM: updateEvent:", f"{item[0]}, {item[1]}, {title}")
 										db.updateSingleEventInfo(item[0], item[1], title[0])  # only fill up what is still missing
-						imageurl = f"{serviceurl}/{coverfile}" if serviceurl and coverfile and config.plugins.AdvancedEventLibrary.SearchFor.value == 0 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value else ""
+						elif categoryName == "Spielfilm":
+							print("#####TVM: lege neuen Eventinfo Datensatz an...")
+							db.addEventInfo(title[0], genre, year, rating, fsk, country, imdbId, coverfile, posterfile, trailer_url)
+						imageurl = f"{serviceurl}/{coverfile}" if serviceurl and coverfile and config.plugins.AdvancedEventLibrary.SearchFor.value and config.plugins.AdvancedEventLibrary.UsePreviewImages.value else ""
 						success = found
-						db.updateliveTV(providerId, genre, year, rating, fsk, country, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, title[0], airtime)
-						found = tcount - db.getUpdateCount()
-						if found > success and imageurl and config.plugins.AdvancedEventLibrary.SearchFor.value == 0 and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and imageurl != lastImage:
+						found = ucount - db.getUpdateCount()
+						if found > success and imageurl and config.plugins.AdvancedEventLibrary.SearchFor.value and config.plugins.AdvancedEventLibrary.UsePreviewImages.value and imageurl != lastImage:
 							if downloadImage(imageurl, join(aelGlobals.COVERPATH, coverfile)):
-								coverscount += 1
+								ccount += 1
 								lastImage = imageurl
+							else:
+								imageurl = ""
+						db.updateliveTV(providerId, genre, year, rating, fsk, country, imdbId, trailer_url, subtitle, leadText, conclusion, categoryName, season, episode, coverfile, title[0], airtime)
 			if nothingfound:
 				writeLog(f"nothing found on TV-Movie for '{title[0]}'")
+			createStatistics(db)
 	writeLog(f"have updated {found} events from TV-Movie")
-	writeLog(f"have downloaded {coverscount} images from TV-Movie")
+	writeLog(f"have downloaded {ccount} images from TV-Movie")
 	if not secondRun:
 		tvsImages = db.parameter(aelGlobals.PARAMETER_GET, "lastPreviewImageCount", None, 0)
-		coverscount += int(tvsImages)
-		db.parameter(aelGlobals.PARAMETER_SET, "lastPreviewImageCount", str(coverscount))
+		ccount += int(tvsImages)
+		db.parameter(aelGlobals.PARAMETER_SET, "lastPreviewImageCount", str(ccount))
 		getTVMovie(db, True)
 	del tvnames
-	del failedNames
 
 
 def convertTitle(name):
@@ -1466,14 +1479,18 @@ def convertYearInTitle(title):
 
 def downloadImage(url, filename, timeout=(3.05, 6)):
 	try:
-		if not fileExists(filename):
+		if not exists(filename):
 			response = get(url, stream=True, timeout=timeout)
-			with open(filename, "wb") as file:
-				file.write(response.content)
+			if response.ok:
+				with open(filename, "wb") as file:
+					file.write(response.content)
+			else:
+				writeLog(f"Server error in module 'downloadImage': {response.raise_for_status()}")
+				return False
 			del response
 		return True
 	except Exception as errmsg:
-		writeLog(f"Exception in module 'downloadImage': {errmsg}")
+		writeLog(f"ERROR in module 'downloadImage': {errmsg}")
 		return False
 
 
@@ -1502,151 +1519,91 @@ def checkAllImages():
 	clearMem("checkAllImages")
 
 
-def reduceImageSize(path, db):
-	imgsize = aelGlobals.COVERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.coverQuality.value, "1280x720") if "cover" in path else aelGlobals.POSTERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.posterQuality.value, "780x1170")
-	sizex, sizey = imgsize.split("x", 1)
-	maxSize = config.plugins.AdvancedEventLibrary.MaxImageSize.value
-	filename = ""
+def reduceImagesSize(path, db):
+	coverres = aelGlobals.COVERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.coverResolution.value, "1280x720").split("x")
+	posterres = aelGlobals.POSTERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.posterResolution.value, "780x1170").split("x")
+	maxcompression = config.plugins.AdvancedEventLibrary.JPEGquality.value
+	imgfile = ""
 	imglist = glob(join(path, "*.*"))
 	lenimglist = len(imglist)
-	for index, filename in enumerate(imglist):
+	for index, imgfile in enumerate(imglist):
+		imgname = imgfile.split("/")[-1]
+		if not db.getblackListImage(imgname) and exists(imgfile):
+#			imgsize = getsize(imgfile)
+#			if imgsize / 1024.0 > 2000:  # if images are oversized, PIL crashes!
+#				writeLog("Image is too large and therefore cannot be processed. Image will be deleted!")
+#				db.addblackListImage(imgfile)
+#				continue
+			wnew, hnew = tuple(map(int, coverres if "cover" in imgfile else posterres))
+			oldsize = getsize(imgfile)
+			wold, hold = processImage(imgfile, imgfile, (wnew, hnew), maxcompression)
+			if wold and hold and exists(imgfile):  # successful?
+				newsize = getsize(imgfile)
+				setStatus(f"({index + 1}/{lenimglist}) {_('resize')} '{imgname}' {_('from')} {bytes2human(oldsize, 1)} ({wold}x{hold}px) {_('with')} {_('to')} {bytes2human(newsize, 1)} ({wnew}x{hnew}px)")
+				writeLog(f"file {imgname} reduced from {bytes2human(oldsize, 1)} ({wold}x{hold}px) to {bytes2human(newsize, 1)} ({wnew}x{hnew}px)")
+			else:
+				db.addblackListImage(imgname)
+				writeLog(f"file {imgname} was corrupt and therefore deleted and blacklisted")
 		if isScanStopped():
 			setStatus()
-			return
-		try:
-			q = 90
-			if not db.getblackListImage(filename):
-				if getsize(filename) / 1024.0 > 2000:  # if images are oversized, PIL crashes!
-					writeLog("Image is too large and therefore cannot be processed. Image will be deleted!")
-					db.addblackListImage(filename)
-					continue
-				oldSize = int(getsize(filename) / 1024.0)
-				if oldSize > maxSize:
-					filename = (filename.split("/")[-1])
-					try:  # mandatory because file could be corrupt
-						img = Image.open(filename)
-						w, h = int(img.size[0]), int(img.size[1])
-						setStatus(f"{_('downsize')} '{filename}' ({index + 1}/{lenimglist}) {_('with')} {bytes2human(getsize(filename), 1)} {_('and')} {w}x{h}px")
-						img_bytes = StringIO()
-						img1 = img.convert("RGB", colors=256)
-						img1.save(str(img_bytes), format="jpeg")
-						if img_bytes.tell() / 1024 >= oldSize:
-							if w > int(sizex):
-								w, h = int(sizex), int(sizey)
-								img1 = img.resize((w, h), Image.LANCZOS)
-								img1.save(str(img_bytes), format="jpeg")
-						else:
-							if w > int(sizex):
-								w, h = int(sizex), int(sizey)
-								img1 = img1.resize((w, h), Image.LANCZOS)
-								img1.save(str(img_bytes), format="jpeg")
-						if img_bytes.tell() / 1024 > maxSize:
-							while img_bytes.tell() / 1024 > maxSize:
-								img1.save(str(img_bytes), format="jpeg", quality=q)
-								q -= 8
-								if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
-									break
-						img1.save(filename, format="jpeg", quality=q)
-						del img, img1
-					except Exception as errmsg:
-						writeLog(f"Exception in module 'reduceImageSize' with file '{filename}': {errmsg}")
-						continue
-					writeLog(f"file {filename} reduced from {bytes2human(int(oldSize * 1024), 1)} to {bytes2human(getsize(filename), 1)} and {w}x{h}px")
-					if getsize(filename) / 1024.0 > maxSize:
-						writeLog("Image size cannot be further reduced with the current settings!")
-						db.addblackListImage(filename)
-		except Exception as errmsg:
-			writeLog(f"ERROR in module 'reduceImageSize': {filename} - {errmsg}")
-			continue
+			break
 
 
-def reduceSigleImageSize(src, dest):
-	imgsize = aelGlobals.COVERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.coverQuality.value, "1280x720") if "cover" in dest else aelGlobals.POSTERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.posterQuality.value, "780x1170")
-	sizex, sizey = imgsize.split("x", 1)
-	maxSize = config.plugins.AdvancedEventLibrary.MaxImageSize.value
-	q = 90
-	oldSize = int(getsize(src) / 1024.0)
-	if oldSize > maxSize:
-		filename = (src.split("/")[-1]).rsplit(".", 1)[0]
-		try:  # mandatory because file could be corrupt
-			img = Image.open(src)
-			w, h = int(img.size[0]), int(img.size[1])
-			writeLog(f"convert image {filename} with {bytes2human(getsize(src), 1)} and {w}x{h}px")
-			img_bytes = StringIO()
-			img1 = img.convert("RGB", colors=256)
-			img1.save(str(img_bytes), format="jpeg")
-			if img_bytes.tell() / 1024 >= oldSize:
-				if w > int(sizex):
-					w, h = int(sizex), int(sizey)
-					img1 = img.resize((w, h), Image.LANCZOS)
-					img1.save(str(img_bytes), format="jpeg")
-			else:
-				if w > int(sizex):
-					w, h = int(sizex), int(sizey)
-					img1 = img1.resize((w, h), Image.LANCZOS)
-					img1.save(str(img_bytes), format="jpeg")
-			if img_bytes.tell() / 1024 > maxSize:
-				while img_bytes.tell() / 1024 > maxSize:
-					img1.save(str(img_bytes), format="jpeg", quality=q)
-					q -= 8
-					if q <= config.plugins.AdvancedEventLibrary.MaxCompression.value:
-						break
-			img1.save(dest, format="jpeg", quality=q)
-			writeLog(f"file {filename} reduced from {bytes2human(int(oldSize * 1024), 1)} to {bytes2human(getsize(dest), 1)} and {w}x{h}px")
-			if getsize(dest) / 1024.0 > maxSize:
-				writeLog("Image size cannot be further reduced with the current settings!")
-		except Exception as errmsg:
-			writeLog(f"ERROR in module 'reduceSingleImageSize': {filename} - {errmsg}")
+def reduceSigleImageSize(srcfile, destfile):
+	coverres = aelGlobals.COVERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.coverResolution.value, "1280x720").split("x", 1)
+	posterres = aelGlobals.POSTERQUALITYDICT.get(config.plugins.AdvancedEventLibrary.posterResolution.value, "780x1170").split("x", 1)
+	maxcompression = config.plugins.AdvancedEventLibrary.JPEGquality.value
+	destres = tuple(map(int, coverres if "cover" in destfile else posterres))
+	processImage(srcfile, destfile, destres, maxcompression)
 
 
 def createThumbnails(path, imgtype):
-	wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
-	wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
 	imglist = glob(join(path, "*.*"))
 	lenimglist = len(imglist)
-	for index, filename in enumerate(imglist):
+	for index, srcfile in enumerate(imglist):
+		if srcfile:
+			srcname = srcfile.split("/")[-1]
+			setStatus(f"{_('create thumbnail')} ({index + 1}/{lenimglist}) {_('for')} {imgtype} '{srcname}'")
+			createSingleThumbnail(srcfile, srcfile)
 		if isScanStopped():
 			setStatus()
-			return
-		if filename:
-			destfile = filename.replace("cover", "cover/thumbnails").replace("poster", "poster/thumbnails").replace("preview", "preview/thumbnails")
-			if not fileExists(destfile):
-				setStatus(f"{_('create thumbnail')} ({index + 1}/{lenimglist}) {_('for')} {imgtype} '{filename}'")
-				try:  # mandatory because file could be corrupt
-					img = Image.open(filename)
-					imgnew = img.convert("RGBA", colors=256)
-					imgnew = img.resize((wc, hc), Image.LANCZOS) if "cover" in filename or "preview" in filename else img.resize((wp, hp), Image.LANCZOS)
-					imgnew.save(destfile)
-				except Exception as errmsg:
-					writeLog(f"ERROR in module 'createThumbnails': {filename} - {errmsg}")
-					remove(filename)
+			break
 
 
-def createSingleThumbnail(srcfile, dest):
-	wp, hp = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
-	wc, hc = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
-	destfile = dest.replace("cover", "cover/thumbnails").replace("poster", "poster/thumbnails")
-	writeLog(f"create single thumbnail from source {srcfile} to {destfile} with {wc}x{hc}px")
+def createSingleThumbnail(srcfile, destfile):
+	for imgtype in ["cover", "poster", "preview"]:
+		destfile = destfile.replace(imgtype, f"{imgtype}/thumbnails")
+	if exists(srcfile) and not exists(destfile):
+		coverres = parameters.get("EventLibraryThumbnailCoverSize", (100, 60))
+		posterres = parameters.get("EventLibraryThumbnailPosterSize", (60, 100))
+		destres = posterres if "poster" in destfile else coverres
+		processImage(srcfile, destfile, destres)
+		if exists(destfile):
+			wdest, hdest = destres
+			writeLog(f"created single thumbnail from source {srcfile} to {destfile} with {wdest}x{hdest}px")
+
+
+def processImage(srcfile, destfile, destres, quality=95):  # hint: quality=95 is highest possible in PIL
+	srcres = (0, 0)
 	try:  # mandatory because file could be corrupt
-		img = Image.open(srcfile)
-		imgnew = img.convert("RGBA", colors=256)
-		imgnew = img.resize((wc, hc), Image.LANCZOS) if "cover" in dest or "preview" in dest else img.resize((wp, hp), Image.LANCZOS)
-		imgnew.save(destfile)
+		srcimg = Image.open(srcfile)
+		srcres = srcimg.size
+		destimg = srcimg.thumbnail(destres)
+		destimg.save(destfile, quality=quality, format="jpeg", optimize=True, progressive=True)
+		del srcimg, destimg
 	except Exception as errmsg:
-		writeLog(f"ERROR in module 'createSingleThumbnail': {srcfile} - {errmsg}")
+		writeLog(f"ERROR in module 'processImage': {srcfile.split("/")[-1]} - {errmsg}")
 		remove(srcfile)
-	if fileExists(destfile):
-		writeLog("thumbnail created")
+	return srcres
 
 
 def getPicture(title, what="Cover", lang="de"):
-	cq = config.plugins.AdvancedEventLibrary.coverQuality.value if config.plugins.AdvancedEventLibrary.coverQuality.value != "w1920" else "original"
-	posterquality = config.plugins.AdvancedEventLibrary.posterQuality.value
+	cq = config.plugins.AdvancedEventLibrary.coverResolution.value if config.plugins.AdvancedEventLibrary.coverResolution.value != "w1920" else "original"
+	posterquality = config.plugins.AdvancedEventLibrary.posterResolution.value
 	tmdb.API_KEY = getKeys("tmdb")
 	picture = ""
 	titleNyear = convertYearInTitle(title)
-	title = removeExtension(titleNyear[0])
-	jahr = titleNyear[1]
+	title, jahr = titleNyear[0], titleNyear[1]
 	# TMDB image server
 	tmdb.API_KEY = getKeys("tmdb")
 	search = tmdb.Search()
@@ -1801,20 +1758,21 @@ def writeTVStatistic(db):
 				writeLog(f"There are {count} events for '{servicename}' in database'")
 
 
-def getSize(path):  # TODO: kann das weg?
-	total_size = 0
+def getSize(path):
+	totalsize = 0
 	for dirpath, dirnames, filenames in walk(path):
-		for f in filenames:
-			fp = join(dirpath, f)
-			total_size += getsize(fp)
-	return f"{round(float(total_size / 1024.0 / 1024.0), 1)}M"
+		for filename in filenames:
+			filepath = join(dirpath, filename)
+			totalsize += getsize(filepath)
+	return round(float(totalsize / 1024.0 / 1024.0), 1)
 
 
 def createStatistics(db):
 	inodes = check_output(["df", "-i", aelGlobals.HDDPATH]).decode().split()
-	db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if fileExists(join(aelGlobals.POSTERPATH, name))])))
-	db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if fileExists(join(aelGlobals.COVERPATH, name))])))
-	db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if fileExists(join(aelGlobals.PREVIEWPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if exists(join(aelGlobals.POSTERPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if exists(join(aelGlobals.COVERPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if exists(join(aelGlobals.PREVIEWPATH, name))])))
+	db.parameter(aelGlobals.PARAMETER_SET, "trailerCount", str(db.getTrailerCount()))
 	db.parameter(aelGlobals.PARAMETER_SET, "posterSize", str(check_output(["du", "-sh", aelGlobals.POSTERPATH]).decode().split()[0]))
 	db.parameter(aelGlobals.PARAMETER_SET, "coverSize", str(check_output(["du", "-sh", aelGlobals.COVERPATH]).decode().split()[0]))
 	db.parameter(aelGlobals.PARAMETER_SET, "previewSize", str(check_output(["du", "-sh", aelGlobals.PREVIEWPATH]).decode().split()[0]))
@@ -1822,12 +1780,11 @@ def createStatistics(db):
 
 
 def getPictureList(title, what="Cover", count=20, lang="de", bingOption=""):
-	cq = config.plugins.AdvancedEventLibrary.coverQuality.value if config.plugins.AdvancedEventLibrary.coverQuality.value != "w1920" else "original"
-	posterquality = config.plugins.AdvancedEventLibrary.posterQuality.value
+	cq = config.plugins.AdvancedEventLibrary.coverResolution.value if config.plugins.AdvancedEventLibrary.coverResolution.value != "w1920" else "original"
+	posterquality = config.plugins.AdvancedEventLibrary.posterResolution.value
 	pictureList = []
-	titleNyear = convertYearInTitle(title)
-	title = removeExtension(titleNyear[0])
-	jahr = titleNyear[1]
+	titleNyear = convertYearInTitle(title)[0]
+	title, jahr = titleNyear[0], titleNyear[1]
 	writeLog(f"searching '{what}' for '{title}' with language = '{lang}'")
 	# TVDB image server
 	tvdb.KEYS.API_KEY = getKeys("tvdb")
@@ -1927,9 +1884,9 @@ def getPictureList(title, what="Cover", count=20, lang="de", bingOption=""):
 								imgs = details.images(language=lang)
 								if imgs:
 									for img in imgs.get("stills", [{}]):
-											imgsize = f"{img["width"]}x{img["height"]}"
+											imgresstr = f"{img["width"]}x{img["height"]}"
 											file_path = img.get("file_path", "")
-											itm = [f"{item.get("name", "")} - {episode.get("name", "").lower()}", what, f"{imgsize} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
+											itm = [f"{item.get("name", "")} - {episode.get("name", "").lower()}", what, f"{imgresstr} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
 											pictureList.append((itm,))
 								still_path = episode.get("still_path", "")
 								if still_path:
@@ -1940,38 +1897,38 @@ def getPictureList(title, what="Cover", count=20, lang="de", bingOption=""):
 						imgs = idx.images(language=lang).get("backdrops", [])
 						if imgs:
 							for img in imgs:
-								imgsize = f"{img["width"]}x{img["height"]}"
+								imgresstr = f"{img["width"]}x{img["height"]}"
 								file_path = img.get("file_path", "")
-								itm = [item.get("name", ""), what, f"{imgsize} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
+								itm = [item.get("name", ""), what, f"{imgresstr} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
 								pictureList.append((itm,))
 						if len(imgs) < 2:
 							imgs = idx.images()["backdrops"]
 							if imgs:
 								for img in imgs:
-									imgsize = f"{img["width"]}x{img["height"]}"
+									imgresstr = f"{img["width"]}x{img["height"]}"
 									file_path = img.get("file_path", "")
-									itm = [item.get("name", ""), what, f"{imgsize} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
+									itm = [item.get("name", ""), what, f"{imgresstr} {_('found on TMDb TV')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
 									pictureList.append((itm,))
 					if what == "Poster":
 						imgs = idx.images(language=lang).get("posters", [])
 						if imgs:
 							for img in imgs:
-								imgsize = f"{img["width"]}x{img["height"]}"
+								imgresstr = f"{img["width"]}x{img["height"]}"
 								file_path = img.get("file_path", "")
-								itm = [item.get("name", ""), what, f"{imgsize} {_('found on TMDb TV')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
+								itm = [item.get("name", ""), what, f"{imgresstr} {_('found on TMDb TV')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
 								pictureList.append((itm,))
 						if len(imgs) < 2:
 							imgs = idx.images()["posters"]
 							if imgs:
 								for img in imgs:
-									imgsize = f"{img["width"]}x{img["height"]}"
+									imgresstr = f"{img["width"]}x{img["height"]}"
 									file_path = img.get("file_path", "")
-									itm = [item.get("name", ""), what, f"{imgsize} {_('found on TMDb TV')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
+									itm = [item.get("name", ""), what, f"{imgresstr} {_('found on TMDb TV')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
 									pictureList.append((itm,))
 				except Exception:
 					continue
 		search = tmdb.Search()
-		response = search.movie(query=title, language=lang, year=jahr) if jahr != "" else search.movie(query=title, language=lang)
+		response = search.movie(query=title, language=lang, year=jahr) if jahr else search.movie(query=title, language=lang)
 		if response and response.get("results", []):
 			reslist = []
 			for item in response.get("results", []):
@@ -1996,33 +1953,33 @@ def getPictureList(title, what="Cover", count=20, lang="de", bingOption=""):
 						imgs = idx.images(language=lang).get("backdrops", [])
 						if imgs:
 							for img in imgs:
-								imgsize = f"{img["width"]}x{img["height"]}"
+								imgresstr = f"{img["width"]}x{img["height"]}"
 								file_path = img.get("file_path", "")
-								itm = [item.get("title", ""), what, f"{imgsize} {_('found on TMDb Movie')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
+								itm = [item.get("title", ""), what, f"{imgresstr} {_('found on TMDb Movie')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
 								pictureList.append((itm,))
 						if len(imgs) < 2:
 							imgs = idx.images()["backdrops"]
 							if imgs:
 								for img in imgs:
-									imgsize = f"{img["width"]}x{img["height"]}"
+									imgresstr = f"{img["width"]}x{img["height"]}"
 									file_path = img.get("file_path", "")
-									itm = [item.get("title", ""), what, f"{imgsize} {_('found on TMDb Movie')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
+									itm = [item.get("title", ""), what, f"{imgresstr} {_('found on TMDb Movie')}", f"{tmdburl}{cq}{file_path}", join(aelGlobals.COVERPATH, title), file_path]
 									pictureList.append((itm,))
 					if what == "Poster":
 						imgs = idx.images(language=lang).get("posters", [])
 						if imgs:
 							for img in imgs:
-								imgsize = f"{img["width"]}x{img["height"]}"
+								imgresstr = f"{img["width"]}x{img["height"]}"
 								file_path = img.get("file_path", "")
-								itm = [item.get("title", ""), what, f"{imgsize} {_('found on TMDb Movie')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
+								itm = [item.get("title", ""), what, f"{imgresstr} {_('found on TMDb Movie')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
 								pictureList.append((itm,))
 						if len(imgs) < 2:
 							imgs = idx.images()["posters"]
 							if imgs:
 								for img in imgs:
-									imgsize = f"{img["width"]}x{img["height"]}"
+									imgresstr = f"{img["width"]}x{img["height"]}"
 									file_path = img.get("file_path", "")
-									itm = [item.get("title", ""), what, f"{imgsize} {_('found on TMDb Movie')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
+									itm = [item.get("title", ""), what, f"{imgresstr} {_('found on TMDb Movie')}", f"{tmdburl}{posterquality}{file_path}", join(aelGlobals.POSTERPATH, title), file_path]
 									pictureList.append((itm,))
 				except Exception:
 					continue
@@ -2084,8 +2041,7 @@ def getPictureList(title, what="Cover", count=20, lang="de", bingOption=""):
 def getSearchResults(title, lang):
 	resultList = []
 	titleNyear = convertYearInTitle(title)
-	title = removeExtension(titleNyear[0])
-	jahr = titleNyear[1]
+	title, jahr = titleNyear[0], titleNyear[1]
 	writeLog(f"searching results for '{title}' with language = '{lang}'")
 	searchName = findEpisode(title)
 	# TMDB data server
@@ -2158,7 +2114,7 @@ def getSearchResults(title, lang):
 					resultList.append((itm,))
 		try:  # mandatory because the library raises an error when no result
 			search = tmdb.Search()
-			response = search.movie(query=title, language=lang, year=jahr) if jahr != "" else search.movie(query=title, language=lang)
+			response = search.movie(query=title, language=lang, year=jahr) if jahr else search.movie(query=title, language=lang)
 		except Exception:
 			response = {}
 		if response and response.get("results", []):
@@ -2343,42 +2299,6 @@ def getSearchResults(title, lang):
 		return resultList
 
 
-def getImageFile(path, eventName):
-	pictureName = eventName
-	imagefile = join(path, pictureName)
-	if (exists(imagefile)):
-		return imagefile
-	else:
-		pictureName = convertTitle(eventName)
-		imagefile = join(path, pictureName)
-		if (exists(imagefile)):
-			return imagefile
-		else:
-			pictureName = convertTitle2(eventName)
-			imagefile = join(path, pictureName)
-			if (exists(imagefile)):
-				return imagefile
-	if "cover" in path and config.plugins.AdvancedEventLibrary.UsePreviewImages.value:
-		ppath = path.replace("cover", "preview")
-		imagefile = getPreviewImageFile(ppath, eventName)
-		if imagefile:
-			return imagefile
-
-
-def getPreviewImageFile(path, eventName):
-	imagefile = join(path, eventName)
-	if exists(imagefile):
-		return imagefile
-	else:
-		imagefile = join(path, convertTitle(eventName))
-		if exists(imagefile):
-			return imagefile
-		else:
-			imagefile = join(path, convertTitle2(eventName))
-			if exists(imagefile):
-				return imagefile
-
-
 def setStatus(text=None):
 	aelGlobals.STATUS = text or ""
 
@@ -2414,7 +2334,7 @@ class AELGlobals:
 	API_ERRDICT = {"TMDB": 0, "TVDB": 0, "TVMAZE": 0, "OMDB": 0, "TVS": 0, "TVMOVIE": 0}
 	FSKDICT = {"R": "18", "TV-MA": "18", "TV-PG": "16", "TV-14": "12", "TV-Y7": "6", "PG-13": "12", "PG": "6", "G": "16"}
 	SPDICT = {}
-	if config.plugins.AdvancedEventLibrary.searchPlaces.value != "":
+	if config.plugins.AdvancedEventLibrary.searchPlaces.value:
 		SPDICT = eval(config.plugins.AdvancedEventLibrary.searchPlaces.value)
 	SCAN_STOPPED = True
 	PARAMETER_SET = 0
@@ -2464,7 +2384,7 @@ aelGlobals = AELGlobals()
 
 
 class DB_Functions(AELGlobals, object):
-	@staticmethod
+	@ staticmethod
 	def dict_factory(cursor, row):
 		d = {}
 		for idx, col in enumerate(cursor.description):
@@ -2572,7 +2492,7 @@ class DB_Functions(AELGlobals, object):
 		row = cur.fetchall()
 		return row[0] if row else []
 
-	def checkTitle(self, title):
+	def checkEventTitle(self, title):
 		cur = self.conn.cursor()
 		query = "SELECT title FROM eventInfo where title = ?;"
 		cur.execute(query, (title,))
@@ -2682,9 +2602,9 @@ class DB_Functions(AELGlobals, object):
 		rows = cur.fetchall()
 		if rows:
 			for row in rows:
-				if not getImageFile(f"{aelGlobals.COVERPATH}", row[0]):
+				if not exists(join(aelGlobals.COVERPATH, row[0])):
 					coverList.append(row[0])
-				if not getImageFile(f"{aelGlobals.POSTERPATH}", row[0]):
+				if not exists(join(aelGlobals.POSTERPATH, row[0])):
 					posterList.append(row[0])
 		return [coverList, posterList]
 
@@ -2713,25 +2633,28 @@ class DB_Functions(AELGlobals, object):
 		return row[0][0] if row else 0
 
 	def getTrailerCount(self):
-		trailercount = set()
+		livetrailers = set()
 		cur = self.conn.cursor()
 		query = "SELECT DISTINCT trailer_url FROM liveOnTV WHERE trailer_url <> ''"
 		cur.execute(query)
 		rows = cur.fetchall()
 		if rows:
 			for row in rows:
-				trailercount.add(row[0])
-		writeLog(f"found {len(trailercount)} liveOnTV")
-		i = len(trailercount)
+				livetrailers.add(row[0])
+		livecount = len(list(livetrailers))  # list(set()) removes dupes
+		writeLog(f"found {livecount} different trailers on liveOnTV")
+		eventtrailers = set()
 		query = "SELECT DISTINCT trailer_url FROM eventInfo WHERE trailer_url <> ''"
 		cur.execute(query)
 		rows = cur.fetchall()
 		if rows:
 			for row in rows:
-				trailercount.add(row[0])
-		eI = len(trailercount) - i
-		writeLog(f"found {eI} on eventInfo")
-		return len(trailercount)
+				eventtrailers.add(row[0])
+		eventcount = len(list(eventtrailers))
+		writeLog(f"found {eventcount} different trailers on eventInfo")
+		totalcount = len(list(livetrailers | eventtrailers))
+		writeLog(f"found {totalcount} different trailers on liveOnTV and eventInfo")
+		return totalcount
 
 	def getEventCount(self, sref):
 		cur = self.conn.cursor()
@@ -2827,8 +2750,7 @@ class DB_Functions(AELGlobals, object):
 				titleList.append(row[0])
 		delList = [x for x in titleList if x not in duplicates]
 		writeLog(f"not used preview images {len(delList)}")
-		del duplicates
-		del titleList
+		del duplicates, titleList
 		return delList
 
 	def cleanblackList(self):
@@ -2850,31 +2772,31 @@ class DB_Functions(AELGlobals, object):
 		cur.execute(query, (title,))
 		self.conn.commit()
 
-	def addblackList(self, title):
+	def addblackListTitle(self, title):  # TODO: macht die Blacklist für Titel überhaupt Sinn bei abschaltbaren Servern?
 		cur = self.conn.cursor()
 		query = "insert or ignore into blackList (title) values (?);"
 		cur.execute(query, (title,))
 		self.conn.commit()
 
-	def addblackListImage(self, filename):
-		filename = filename.rsplit("/")[-1]
+	def addblackListImage(self, imgfile):
+		imgname = imgfile.split("/")[-1]
 		cur = self.conn.cursor()
 		query = "insert or ignore into blackListImage (filename) values (?);"
-		cur.execute(query, (filename,))
+		cur.execute(query, (imgname,))
 		self.conn.commit()
 
-	def getblackList(self, title):
+	def getblackListTitle(self, title):  # TODO: macht die Blacklist für Titel überhaupt Sinn bei abschaltbaren Servern?
 		cur = self.conn.cursor()
 		query = "SELECT title FROM blackList WHERE title = ?"
 		cur.execute(query, (title,))
 		row = cur.fetchall()
 		return True if row else False
 
-	def getblackListImage(self, filename):
-		filename = filename.rsplit("/")[-1]
+	def getblackListImage(self, imgfile):
+		imgname = imgfile.split("/")[-1]
 		cur = self.conn.cursor()
 		query = "SELECT filename FROM blackListImage WHERE filename = ?"
-		cur.execute(query, (filename,))
+		cur.execute(query, (imgname,))
 		row = cur.fetchall()
 		return True if row else False
 
@@ -3037,8 +2959,8 @@ class PicLoader:
 		self.picload = ePicLoad()
 		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
 
-	def load(self, filename):
-		self.picload.startDecode(filename, 0, 0, False)
+	def load(self, imgfile):
+		self.picload.startDecode(imgfile, 0, 0, False)
 		data = self.picload.getData()
 		return data
 

@@ -26,7 +26,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, writeLog, getDB, getImageFile, clearMem
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, writeLog, getDB, clearMem
 from Tools.LoadPixmap import LoadPixmap
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -337,7 +337,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 			else:
 				mlist.sort(key=lambda x: x[2], reverse=False)
 			for item in mlist:
-				image = getImageFile(aelGlobals.HDDPATH + self.movieImageType, item[2])
+				image = join(f"{aelGlobals.HDDPATH}{self.movieImageType}", item[2])
 				if image is None:
 					image = self.movieSubstituteImage
 				if len(item) > 7:
@@ -395,10 +395,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 							hasTrailer = dbdata[7]
 					if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
 						if evt and evt[0][3] != '':
-							image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, evt[0][3])
+							image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", evt[0][3])
 							name = evt[0][3]
 						if image is None:
-							image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, event.getEventName())
+							image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", event.getEventName())
 					cleanname = str(event.getEventName()).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
 					if cleanname in self.timers or str(event.getEventId()) in self.timers or name in self.timers:
@@ -466,10 +466,10 @@ class AdvancedEventLibraryMediaHub(Screen):
 								hasTrailer = evt[0][16]
 							if self.channelImageType in ["poster", "poster/thumbnails", "cover", "cover/thumbnails"]:
 								if evt and evt[0][3] != '':
-									image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, evt[0][3])
+									image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", evt[0][3])
 									name = evt[0][3]
 								if image is None:
-									image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, event.getEventName())
+									image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", event.getEventName())
 
 							cleanname = str(event.getEventName()).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 							hasTimer = False
