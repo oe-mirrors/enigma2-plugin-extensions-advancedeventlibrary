@@ -12,6 +12,7 @@ from Components.Pixmap import Pixmap
 from time import localtime
 import os
 import skin
+from os.path import join
 import NavigationInstance
 from html.parser import HTMLParser
 from skin import loadSkin
@@ -24,7 +25,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, clearMem, aelGlobals
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -605,9 +606,9 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						else:
 							image = None
 							if self.imageType == "cover" and evt and evt[0][3] != '':
-								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', evt[0][3])
+								image = join(f"{aelGlobals.HDDPATH}{self.imageType}/", evt[0][3])
 							if image is None:
-								image = getImageFile(aelGlobals.HDDPATH + self.imageType + '/', name)
+								image = join(f"{aelGlobals.HDDPATH}{self.imageType}/", name)
 							itm = EventEntry(name, serviceref, eit, begin, duration, hasTimer, edesc, sname, image, hasTrailer)
 						if 'Reportage' in startEvent[2]:
 							self.doculist.append((itm,))

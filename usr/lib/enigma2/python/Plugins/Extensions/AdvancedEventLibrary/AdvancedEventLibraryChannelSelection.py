@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, clearMem, aelGlobals
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -291,18 +291,16 @@ class AdvancedEventLibraryChannelSelection(Screen):
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, evt[0][3])
-								if image is not None:
-									self.nameCache[evt[0][3]] = str(image)
+								image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", evt[0][3])
+								self.nameCache[evt[0][3]] = str(image)
 							name = evt[0][3]
 						if image is None:
 							niC = self.nameCache.get(events[0][1], '')
 							if niC != '':
 								image = niC
 							else:
-								image = getImageFile(aelGlobals.HDDPATH + self.channelImageType, events[0][1])
-								if image is not None:
-									self.nameCache[events[0][1]] = str(image)
+								image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", events[0][1])
+								self.nameCache[events[0][1]] = str(image)
 
 					cleanname = str(events[0][1]).strip().replace(".", "").replace(":", "").replace("-", "").replace("  ", " ").upper()
 					hasTimer = False
@@ -764,7 +762,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(aelGlobals.HDDPATH + self.eventImageType, evt[0][3])
+									image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", evt[0][3])
 									if image is not None:
 										self.nameCache[evt[0][3]] = str(image)
 								name = evt[0][3]
@@ -773,7 +771,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 								if niC != '':
 									image = niC
 								else:
-									image = getImageFile(aelGlobals.HDDPATH + self.eventImageType, event[1])
+									image = join(f"{aelGlobals.HDDPATH}{self.channelImageType}", event[1])
 									if image is not None:
 										self.nameCache[event[1]] = str(image)
 

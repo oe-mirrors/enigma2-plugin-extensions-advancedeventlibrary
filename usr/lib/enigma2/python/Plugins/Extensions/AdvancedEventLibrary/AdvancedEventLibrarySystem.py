@@ -44,7 +44,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, writeLog, removeExtension, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, getSearchResults, checkAllImages, convertTitle, convertTitle2, getImageFile, getPictureList, clearMem, setScanStopped, isScanStopped, PicLoader
+from Tools.AdvancedEventLibrary import aelGlobals, getDB, getSizeStr, startUpdate, createDirs, createBackup, getAPIdata, writeLog, removeExtension, convertDateInFileName, createSingleThumbnail, reduceSigleImageSize, getSearchResults, checkAllImages, convertTitle, convertTitle2, getPictureList, clearMem, setScanStopped, isScanStopped, PicLoader
 
 from . import _  # for localized messages
 
@@ -319,7 +319,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 	def stopScan_answer(self, answer):
 		if answer is True:
 			setScanStopped(True)
-			self["status"].setText(_("stop search run..."))
+			self["status"].setText(_("stopping search run..."))
 			self["key_green"].setText(_("Start scan"))
 			writeLog("### ...Update was stopped due to user request ###")
 
@@ -986,7 +986,7 @@ class Editor(Screen, ConfigListScreen):
 						typ = "poster/"
 					else:
 						typ = "cover/"
-					createSingleThumbnail(fileName, join(aelGlobals.HDDPATH + typ, fname))
+					createSingleThumbnail(fileName, join(f"{aelGlobals.HDDPATH}{typ}", fname))
 					if int(getsize(fileName) / 1024.0) > int(config.plugins.AdvancedEventLibrary.MaxImageSize.value):
 						reduceSigleImageSize(fileName, join(aelGlobals.HDDPATH + typ, fname))
 					else:
@@ -1216,7 +1216,7 @@ class Editor(Screen, ConfigListScreen):
 				eventData = self.db.getEventInfo(removeExtension(convertTitle2(self.ptr)))
 		if not eventData:
 			eventData = [removeExtension(self.ptr), self.ptr, "", "", "", "", ""]
-		if not self.db.checkTitle(self.ptr) and self.ptr != "nothing found":
+		if not self.db.checkEventTitle(self.ptr) and self.ptr != "nothing found":
 			self.db.addEventInfo(removeExtension(self.ptr), self.ptr, "", "", "", "", "", "", "", "")
 		self.eventData = [removeExtension(self.ptr), self.ptr, "", "", "", "", ""]
 		if self.evt:  # genre
@@ -1315,7 +1315,7 @@ class Editor(Screen, ConfigListScreen):
 					if file not in coverFiles:
 						coverFiles.append(file)
 				del c2
-				coverFile = getImageFile(aelGlobals.COVERPATH, self.ptr)
+				coverFile = join(aelGlobals.COVERPATH, self.ptr)
 				if coverFile and coverFile not in coverFiles:
 					coverFiles.append(coverFile)
 				if self.orgName and self.orgName != self.ptr:
@@ -1332,7 +1332,7 @@ class Editor(Screen, ConfigListScreen):
 						if file not in coverFiles:
 							coverFiles.append(file)
 					del p2
-					coverFile = getImageFile(aelGlobals.COVERPATH, self.orgName)
+					coverFile = join(aelGlobals.COVERPATH, self.orgName)
 					if coverFile and coverFile not in coverFiles:
 						coverFiles.append(coverFile)
 				for files in coverFiles:
@@ -1372,7 +1372,7 @@ class Editor(Screen, ConfigListScreen):
 					if file not in posterFiles:
 						posterFiles.append(file)
 				del p2
-				posterFile = getImageFile(aelGlobals.POSTERPATH, self.ptr)
+				posterFile = join(aelGlobals.POSTERPATH, self.ptr)
 				if posterFile and posterFile not in posterFiles:
 					posterFiles.append(posterFile)
 
@@ -1390,7 +1390,7 @@ class Editor(Screen, ConfigListScreen):
 						if file not in posterFiles:
 							posterFiles.append(file)
 					del p2
-					posterFile = getImageFile(aelGlobals.POSTERPATH, self.orgName)
+					posterFile = join(aelGlobals.POSTERPATH, self.orgName)
 					if posterFile and posterFile not in posterFiles:
 							posterFiles.append(posterFile)
 				for files in posterFiles:
@@ -1464,32 +1464,21 @@ class Editor(Screen, ConfigListScreen):
 		if self.ptr != "nothing found":
 			if self.e2eventId:
 				self.db.updateliveTVInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, self.e2eventId)
-			if self.db.checkTitle(self.eventData[0]):
+			if self.db.checkEventTitle(self.eventData[0]):
 				imdbId = trailer = "", ""  # not supported here
 				self.db.updateEventInfo(self.eventGenre.value, self.eventYear.value, self.eventRating.value, self.eventFSK.value, self.eventCountry.value, "", "", imdbId, trailer, self.eventData[0])
 				if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
 					if self.fileName and not isfile(self.fileName.replace(".ts", ".eit").replace(".mkv", ".eit").replace(".avi", ".eit").replace(".mpg", ".eit").replace(".mp4", ".eit")):
 						if self.eventOverview:
-							txt = open(self.fileName + ".txt", "w")
-							txt.write(self.eventOverview)
-							txt.close()
+							with open(self.fileName + ".txt", "w") as txt:
+								txt.write(self.eventOverview)
 					if self.fileName and not isfile(self.fileName + ".meta"):
 						filedt = int(stat(self.fileName).st_mtime)
-						txt = open(self.fileName + ".meta", "w")
-						minfo = f"1:0:0:0:B:0:C00000:0:0:0:\n{self.eventTitle.value}\n"
-						if self.eventGenre.value:
-							minfo += f"{self.eventGenre.value}, "
-						if self.eventCountry.value:
-							minfo += f"{self.eventCountry}.value, "
-						if self.eventYear.value:
-							minfo += f"{self.eventYear.value}, "
-						if minfo.endswith(", "):
-							minfo = minfo[:-2]
-						else:
-							minfo += "\n"
-						minfo += f"\n{filedt}\nAdvanced-Event-Library\n"
-						txt.write(minfo)
-						txt.close()
+						with open(self.fileName + ".meta", "w") as txt:
+							minfo = f"1:0:0:0:B:0:C00000:0:0:0:\n{self.eventTitle.value}\n"
+							minfo += ", ".join(filter(None, [self.eventGenre.value, self.eventCountry.value, self.eventYear.value]))
+							minfo += f"\n\n{filedt}\nAdvanced-Event-Library\n"
+							txt.write(minfo)
 		self.doClose()
 
 	def key_green_handler(self):
