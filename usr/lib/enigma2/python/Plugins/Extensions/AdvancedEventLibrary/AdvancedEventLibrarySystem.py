@@ -467,8 +467,7 @@ class AdvancedEventLibrarySetup(Setup):
 #		self["config"].onSelectionChanged.append(self.selectionChanged)
 
 	def keyYellow(self):
-		pass
-#		self.session.open(TVSSetup)  # TODO: fliegt raus
+		self.session.open(TVSSetup)  # TODO: fliegt raus
 
 	def keySelect(self):
 		def keySelectCallback(value):
@@ -1591,25 +1590,23 @@ class TVSmakeReferenceFile(Screen):
 		current = self["bouquetslist"].getCurrent()  # e.g. ('Favoriten (TV)', <enigma.eServiceReference; proxy of <Swig Object of type 'eServiceReference *' at 0xa70d46f8> >)
 		importlist, dupeslist, unsupported = self.importBouquet(current[1])
 		if importlist:
-			for item in importlist:
-				if item[1][0] in [x[1][0] for x in self.totalimport]:  # TVS service already listed?
-					self.totaldupes.append(item)
-				else:
-					self.totalimport.append(item)
-			self.totaldupes += dupeslist
-			self.totalunsupp += unsupported
+			# combine two lists without duplicate entries while retaining the sort order
+			self.totalimport = list(dict(dict(self.totalimport), **dict(importlist)).items())
+			self.totaldupes = list(dict(dict(self.totaldupes), **dict(dupeslist)).items())
+			self.totalunsupp = list(dict(dict(self.totalunsupp), **dict(unsupported)).items())
 			totalfound = importlist + dupeslist + unsupported
 			self.appendImportLog(current[0], totalfound, importlist, dupeslist, unsupported)
-			msg = "\nChannels just found in the bouquet: %s" % len(totalfound)
-			msg += "\nChannel shortcuts just successfully imported: %s" % len(importlist)
-			msg += "\nDuplicate channel shortcuts that have not yet been imported: %s" % len(dupeslist)
-			msg += "\nChannels not supported by TV Spielfilm: %s" % len(unsupported)
+			msg = f"\n{_('Channels just found in the bouquet: %s')}" % len(totalfound)
+			msg += f"\n{_('Channel shortcuts just successfully imported: %s')}" % len(importlist)
+			msg += f"\n{_('Duplicate channel shortcuts just not imported: %s')}" % len(dupeslist)
+			msg += f"\n{_('Channels just found that are not supported by TVS: %s')}" % len(unsupported)
 			msg += f"\n{'-' * 80}"
-			msg += "\nTotal number of successfully imported channels to date: %s" % len(importlist)
-			msg += "\nDuplicate channel shortcuts that have not yet been imported: %s" % len(dupeslist)
-			msg += "\n\nWould you like to import another TV bouquet?"
+			msg += f"\n{_('Channel shortcuts successfully imported so far: %s')}" % len(self.totalimport)
+			msg += f"\n{_('Duplicate channel shortcuts not yet imported: %s')}" % len(self.totaldupes)
+			msg += f"\n{_('Channels found so far that are not supported by TVS: %s')}" % len(self.totalunsupp)
+			msg += f"\n\n{_('Would you like to import another TV bouquet?')}"
 		else:
-			msg = "\nNo TV Spielfilm channels found.\nPlease select another TV bouquet."
+			msg = f"\n{_('No TV Spielfilm channels found.\nPlease select another TV bouquet.')}"
 		self.session.openWithCallback(self.anotherBouquet, MessageBox, msg, MessageBox.TYPE_YESNO, timeout=30, default=False)
 
 	def anotherBouquet(self, answer):

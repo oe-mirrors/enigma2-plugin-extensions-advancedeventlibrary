@@ -130,6 +130,7 @@ def getAPIdata(url, headers=None, params=None):
 			headers = {}
 		headers["User-Agent"] = choice(aelGlobals.AGENTS)
 		response = get(url, params=params, headers=headers, timeout=(3.05, 6))
+		response.raise_for_status()
 		if response.ok:
 			errmsg, jsondict = "", response.json()
 		else:
@@ -2362,7 +2363,7 @@ class AELGlobals:
 	TVS_MAPDICT = {}
 	TVS_MAPFILE = join(CONFIGPATH, "tvs_mapping.txt")
 	TVS_REFDICT = {}
-	TVS_REFFILE = join(CONFIGPATH, "tvs_reflist.json")
+	TVS_REFFILE = join(CONFIGPATH, "tvs_services.json")
 
 	def __init__(self):
 		self.saving = False
