@@ -8,7 +8,7 @@ from Components.GUIComponent import GUIComponent
 from Components.VariableText import VariableText
 from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import PicLoader, writeLog
+from Tools.AdvancedEventLibrary import PicLoader, aelHelper
 
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -934,7 +934,7 @@ class AELBaseWall(GUIComponent, object):
 			for fnc in self.onselectionchanged:
 				fnc()
 		except Exception as ex:
-			writeLog('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog('AEL BaseWall selectionchanged : ' + str(self.selectedItem) + '  ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def itemupdated(self, index=0):
 		self.l.invalidateEntry(index)
@@ -973,7 +973,7 @@ class AELBaseWall(GUIComponent, object):
 			self.l.setList(lst)
 			self.list = lst
 		except Exception as ex:
-			writeLog('set list : ' + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog('set list : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def getlist(self):
 		return self.list

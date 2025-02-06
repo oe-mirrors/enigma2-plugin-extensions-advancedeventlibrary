@@ -8,13 +8,13 @@ from os import makedirs, system, remove, walk, access, stat, listdir, W_OK
 from os.path import join, exists, basename, getmtime, isdir, getsize
 from PIL import Image
 from re import compile, findall, IGNORECASE, MULTILINE, DOTALL
-from requests import get, post, exceptions
+from requests import get, exceptions
 from secrets import choice
 from shutil import copy2, move
 from sqlite3 import connect
 from subprocess import check_output
 from twisted.internet.reactor import callInThread
-from urllib.parse import urlparse, urlunparse, urlencode
+from urllib.parse import urlparse, urlunparse
 from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop, ePicLoad
 from skin import parameters
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
@@ -22,6 +22,7 @@ from Screens.ChannelSelection import service_types_tv
 from Tools.Bytes2Human import bytes2human
 from Tools.Directories import resolveFilename, defaultRecordingLocation, SCOPE_CURRENT_PLUGIN, SCOPE_CONFIG, SCOPE_SKIN_IMAGE, SCOPE_CURRENT_SKIN
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
+from . import TVDbApiV4
 import tmdbsimple as tmdb
 import tvdbsimple as tvdb
 
@@ -146,7 +147,7 @@ class AELGlobals():
 aelGlobals = AELGlobals()
 
 
-class AELHelper:
+class AELHelpers:
 	def getDB(self):
 		dbpath = aelGlobals.CONFIGPATH if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else aelGlobals.HDDPATH
 		return DB_Functions(join(dbpath, aelGlobals.LIBFILE))
@@ -162,7 +163,7 @@ class AELHelper:
 		tvdbV4Key = config.plugins.AdvancedEventLibrary.tvdbV4Key.value
 		if tvdbV4Key == _("unused"):
 			tvdbV4Key = ""
-		tvdbV4 = TVDB(tvdbV4Key)
+		tvdbV4 = TVDbApiV4.TVDB(tvdbV4Key)
 		if tvdbV4.getLoginState():
 			return tvdbV4
 
@@ -367,12 +368,12 @@ class AELHelper:
 										response = self.callLibrary(search.movie, "", query=title, language=lang, year=jahr) if jahr else self.callLibrary(search.movie, "", query=title, language=lang)
 										if response and response.get("results", {}):
 											reslist = []
-											for item in response.get("results", []):
+											for item in response.get("results", {}):
 												reslist.append(item.get("title", "").lower())
 											bestmatch = get_close_matches(title.lower(), reslist, 1, 0.7)
 											if not bestmatch:
 												bestmatch = [title.lower()]
-											for item in response.get("results", []):
+											for item in response.get("results", {}):
 												if item.get("title", "").lower() == bestmatch[0]:
 													foundAsMovie = True
 													titleinfo["title"] = item.get("title", "")
@@ -1208,6 +1209,7 @@ class AELHelper:
 							db.addEventInfo(title, titleinfo.get("genre", ""), titleinfo.get("year", ""), titleinfo.get("rating", ""), titleinfo.get("fsk", ""), titleinfo.get("country", ""), titleinfo.get("imdbID", ""), coverfile, posterfile, titleinfo.get("trailer_url", ""))
 						self.setStatus(f"{_('found data for')} '{titleinfo.get('title', '')}'")
 						self.writeLog(f"found data for '{titleinfo.get("title", "")}'")
+			self.createStatistics(db)
 		self.writeLog(f"set {entrys} on eventInfo")
 		self.writeLog(f"set {blentrys} on Blacklist")
 		if db:
@@ -1248,7 +1250,7 @@ class AELHelper:
 		if config.plugins.AdvancedEventLibrary.CreateMetaData.value:
 			self.writeLog("looking for missing meta-Info")
 			self.createMovieInfo(db, lang)
-		self.createStatistics(db, logging=True)
+		self.createStatistics(db)
 		if config.plugins.AdvancedEventLibrary.Log.value:
 			self.writeTVStatistic(db)
 		if db:
@@ -1784,12 +1786,12 @@ class AELHelper:
 				totalsize += getsize(filepath)
 		return round(float(totalsize / 1024.0 / 1024.0), 1)
 
-	def createStatistics(self, db, logging=False):
+	def createStatistics(self, db):
 		inodes = check_output(["df", "-i", aelGlobals.HDDPATH]).decode().split()
 		db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if exists(join(aelGlobals.POSTERPATH, name))])))
 		db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if exists(join(aelGlobals.COVERPATH, name))])))
 		db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if exists(join(aelGlobals.PREVIEWPATH, name))])))
-		db.parameter(aelGlobals.PARAMETER_SET, "trailerCount", str(db.getTrailerCount(logging)))
+		db.parameter(aelGlobals.PARAMETER_SET, "trailerCount", str(db.getTrailerCount()))
 		db.parameter(aelGlobals.PARAMETER_SET, "posterSize", str(check_output(["du", "-sh", aelGlobals.POSTERPATH]).decode().split()[0]))
 		db.parameter(aelGlobals.PARAMETER_SET, "coverSize", str(check_output(["du", "-sh", aelGlobals.COVERPATH]).decode().split()[0]))
 		db.parameter(aelGlobals.PARAMETER_SET, "previewSize", str(check_output(["du", "-sh", aelGlobals.PREVIEWPATH]).decode().split()[0]))
@@ -2330,10 +2332,7 @@ class AELHelper:
 		return False if aelGlobals.API_ERRDICT[APIservice] < 10 else True
 
 
-aelHelper = AELHelper()
-
-
-class DB_Functions(AELGlobals, AELHelper, object):
+class DB_Functions(AELGlobals, object):
 	@ staticmethod
 	def dict_factory(cursor, row):
 		d = {}
@@ -2342,7 +2341,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		return d
 
 	def __init__(self, db_file):
-		self.createDirs(aelGlobals.HDDPATH)
+		createDirs(aelGlobals.HDDPATH)
 		self.conn = connect(db_file, check_same_thread=False)
 		self.create_DB()
 
@@ -2355,7 +2354,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			query = "CREATE TABLE [eventInfo] ([creationdate] INTEGER NOT NULL, [title] TEXT NOT NULL, [genre] TEXT NULL, [year] TEXT NULL, [rating] TEXT NULL, [fsk] TEXT NULL, [country] TEXT NULL, [imdbId] TEXT NULL, [coverfile] TEXT NULL, [posterfile] TEXT NULL, [trailer_url] TEXT NULL, PRIMARY KEY ([title]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'eventInfo' hinzugefügt")
+			writeLog("Tabelle 'eventInfo' hinzugefügt")
 		# create table blackList
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackList';"
 		cur.execute(query)
@@ -2363,7 +2362,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			query = "CREATE TABLE [blackList] ([title] TEXT NOT NULL,PRIMARY KEY ([title]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'blackList' hinzugefügt")
+			writeLog("Tabelle 'blackList' hinzugefügt")
 		# create table blackListImage
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListImage';"
 		cur.execute(query)
@@ -2371,7 +2370,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			query = "CREATE TABLE [blackListImage] ([filename] TEXT NOT NULL,PRIMARY KEY ([filename]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'blackListImage' hinzugefügt")
+			writeLog("Tabelle 'blackListImage' hinzugefügt")
 		# create table liveOnTV
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='liveOnTV';"
 		cur.execute(query)
@@ -2379,7 +2378,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			query = "CREATE TABLE [liveOnTV] (e2eventId INTEGER NOT NULL, providerId TEXT, title TEXT, genre TEXT, year TEXT, rating TEXT, fsk TEXT, country TEXT, airtime INTEGER NOT NULL, imdbId TEXT, trailer_url TEXT, subtitle TEXT, leadText TEXT, conclusion TEXT, categoryName TEXT, season TEXT, episode TEXT, imagefile TEXT, sref TEXT NOT NULL, PRIMARY KEY ([e2eventId], [airtime], [sref]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'liveOnTV' hinzugefügt")
+			writeLog("Tabelle 'liveOnTV' hinzugefügt")
 		# create table parameters
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='parameters';"
 		cur.execute(query)
@@ -2387,7 +2386,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			query = "CREATE TABLE 'parameters' ( 'name' TEXT NOT NULL UNIQUE, 'value' TEXT, PRIMARY KEY('name') )"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Table 'parameters' added")
+			writeLog("Table 'parameters' added")
 
 	def releaseDB(self):
 		self.conn.close()
@@ -2458,7 +2457,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 	def addliveTV(self, records):  # records = (e2eventId, "in progress", tvname, "", "", "", "", "", round(begin), "", "", "", "", "", "", "", "", "", serviceref)
 		cur = self.conn.cursor()
 		cur.executemany("insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", records)
-		self.writeLog(f"have inserted {cur.rowcount} events into database")
+		writeLog(f"have inserted {cur.rowcount} events into database")
 		self.conn.commit()
 		self.parameter(self.PARAMETER_SET, "lastAdditionalDataCount", str(cur.rowcount))
 
@@ -2498,11 +2497,11 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		cur = self.conn.cursor()
 		query = "update liveOnTV set providerId = '' where providerId = 'in progress';"
 		cur.execute(query)
-		self.writeLog(f"nothing found for '{cur.rowcount}' events in liveOnTV")
+		writeLog(f"nothing found for '{cur.rowcount}' events in liveOnTV")
 		self.conn.commit()
 		self.parameter(self.PARAMETER_SET, 'lastAdditionalDataCountSuccess', str(cur.rowcount))
 
-	def getTitleInfos(self, base64title):  # TODO: wird wahrscheinlich gar nicht benötigt
+	def getTitleInfo(self, base64title):
 		cur = self.conn.cursor()
 		query = "SELECT base64title,title,genre,year,rating,fsk,country, trailer FROM eventInfo WHERE base64title = ?"
 		cur.execute(query, (str(base64title),))
@@ -2582,7 +2581,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		row = cur.fetchall()
 		return row[0][0] if row else 0
 
-	def getTrailerCount(self, logging=False):
+	def getTrailerCount(self):
 		livetrailers = set()
 		cur = self.conn.cursor()
 		query = "SELECT DISTINCT trailer_url FROM liveOnTV WHERE trailer_url <> ''"
@@ -2592,6 +2591,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			for row in rows:
 				livetrailers.add(row[0])
 		livecount = len(list(livetrailers))  # list(set()) removes dupes
+		writeLog(f"found {livecount} different trailers on liveOnTV")
 		eventtrailers = set()
 		query = "SELECT DISTINCT trailer_url FROM eventInfo WHERE trailer_url <> ''"
 		cur.execute(query)
@@ -2600,11 +2600,9 @@ class DB_Functions(AELGlobals, AELHelper, object):
 			for row in rows:
 				eventtrailers.add(row[0])
 		eventcount = len(list(eventtrailers))
+		writeLog(f"found {eventcount} different trailers on eventInfo")
 		totalcount = len(list(livetrailers | eventtrailers))
-		if logging:
-			self.writeLog(f"found {livecount} different trailers on liveOnTV")
-			self.writeLog(f"found {eventcount} different trailers on eventInfo")
-			self.writeLog(f"found {totalcount} different trailers on liveOnTV and eventInfo")
+		writeLog(f"found {totalcount} different trailers on liveOnTV and eventInfo")
 		return totalcount
 
 	def getEventCount(self, sref):
@@ -2671,7 +2669,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		cur = self.conn.cursor()
 		query = "delete from liveOnTV where airtime < ?;"
 		cur.execute(query, (airtime,))
-		self.writeLog(f"have removed {cur.rowcount} events from liveOnTV")
+		writeLog(f"have removed {cur.rowcount} events from liveOnTV")
 		self.conn.commit()
 		self.vacuumDB()
 
@@ -2695,12 +2693,12 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		query = 'SELECT DISTINCT imagefile from liveOnTV where airtime < ? AND imagefile <> "";'
 		cur.execute(query, (airtime,))
 		rows = cur.fetchall()
-		self.writeLog(f"found old preview images {len(rows)}")
+		writeLog(f"found old preview images {len(rows)}")
 		if rows:
 			for row in rows:
 				titleList.append(row[0])
 		delList = [x for x in titleList if x not in duplicates]
-		self.writeLog(f"not used preview images {len(delList)}")
+		writeLog(f"not used preview images {len(delList)}")
 		del duplicates, titleList
 		return delList
 
@@ -2857,20 +2855,21 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		cur.execute("VACUUM")
 		self.conn.commit()
 
-	def url_parse(self, url, defaultPort=None):
-		parsed = urlparse(url)
-		scheme = parsed[0]
-		path = urlunparse(("", "") + parsed[2:])
-		if not defaultPort:
-			defaultPort = 443 if scheme == "https" else 80
-		host, port = parsed[1], defaultPort
-		if ":" in host:
-			host, port = host.split(":")
-			port = int(port)
-		return scheme, host, port, path
+
+def url_parse(url, defaultPort=None):
+	parsed = urlparse(url)
+	scheme = parsed[0]
+	path = urlunparse(("", "") + parsed[2:])
+	if not defaultPort:
+		defaultPort = 443 if scheme == "https" else 80
+	host, port = parsed[1], defaultPort
+	if ":" in host:
+		host, port = host.split(":")
+		port = int(port)
+	return scheme, host, port, path
 
 
-class BingImageSearch(AELHelper):
+class BingImageSearch(AELHelpers):
 	def __init__(self, query, limit, what="Cover"):
 		self.download_count = 0
 		self.query = query
@@ -2916,468 +2915,3 @@ class PicLoader:
 
 	def destroy(self):
 		del self.picload
-
-
-class Auth:  # TVDbApiV4
-	def __init__(self, url, apikey="", pin=""):  # get token from server
-		self.token = ""
-		try:
-			if not apikey:
-				apikey = b64decode("ZmFmMzUxMzEtYTUxYy00NjZjLWJiZGEtNDVmYjZlOTE1NmU1h"[:-1]).decode()
-			headers = {"accept": "application/json", "Authorization": f"Bearer {apikey}", "Content-Type": "application/json"}
-			response = post(url, headers=headers, json={"apikey": apikey}, timeout=(3.05, 3))
-			response.raise_for_status()
-			status = response.status_code
-			if status != 200:
-				aelHelper.writeLog(f"API server access ERROR, response code: {status} - {response}")
-				return
-			jsondict = response.json()
-			if jsondict and jsondict.get("status", "failure") == "success":
-				self.token = jsondict.get("data", {}).get("token", "")
-			else:
-				self.token = ""
-				aelHelper.writeLog(f"Response message from server: {jsondict.get('message', '')}")
-		except exceptions.RequestException as errmsg:
-			aelHelper.writeLog(f"ERROR in module 'getAPIdata': {errmsg}")
-
-	def getToken(self):
-		return self.token
-
-
-class Request:  # TVDbApiV4
-	def __init__(self, token):  # get data from server
-		self.getAPIdata = aelHelper.getAPIdata
-		self.writeLog = aelHelper.writeLog
-		self.token = token
-
-	def makeRequest(self, url):
-		errmsg, response = self.getAPIdata(url, headers={"Authorization": f"Bearer {self.token}"})
-		if errmsg:
-			self.writeLog(f"API download error in module 'Request: makeRequest': {errmsg}")
-		if response:
-			data = response.get("data", "")
-			if data and response.get("status", "failure") == "success":
-				return data
-
-
-class Url:  # TVDbApiV4
-	def __init__(self):
-
-		self.baseUrl = b64decode(b"aHR0cHM6Ly9hcGk0LnRoZXR2ZGIuY29tL3Y03"[:-1]).decode()
-
-	def loginUrl(self):
-		return f"{self.baseUrl}/login"
-
-	def artworkStatusUrl(self):
-		return f"{self.baseUrl}/artwork/statuses"
-
-	def artworkTypesUrl(self):
-		return f"{self.baseUrl}/artwork/types"
-
-	def artworkUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/artwork/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def awardsUrl(self, page=1):
-		page = max(page, 0)
-		url = f"{self.baseUrl}/awards?page={page}"
-		return url
-
-	def awardUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/awards/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def awardsCategoriesUrl(self):
-		url = f"{self.baseUrl}/awards/categories"
-		return url
-
-	def awardCategoryUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/awards/categories/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def contentRatingsUrl(self):
-		url = f"{self.baseUrl}/content/ratings"
-		return url
-
-	def countriesUrl(self):
-		url = f"{self.baseUrl}/countries"
-		return url
-
-	def companiesUrl(self, page=0):
-		url = f"{self.baseUrl}/companies?page={page}"
-		return url
-
-	def companyUrl(self, id):
-		url = f"{self.baseUrl}/companies/{id}"
-		return url
-
-	def allSeriesUrl(self, page=0):
-		url = f"{self.baseUrl}/series?page={page}"
-		return url
-
-	def seriesUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/series/{id}"
-		if extended:
-			url = f"{url}/extended?meta=translations"
-		return url
-
-	def seriesEpisodesUrl(self, id, seasonType, page=0, lang=None):
-		lang = f"/{lang}" if lang else ""
-		url = f"{self.baseUrl}/series/{id}/episodes/{seasonType}{lang}?page={page}"
-		return url
-
-	def seriesTranslationUrl(self, id, lang):
-		url = f"{self.baseUrl}/series/{id}/translations/{lang}"
-		return url
-
-	def movieTranslationUrl(self, id, lang):
-		url = f"{self.baseUrl}/movies/{id}/translations/{lang}"
-		return url
-
-	def moviesUrl(self, page=0):
-		url = f"{self.baseUrl}/movies?page={page}"
-		return url
-
-	def movieUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/movies/{id}"
-		if extended:
-			url = f"{url}/extended?meta=translations"
-		return url
-
-	def allSeasonsUrl(self, page=0):
-		url = f"{self.baseUrl}/seasons?page={page}"
-		return url
-
-	def seasonUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/seasons/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def seasonTypesUrl(self):
-		url = f"{self.baseUrl}/seasons/types"
-		return url
-
-	def seasonTranslationUrl(self, id, lang):
-		url = f"{self.baseUrl}/seasons/{id}/translations/{lang}"
-		return url
-
-	def episodeUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/episodes/{id}"
-		if extended:
-			url = f"{url}/extended?meta=translations"
-		return url
-
-	def episodeTranslationUrl(self, id, lang):
-		url = f"{self.baseUrl}/episodes/{id}/translations/{lang}"
-		return url
-
-	def gendersUrl(self):
-		url = f"{self.baseUrl}/genders"
-		return url
-
-	def genresUrl(self):
-		url = f"{self.baseUrl}/genres"
-		return url
-
-	def genreUrl(self, id):
-		url = f"{self.baseUrl}/genres/{id}"
-		return url
-
-	def languagesUrl(self):
-		url = f"{self.baseUrl}/languages"
-		return url
-
-	def personUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/people/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def characterUrl(self, id):
-		url = f"{self.baseUrl}/characters/{id}"
-		return url
-
-	def peopleTypesUrl(self):
-		url = f"{self.baseUrl}/people/types"
-		return url
-
-	def sourceTypesUrl(self):
-		url = f"{self.baseUrl}/sources/types"
-		return url
-
-	def updatesUrl(self, since=0):  # https://api4.thetvdb.com/v4/updates?since=1631049140&type=series&action=update&page=0
-		url = f"{self.baseUrl}/updates?since={since}"
-		return url
-
-	def tagOptionsUrl(self, page=0):
-		url = f"{self.baseUrl}/tags/options?page={page}"
-		return url
-
-	def tagOptionUrl(self, id):
-		url = f"{self.baseUrl}/tags/options/{id}"
-		return url
-
-	def listsUrl(self, page=0):
-		url = f"{self.baseUrl}/lists?page={page}"
-		return url
-
-	def listUrl(self, id, extended=False):
-		url = f"{self.baseUrl}/lists/{id}"
-		if extended:
-			url = f"{url}/extended"
-		return url
-
-	def searchUrl(self, query, filters):
-		filters["query"] = query
-		url = f"{self.baseUrl}/search?{urlencode(filters)}"
-		return url
-
-
-class TVDB:
-	def __init__(self, apikey="", pin=""):
-		self.url = Url()
-		self.auth = Auth(self.url.loginUrl(), apikey, pin)
-		self.token = self.auth.getToken()
-		self.request = Request(self.token)
-
-	def getLoginState(self):
-		return True if self.token else False
-
-	def getArtworkStatuses(self):  # -> list:
-		"""Returns a list of artwork statuses"""
-		url = self.url.artworkStatusUrl()
-		return self.request.makeRequest(url)
-
-	def getArtworkTypes(self):  # -> list:
-		"""Returns a list of artwork types"""
-		url = self.url.artworkTypesUrl()
-		return self.request.makeRequest(url)
-
-	def getArtwork(self, id=0):  # -> dict:
-		"""Returns an artwork dictionary"""
-		url = self.url.artworkUrl(id)
-		return self.request.makeRequest(url)
-
-	def getArtworkExtended(self, id=0):  # -> dict:
-		"""Returns an artwork extended dictionary"""
-		url = self.url.artworkUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getAllAwards(self):  # -> list:
-		"""Returns a list of awards"""
-		url = self.url.awardsUrl()
-		return self.request.makeRequest(url)
-
-	def getAward(self, id=0):  # -> dict:
-		"""Returns an award dictionary"""
-		url = self.url.awardUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getAwardExtended(self, id=0):  # -> dict:
-		"""Returns an award extended dictionary"""
-		url = self.url.awardUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getAllAwardCategories(self):  # -> list:
-		"""Returns a list of award categories"""
-		url = self.url.awardsCategoriesUrl()
-		return self.request.makeRequest(url)
-
-	def getAwardCategory(self, id=0):  # -> dict:
-		"""Returns an award category dictionary"""
-		url = self.url.awardCategoryUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getAwardCategoryExtended(self, id=0):  # -> dict:
-		"""Returns an award category extended dictionary"""
-		url = self.url.awardCategoryUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getContentRatings(self):  # -> list:
-		"""Returns a list of content ratings"""
-		url = self.url.contentRatingsUrl()
-		return self.request.makeRequest(url)
-
-	def getCountries(self):  # -> list:
-		"""Returns a list of countries"""
-		url = self.url.countriesUrl()
-		return self.request.makeRequest(url)
-
-	def getAllCompanies(self, page=0):  # -> list:
-		"""Returns a list of companies"""
-		url = self.url.companiesUrl(page)
-		return self.request.makeRequest(url)
-
-	def getCompany(self, id=0):  # -> dict:
-		"""Returns a company dictionary"""
-		url = self.url.companyUrl(id)
-		return self.request.makeRequest(url)
-
-	def getAllSeries(self, page=0):  # -> list:
-		"""Returns a list of series"""
-		url = self.url.allSeriesUrl(page)
-		return self.request.makeRequest(url)
-
-	def getSeries(self, id=0):  # -> dict:
-		"""Returns a series dictionary"""
-		url = self.url.seriesUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getSeriesExtended(self, id=0):  # -> dict:
-		"""Returns a series extended dictionary"""
-		url = self.url.seriesUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getSeriesEpisodes(self, id, seasonType="official", page=0, lang="deu"):  # -> dict:
-		"""Returns a series episodes dictionary"""
-		url = self.url.seriesEpisodesUrl(id, seasonType, page, lang)
-		return self.request.makeRequest(url)
-
-	def getSeriesTranslation(self, id, lang="deu"):  # -> dict:
-		"""Returns a series translation dictionary"""
-		url = self.url.seriesTranslationUrl(id, lang)
-		return self.request.makeRequest(url)
-
-	def getAllMovies(self, page=0):  # -> list:
-		"""Returns a list of movies"""
-		url = self.url.moviesUrl(page)
-		return self.request.makeRequest(url)
-
-	def getMovie(self, id=0):  # -> dict:
-		"""Returns a movie dictionary"""
-		url = self.url.movieUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getMovieExtended(self, id=0):  # -> dict:
-		"""Returns a movie extended dictionary"""
-		url = self.url.movieUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getMovieTranslation(self, id=0, lang="deu"):  # -> dict:
-		"""Returns a movie translation dictionary"""
-		url = self.url.movieTranslationUrl(id, lang)
-		return self.request.makeRequest(url)
-
-	def getAllSeasons(self, page=0):  # -> list:
-		"""Returns a list of seasons"""
-		url = self.url.allSeasonsUrl(page)
-		return self.request.makeRequest(url)
-
-	def getSeason(self, id=0):  # -> dict:
-		"""Returns a season dictionary"""
-		url = self.url.seasonUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getSeasonExtended(self, id=0):  # -> dict:
-		"""Returns a season extended dictionary"""
-		url = self.url.seasonUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getseasonTypes(self):  # -> list:
-		"""Returns a list of season types"""
-		url = self.url.seasonTypesUrl()
-		return self.request.makeRequest(url)
-
-	def getSeasonTranslation(self, id=0, lang="deu"):  # -> dict:
-		"""Returns a seasons translation dictionary"""
-		url = self.url.seasonTranslationUrl(id, lang)
-		return self.request.makeRequest(url)
-
-	def getEpisode(self, id=0):  # -> dict:
-		"""Returns an episode dictionary"""
-		url = self.url.episodeUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getEpisodesTranslation(self, id=0, lang="deu"):  # -> dict:
-		"""Returns an episode translation dictionary"""
-		url = self.url.episodeTranslationUrl(id, lang)
-		return self.request.makeRequest(url)
-
-	def getEpisodeTxtended(self, id=0):  # -> dict:
-		"""Returns an episode extended dictionary"""
-		url = self.url.episodeUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getAllGenders(self):  # -> list:
-		"""Returns a list of genders"""
-		url = self.url.gendersUrl()
-		return self.request.makeRequest(url)
-
-	def getAllGenres(self):  # -> list:
-		"""Returns a list of genres"""
-		url = self.url.genresUrl()
-		return self.request.makeRequest(url)
-
-	def getGenre(self, id=0):  # -> dict:
-		"""Returns a genres dictionary"""
-		url = self.url.genreUrl(id)
-		return self.request.makeRequest(url)
-
-	def getAllLanguages(self):  # -> list:
-		"""Returns a list of languages"""
-		url = self.url.languagesUrl()
-		return self.request.makeRequest(url)
-
-	def getPerson(self, id=0):  # -> dict:
-		"""Returns a person dictionary"""
-		url = self.url.personUrl(id, False)
-		return self.request.makeRequest(url)
-
-	def getPersonExtended(self, id=0):  # -> dict:
-		"""Returns a person extended dictionary"""
-		url = self.url.personUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def getCharacter(self, id=0):  # -> dict:
-		"""Returns a character dictionary"""
-		url = self.url.characterUrl(id)
-		return self.request.makeRequest(url)
-
-	def getAllPeopleTypes(self):  # -> list:
-		"""Returns a list of people types"""
-		url = self.url.peopleTypesUrl()
-		return self.request.makeRequest(url)
-
-	def getAllSourcetypes(self):  # -> list:
-		"""Returns a list of sourcetypes"""
-		url = self.url.sourceTypesUrl()
-		return self.request.makeRequest(url)
-
-	def getUpdates(self, since=0):  # -> list:
-		"""Returns a list of updates"""
-		url = self.url.updatesUrl(since)
-		return self.request.makeRequest(url)
-
-	def getAllTagOptions(self, page=0):  # -> list:
-		"""Returns a list of tag options"""
-		url = self.url.tagOptionsUrl(page)
-		return self.request.makeRequest(url)
-
-	def getTagOption(self, id=0):  # -> dict:
-		"""Returns a tag option dictionary"""
-		url = self.url.tagOptionUrl(id)
-		return self.request.makeRequest(url)
-
-	def getAllLists(self, page=0):  # -> dict:
-		url = self.url.listsUrl(page)
-		return self.request.makeRequest(url)
-
-	def getList(self, id):  # -> dict:
-		url = self.url.listUrl(id)
-		return self.request.makeRequest(url)
-
-	def getlistExtended(self, id):  # -> dict:
-		url = self.url.listUrl(id, True)
-		return self.request.makeRequest(url)
-
-	def search(self, query, **kwargs):  # -> list:
-		"""Returns a list of search results"""
-		url = self.url.searchUrl(query, kwargs)
-		return self.request.makeRequest(url)

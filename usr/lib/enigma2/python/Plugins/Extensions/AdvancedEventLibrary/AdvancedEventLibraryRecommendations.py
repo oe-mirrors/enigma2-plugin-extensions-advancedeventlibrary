@@ -24,7 +24,7 @@ import NavigationInstance
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()
@@ -83,7 +83,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.title = "Favoriten-Planer"
 		self.viewType = viewType
 		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 1 else "AdvancedEventLibraryWallPlaners"
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.isinit = False
 		self.lastidx = 0
 		self.listlen = 0
@@ -265,7 +265,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 #			writeLog('infoKeyPressed : ' + str(ex))
 
 	def key_red_handler(self):
-		clearMem("Favoriten-Planer")
+		aelHelper.clearMem("Favoriten-Planer")
 		global active
 		active = False
 		self.close()
@@ -420,7 +420,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if val:
 				if str(val[0][11]) != "Spielfilm":
 					if str(val[0][2]) != "":
-						recname = convertTitle(recname) + ' - '
+						recname = aelHelper.convertTitle(recname) + ' - '
 					else:
 						recname += ' - '
 					if str(val[0][12]) != "":
@@ -708,7 +708,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 class MySetup(Setup):
 	def __init__(self, session):
 		Setup.__init__(self, session, "Favoriten-Planer-Setup", plugin="Extensions/AdvancedEventLibrary", PluginLanguageDomain="AdvancedEventLibrary")
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.genres = self.db.getGenres()
 		self["entryActions"] = HelpableActionMap(self, ["ColorActions"],
 														{

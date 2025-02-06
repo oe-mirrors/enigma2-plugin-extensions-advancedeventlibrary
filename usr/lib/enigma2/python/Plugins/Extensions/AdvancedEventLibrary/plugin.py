@@ -8,12 +8,12 @@ from pickle import load, dump
 from time import time
 from enigma import eEPGCache, eTimer, eServiceReference, addFont
 from Components.config import config
-from Components.FunctionTimer import functionTimer  # TODO: später dann from Janitor import functionTimer
 from Plugins.Plugin import PluginDescriptor
+from Scheduler import functionTimer
 from Tools.Directories import fileExists
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySerienStarts, AdvancedEventLibraryPrimeTime, AdvancedEventLibraryChannelSelection, AdvancedEventLibraryMediaHub, AdvancedEventLibraryRecommendations
-from Tools.AdvancedEventLibrary import setRequestLoggingLevel, writeLog, getDB, getallEventsfromEPG, createBackup, aelGlobals
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 gSession = None
@@ -31,7 +31,7 @@ def sessionstart(reason, **kwargs):
 		gSession = kwargs["session"]
 		foundTimer = False
 		foundBackup = False
-		setRequestLoggingLevel()
+		aelHelper.setRequestLoggingLevel()
 		fTimers = functionTimer.get()
 		for fTimer in fTimers:
 			if 'AdvancedEventLibraryUpdate' in fTimer:
@@ -39,9 +39,9 @@ def sessionstart(reason, **kwargs):
 			if 'AdvancedEventLibraryBackup' in fTimer:
 				foundBackup = True
 		if not foundTimer:
-			functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "fnc": getallEventsfromEPG}))
+			functionTimer.add(("AdvancedEventLibraryUpdate", {"name": "Advanced-Event-Library-Update", "fnc": aelHelper.getallEventsfromEPG}))
 		if not foundBackup:
-			functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "fnc": createBackup}))
+			functionTimer.add(("AdvancedEventLibraryBackup", {"name": "Advanced-Event-Library-Backup", "fnc": aelHelper.createBackup}))
 #			for evt in systemevents.getSystemEvents():
 			#	writeLog('available event : ' + str(systemevents.getfriendlyName(evt)) + ' - ' + str(evt), DEFAULT_MODULE_NAME)
 #				if (evt == systemevents.RECORD_STOP or evt == systemevents.PVRDESCRAMBLE_STOP):
@@ -92,7 +92,7 @@ def sessionstart(reason, **kwargs):
 
 
 def cancelTimerFunction():
-	writeLog("[Advanced-Event-Library-Update] Aufgabe beendet!", DEFAULT_MODULE_NAME)
+	aelHelper.writeLog("[Advanced-Event-Library-Update] Aufgabe beendet!", DEFAULT_MODULE_NAME)
 
 
 def getMovieDescriptionFromTXT(ref):
@@ -171,7 +171,6 @@ def autostart(reason, **kwargs):
 
 
 def Plugins(**kwargs):
-
 	epgSearch = PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, fnc=autostart, needsRestart=False, weight=100)
 	desc_pluginmenu = PluginDescriptor(name='AEL-Übersicht', description="AEL Menü & Statistik", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=open_aelMenu)
 	desc_pluginmenued = PluginDescriptor(name='AEL-Editor', description="Eventinformationen bearbeiten", where=PluginDescriptor.WHERE_PLUGINMENU, icon="plugin.png", fnc=main)
@@ -185,18 +184,18 @@ def Plugins(**kwargs):
 	#desc_movielist = PluginDescriptor(name='AdvancedEventLibrary', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MOVIELIST, icon="plugin.png", fnc=mlist)
 	desc_sessionstart = PluginDescriptor(where=[PluginDescriptor.WHERE_SESSIONSTART, PluginDescriptor.WHERE_AUTOSTART], fnc=sessionstart)
 	desc_aelmenumainmenu = PluginDescriptor(name='Advanced-Event-Library', description="AdvancedEventLibrary", where=PluginDescriptor.WHERE_MENU, icon='plugin.png', fnc=aelMenu_in_mainmenu)
-	list = []
-	list.append(epgSearch)
-	list.append(desc_pluginmenu)
-	list.append(desc_pluginmenued)
-	list.append(desc_pluginmenupt)
-	list.append(desc_pluginmenuss)
-	list.append(desc_pluginmenufav)
-	list.append(desc_pluginmenuhb)
-	list.append(desc_pluginmenucs)
-	list.append(desc_sessionstart)
-	list.append(desc_aelmenumainmenu)
-	return list
+	plist = []
+	plist.append(epgSearch)
+	plist.append(desc_pluginmenu)
+	plist.append(desc_pluginmenued)
+	plist.append(desc_pluginmenupt)
+	plist.append(desc_pluginmenuss)
+	plist.append(desc_pluginmenufav)
+	plist.append(desc_pluginmenuhb)
+	plist.append(desc_pluginmenucs)
+	plist.append(desc_sessionstart)
+	plist.append(desc_aelmenumainmenu)
+	return plist
 
 
 class Recommendations(object):
@@ -208,7 +207,7 @@ class Recommendations(object):
 		self.currentService = None
 		self.currentEventName = None
 		self.epgcache = eEPGCache.getInstance()
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		if fileExists(join(aelGlobals.PLUGINPATH, 'favourites.data')):
 			self.favourites = self.load_pickle(join(aelGlobals.PLUGINPATH, 'favourites.data'))
 		else:
@@ -272,7 +271,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				writeLog('remove genre from favourites : ' + str(k))
+				aelHelper.writeLog('remove genre from favourites : ' + str(k))
 				del self.favourites['genres'][key]
 		keys = []
 		for k, v in self.favourites['titles'].items():
@@ -280,7 +279,7 @@ class Recommendations(object):
 				keys.append(k)
 		if keys:
 			for key in keys:
-				writeLog('remove title from favourites : ' + str(k))
+				aelHelper.writeLog('remove title from favourites : ' + str(k))
 				del self.favourites['titles'][key]
 
 	def convertTitle(self, name):

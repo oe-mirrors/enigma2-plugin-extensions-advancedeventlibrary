@@ -24,7 +24,7 @@ from glob import glob
 from os.path import join
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import aelGlobals, clearMem, getDB, PicLoader
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime

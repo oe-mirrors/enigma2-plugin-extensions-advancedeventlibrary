@@ -30,7 +30,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertTitle, getDB, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 
@@ -91,7 +91,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 		self.nameCache = {}
 		self.title = "Advanced-Event-Library-ChannelSelection"
 		self.skinName = "AdvancedEventLibraryChannelSelection"
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.isinit = False
 		self.channelList = []
 		self.timers = []
@@ -362,7 +362,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#print(ret)
 			return ret
 		except Exception as ex:
-			writeLog('Error in buildChannelList : ' + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog('Error in buildChannelList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def buildEventList(self, entrys):
 		try:
@@ -388,7 +388,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			#	ret.append((eWallPythonMultiContent.TYPE_TEXT, eWallPythonMultiContent.SHOW_ALWAYS, self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][0], self.eventParameter[20][1], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][2], self.eventParameter[20][3], self.eventParameter[20][5], self.eventParameter[20][5], self.eventListFontOrientation, str(self.correctweekdays(entrys.timespan)), skin.parseColor(self.eventParameter[6]).argb(), skin.parseColor(self.eventParameter[7]).argb()))
 			return ret
 		except Exception as ex:
-			writeLog('Error in buildEventList : ' + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog('Error in buildEventList : ' + str(ex), DEFAULT_MODULE_NAME)
 
 	def findPicon(self, service=None, serviceName=None):
 		if service is not None:
@@ -454,7 +454,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 					sRef.setName(str(selected_element.title))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			writeLog("key_play : " + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog("key_play : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def key_ok_handler(self):
 		selection = self["channelList"].getcurrentselection()
@@ -474,7 +474,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			self.key_red_handler()
 
 	def key_red_handler(self):
-		clearMem("ChannelSelection")
+		aelHelper.clearMem("ChannelSelection")
 		global active
 		active = False
 		self.close()
@@ -652,7 +652,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 			if val:
 				if str(val[0][11]) != "Spielfilm":
 					if str(val[0][2]) != "":
-						recname = convertTitle(recname) + ' - '
+						recname = aelHelper.convertTitle(recname) + ' - '
 					else:
 						recname += ' - '
 					if str(val[0][12]) != "":
@@ -689,7 +689,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			writeLog("addtimer : " + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog("addtimer : " + str(ex), DEFAULT_MODULE_NAME)
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -796,7 +796,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				self["eventList"].refresh()
 				self["eventsInfo"].setText(str(self["eventList"].getCurrentIndex() + 1) + '/' + str(self.eventListLen))
 		except Exception as ex:
-			writeLog("channel_changed : " + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog("channel_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def event_changed(self):
@@ -813,7 +813,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 				else:
 					self["trailer"].hide()
 		except Exception as ex:
-			writeLog("event_changed : " + str(ex), DEFAULT_MODULE_NAME)
+			aelHelper.writeLog("event_changed : " + str(ex), DEFAULT_MODULE_NAME)
 			self["Event"].newEvent(None)
 
 	def key_info_handler(self):
