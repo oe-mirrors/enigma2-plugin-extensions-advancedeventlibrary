@@ -10,7 +10,7 @@ from threading import Thread, Lock, current_thread
 from time import sleep, time
 from enigma import eServiceCenter, eServiceReference, iServiceInformation, eTimer
 from Components.Task import Task, Job, job_manager
-from Components.config import config
+from Components.config import config, ConfigDirectory, ConfigYesNo
 from Components.FunctionTimer import functionTimer
 from Screens.MessageBox import MessageBox
 from Tools.Notifications import AddPopup
@@ -20,6 +20,10 @@ from Tools.CoreUtils import getUniqueID
 BASEINIT = None
 has_e2 = True
 lock = Lock()
+
+
+config.misc.db_path = ConfigDirectory(default="/media/hdd/")
+config.misc.db_enabled = ConfigYesNo(default=True)
 
 
 class LOGLEVEL:
@@ -234,7 +238,7 @@ class CommonDataBase():
 			db_path += "/"
 		if not exists(db_path):
 			db_path = "/media/hdd/"
-		self.db_file = db_path + "vtidb.db" if not db_file else db_path + db_file
+		self.db_file = db_path + "moviedb.db" if not db_file else db_path + db_file
 		self.boxid = getUniqueID("e" + "t" + "h" + "0")
 		self.dbstate = DatabaseState(self.db_file, self.boxid)
 		debugPrint(f"init database: {self.db_file}", LOGLEVEL.INFO)
@@ -1593,5 +1597,12 @@ class MovieDBUpdate(MovieDBUpdateBase):
 
 moviedbupdate = MovieDBUpdate()
 
-functionTimer.add(("moviedbupdate", {"name": _("update movie database (full)"), "imports": "Components.DataBaseAPI", "fnc": "moviedb.BackgroundDBUpdate", "args": "moviedb.updateMovieDB"}))
-functionTimer.add(("movietrashclean", {"name": _("clear movie trash"), "imports": "Components.MovieTrash", "fnc": "movietrash.cleanAll"}))
+
+def backgroundDBUpdate():
+	moviedb.BackgroundDBUpdate(moviedb.updateMovieDB)
+
+
+functionTimer.add(("moviedbupdate", {"name": _("update movie database (full)"), "fnc": "backgroundDBUpdate"}))
+
+# TODO
+#functionTimer.add(("movietrashclean", {"name": _("clear movie trash"), "imports": "Components.MovieTrash", "fnc": "movietrash.cleanAll"}))
