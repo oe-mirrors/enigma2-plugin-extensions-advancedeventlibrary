@@ -2333,8 +2333,8 @@ class AELHelper:
 aelHelper = AELHelper()
 
 
-class DB_Functions(AELGlobals, AELHelper, object):
-	@ staticmethod
+class DB_Functions():
+	@staticmethod
 	def dict_factory(cursor, row):
 		d = {}
 		for idx, col in enumerate(cursor.description):
@@ -2870,7 +2870,7 @@ class DB_Functions(AELGlobals, AELHelper, object):
 		return scheme, host, port, path
 
 
-class BingImageSearch(AELHelper):
+class BingImageSearch():
 	def __init__(self, query, limit, what="Cover"):
 		self.download_count = 0
 		self.query = query
@@ -2883,10 +2883,10 @@ class BingImageSearch(AELHelper):
 		while self.download_count < self.limit:
 			bingurl = b64decode(b"aHR0cHM6Ly93d3cuYmluZy5jb20vaW1hZ2VzL2FzeW5j8"[:-1]).decode()
 			params = {"q": self.query, "first": self.page_counter, "count": self.limit, "adlt": "off", "qft": self.filters}
-			self.writeLog(f"Bing-requests : {bingurl}")
-			errmsg, htmldata = self.getHTMLdata(bingurl, params=params)
+			aelHelper.writeLog(f"Bing-requests : {bingurl}")
+			errmsg, htmldata = aelHelper.getHTMLdata(bingurl, params=params)
 			if errmsg:
-				self.writeLog("HTML download error in module 'BingImageSearch:search'")
+				aelHelper.writeLog("HTML download error in module 'BingImageSearch:search'")
 			if htmldata:
 				links = findall(r"murl&quot;:&quot;(.*?)&quot;", htmldata)
 				self.writeLog(f"Bing-result : {links}")
