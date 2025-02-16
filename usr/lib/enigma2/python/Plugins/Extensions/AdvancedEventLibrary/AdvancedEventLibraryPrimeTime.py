@@ -24,7 +24,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, writeLog, convertDateInFileName, convertTitle, convertTitle2, removeExtension, getDB, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()
@@ -76,7 +76,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 		self.title = "Prime-Time-Planer"
 		self.viewType = viewType
 		self.skinName = "AdvancedEventLibraryListPlaners" if self.viewType == 1 else "AdvancedEventLibraryWallPlaners"
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.isinit = False
 		self.lastidx = 0
 		self.listlen = 0
@@ -164,7 +164,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			else:
 				self.close('Listenansicht')
 		except Exception as ex:
-			writeLog(f"infoKeyPressed : {ex}")
+			aelHelper.writeLog(f"infoKeyPressed : {ex}")
 
 	def key_menu_handler(self):
 		self.session.openWithCallback(self.return_from_setup, MySetup)
@@ -216,7 +216,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.menu_sel_changed(config.plugins.AdvancedEventLibrary.Genres.value)
 
 	def key_red_handler(self):
-		clearMem("Prime-Time-Planer")
+		aelHelper.clearMem("Prime-Time-Planer")
 		global active
 		active = False
 		self.close()
@@ -354,7 +354,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					sRef.setName(str(selected_element.name))
 					self.session.open(MoviePlayer, sRef)
 		except Exception as ex:
-			writeLog(f"key_play : {ex}")
+			aelHelper.writeLog(f"key_play : {ex}")
 
 	def key_info_handler(self):
 		from Screens.EventView import EventViewSimple
@@ -370,7 +370,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if self.current_event and sRef:
 				self.session.open(EventViewSimple, self.current_event, ServiceReference(sRef))
 		except Exception as ex:
-			writeLog(f"call EventView : {ex}")
+			aelHelper.writeLog(f"call EventView : {ex}")
 
 	def addtimer(self):
 		try:
@@ -428,7 +428,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 
 			self.session.openWithCallback(self.finishedAdd, TimerEntry, timer)
 		except Exception as ex:
-			writeLog(f"addtimer : {ex}")
+			aelHelper.writeLog(f"addtimer : {ex}")
 
 	def finishedAdd(self, answer, instantTimer=False):
 		if answer[0]:
@@ -494,7 +494,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 					self["ServiceRef"].setText(sRef)
 					self["ServiceName"].setText(selected_element.sname)
 		except Exception as ex:
-			writeLog(f"sel_changed : {ex}")
+			aelHelper.writeLog(f"sel_changed : {ex}")
 			self["Content"].setText("Keine Sendetermine im EPG gefunden\n" + str(ex))
 			self["Event"].newEvent(None)
 
@@ -516,7 +516,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.sel_changed()
 		except Exception as ex:
 			self["Content"].setText("Keine Sendetermine im EPG gefunden")
-			writeLog(f"menu_sel_changed : {ex}")
+			aelHelper.writeLog(f"menu_sel_changed : {ex}")
 
 	def getAllEvents(self, currentBouquet='Favourites'):
 		try:
@@ -656,7 +656,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if not self.unknownlist:
 				self.unknownlist.append((itm,))
 		except Exception as ex:
-			writeLog(f"getAllEvents : {ex}")
+			aelHelper.writeLog(f"getAllEvents : {ex}")
 
 	def getSimilarEvents(self, id, ref):
 		epgcache = eEPGCache.getInstance()
@@ -703,19 +703,19 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			self.listlen = len(cList)
 			return cList
 		except Exception as ex:
-			writeLog(f"getEPGdata : {ex}")
+			aelHelper.writeLog(f"getEPGdata : {ex}")
 
 	def getEventGenre(self, eit, serviceref, name, desc, begin):
 		try:
 			val = self.db.getliveTV(eit, name, begin)
 			if val and len(str(val[0][11]).strip()) > 0:
 				return str(val[0][11]).strip()
-			eventName = convertDateInFileName(removeExtension(name))
+			eventName = aelHelper.convertDateInFileName(aelHelper.removeExtension(name))
 			dbData = self.db.getTitleInfo(eventName)
 			if not dbData:
-				dbData = self.db.getTitleInfo(convertTitle(eventName))
+				dbData = self.db.getTitleInfo(aelHelper.convertTitle(eventName))
 				if not dbData:
-					dbData = self.db.getTitleInfo(convertTitle2(eventName))
+					dbData = self.db.getTitleInfo(aelHelper.convertTitle2(eventName))
 			if dbData and len(dbData[2]) > 0:
 				if 'Serie' in str(dbData[2]):
 					if 'Dokumentation' in str(dbData[2]) or 'Documentary' in str(dbData[2]):
@@ -747,7 +747,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 						return items[1]
 			return 'Sonstiges'
 		except Exception as ex:
-			writeLog(f"getEventGenre : {name} - {ex}")
+			aelHelper.writeLog(f"getEventGenre : {name} - {ex}")
 			return 'Sonstiges'
 
 	def seteventEntry(self, entrys):
@@ -786,12 +786,12 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[19][0], self.parameter[19][1], self.parameter[19][0], self.parameter[19][1], self.parameter[19][2], self.parameter[19][3], self.parameter[19][2], self.parameter[19][3], self.parameter[19][5], self.parameter[19][5], self.FontOrientation, entrys.sname, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 				ret.append((eListboxPythonMultiContent.TYPE_TEXT, self.parameter[20][0], self.parameter[20][1], self.parameter[20][0], self.parameter[20][1], self.parameter[20][2], self.parameter[20][3], self.parameter[20][2], self.parameter[20][3], self.parameter[20][5], self.parameter[20][5], self.FontOrientation, name, parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()))
 			return ret
-			writeLog(f"error in entrys : {entrys}")
+			aelHelper.writeLog(f"error in entrys : {entrys}")
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'Das war wohl nix', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
 		except Exception as ex:
-			writeLog(f"Error in seteventEntry : {ex}")
+			aelHelper.writeLog(f"Error in seteventEntry : {ex}")
 			return [entrys,
 								(eListboxPythonMultiContent.TYPE_TEXT, 2, 2, 2, 2, 96, 96, 96, 96, 0, 0, RT_WRAP | RT_HALIGN_CENTER | RT_VALIGN_CENTER, 'habe leider keine Sendungen zum Genre gefunden', parseColor(self.parameter[6]).argb(), parseColor(self.parameter[7]).argb()),
 								]
