@@ -2342,7 +2342,7 @@ class DB_Functions():
 		return d
 
 	def __init__(self, db_file):
-		self.createDirs(aelGlobals.HDDPATH)
+		aelGlobals.createDirs(aelGlobals.HDDPATH)
 		self.conn = connect(db_file, check_same_thread=False)
 		self.create_DB()
 
@@ -2355,7 +2355,7 @@ class DB_Functions():
 			query = "CREATE TABLE [eventInfo] ([creationdate] INTEGER NOT NULL, [title] TEXT NOT NULL, [genre] TEXT NULL, [year] TEXT NULL, [rating] TEXT NULL, [fsk] TEXT NULL, [country] TEXT NULL, [imdbId] TEXT NULL, [coverfile] TEXT NULL, [posterfile] TEXT NULL, [trailer_url] TEXT NULL, PRIMARY KEY ([title]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'eventInfo' hinzugefügt")
+			aelHelper.writeLog("Tabelle 'eventInfo' hinzugefügt")
 		# create table blackList
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackList';"
 		cur.execute(query)
@@ -2363,7 +2363,7 @@ class DB_Functions():
 			query = "CREATE TABLE [blackList] ([title] TEXT NOT NULL,PRIMARY KEY ([title]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'blackList' hinzugefügt")
+			aelHelper.writeLog("Tabelle 'blackList' hinzugefügt")
 		# create table blackListImage
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='blackListImage';"
 		cur.execute(query)
@@ -2371,7 +2371,7 @@ class DB_Functions():
 			query = "CREATE TABLE [blackListImage] ([filename] TEXT NOT NULL,PRIMARY KEY ([filename]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'blackListImage' hinzugefügt")
+			aelHelper.writeLog("Tabelle 'blackListImage' hinzugefügt")
 		# create table liveOnTV
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='liveOnTV';"
 		cur.execute(query)
@@ -2379,7 +2379,7 @@ class DB_Functions():
 			query = "CREATE TABLE [liveOnTV] (e2eventId INTEGER NOT NULL, providerId TEXT, title TEXT, genre TEXT, year TEXT, rating TEXT, fsk TEXT, country TEXT, airtime INTEGER NOT NULL, imdbId TEXT, trailer_url TEXT, subtitle TEXT, leadText TEXT, conclusion TEXT, categoryName TEXT, season TEXT, episode TEXT, imagefile TEXT, sref TEXT NOT NULL, PRIMARY KEY ([e2eventId], [airtime], [sref]))"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Tabelle 'liveOnTV' hinzugefügt")
+			aelHelper.writeLog("Tabelle 'liveOnTV' hinzugefügt")
 		# create table parameters
 		query = "SELECT name FROM sqlite_master WHERE type='table' AND name='parameters';"
 		cur.execute(query)
@@ -2387,7 +2387,7 @@ class DB_Functions():
 			query = "CREATE TABLE 'parameters' ( 'name' TEXT NOT NULL UNIQUE, 'value' TEXT, PRIMARY KEY('name') )"
 			cur.execute(query)
 			self.conn.commit()
-			self.writeLog("Table 'parameters' added")
+			aelHelper.writeLog("Table 'parameters' added")
 
 	def releaseDB(self):
 		self.conn.close()
@@ -2458,7 +2458,7 @@ class DB_Functions():
 	def addliveTV(self, records):  # records = (e2eventId, "in progress", tvname, "", "", "", "", "", round(begin), "", "", "", "", "", "", "", "", "", serviceref)
 		cur = self.conn.cursor()
 		cur.executemany("insert or ignore into liveOnTV values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);", records)
-		self.writeLog(f"have inserted {cur.rowcount} events into database")
+		aelHelper.writeLog(f"have inserted {cur.rowcount} events into database")
 		self.conn.commit()
 		self.parameter(self.PARAMETER_SET, "lastAdditionalDataCount", str(cur.rowcount))
 
@@ -2498,7 +2498,7 @@ class DB_Functions():
 		cur = self.conn.cursor()
 		query = "update liveOnTV set providerId = '' where providerId = 'in progress';"
 		cur.execute(query)
-		self.writeLog(f"nothing found for '{cur.rowcount}' events in liveOnTV")
+		aelHelper.writeLog(f"nothing found for '{cur.rowcount}' events in liveOnTV")
 		self.conn.commit()
 		self.parameter(self.PARAMETER_SET, 'lastAdditionalDataCountSuccess', str(cur.rowcount))
 
@@ -2700,7 +2700,7 @@ class DB_Functions():
 			for row in rows:
 				titleList.append(row[0])
 		delList = [x for x in titleList if x not in duplicates]
-		self.writeLog(f"not used preview images {len(delList)}")
+		aelHelper.writeLog(f"not used preview images {len(delList)}")
 		del duplicates, titleList
 		return delList
 
@@ -2889,7 +2889,7 @@ class BingImageSearch():
 				aelHelper.writeLog("HTML download error in module 'BingImageSearch:search'")
 			if htmldata:
 				links = findall(r"murl&quot;:&quot;(.*?)&quot;", htmldata)
-				self.writeLog(f"Bing-result : {links}")
+				aelHelper.writeLog(f"Bing-result : {links}")
 				if len(links) <= self.limit:
 					self.limit = len(links) - 1
 				for link in links:
