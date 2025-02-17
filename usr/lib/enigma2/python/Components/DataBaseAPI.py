@@ -1,7 +1,9 @@
+from fcntl import ioctl
+from socket import socket, AF_INET, SOCK_DGRAM
+from struct import pack
 from bisect import bisect_left, insort
 from ctypes import py_object, pythonapi, c_long
 from difflib import SequenceMatcher
-from gettext import gettext as _
 from os import remove, stat, walk, mknod
 from os.path import exists, dirname, realpath, isdir, join, basename, split
 from sqlite3 import connect, ProgrammingError, OperationalError, DatabaseError
@@ -10,12 +12,12 @@ from threading import Thread, Lock, current_thread
 from time import sleep, time
 from enigma import eServiceCenter, eServiceReference, iServiceInformation, eTimer
 from Components.Task import Task, Job, job_manager
-from Components.config import config, ConfigDirectory, ConfigYesNo
-from Components.FunctionTimer import functionTimer
+from Components.config import config, ConfigDirectory, ConfigYesNo, ConfigSelection
+from Scheduler import functionTimer
 from Screens.MessageBox import MessageBox
 from Tools.Notifications import AddPopup
 from Tools.MovieInfoParser import getExtendedMovieDescription
-from Tools.CoreUtils import getUniqueID
+from Components.SystemInfo import BoxInfo
 
 BASEINIT = None
 has_e2 = True
@@ -24,6 +26,24 @@ lock = Lock()
 
 config.misc.db_path = ConfigDirectory(default="/media/hdd/")
 config.misc.db_enabled = ConfigYesNo(default=True)
+config.misc.timer_show_movie_available = ConfigSelection(choices=[
+	(0, _("off")),
+	(1, _("Title")),
+	(2, _("Title / Description")),
+	], default=2)
+
+
+def getUniqueID(device="eth0"):
+	model = BoxInfo("model")
+	s = socket(AF_INET, SOCK_DGRAM)
+	info = ioctl(s.fileno(), 0x8927, pack("256s", bytes(device[:15], "UTF-8")))
+	key = "".join([f"{char:02x}" for char in info[18:24]])
+	keyid = ""
+	j = len(key) - 1
+	for i in range(0, len(key)):
+		keyid += f"{key[j]}{model[i]}{key[i]}" if i < len(model) else f"{key[j]}{key[i]}"
+		j -= 1
+	return keyid[:12]
 
 
 class LOGLEVEL:
@@ -37,12 +57,10 @@ class LOGLEVEL:
 		self.LogFile = self.createLogFile()
 
 	def createLogFile(self):
-		db_path = config.misc.db_path.value
-		if not db_path.endswith("/"):
-			db_path += "/"
+		db_path = join(config.misc.db_path.value, "")
 		if not exists(db_path):
 			db_path = "/media/hdd/"
-		return f"{db_path}db_error.log"
+		return join(db_path, "db_error.log")
 
 
 loglevel = LOGLEVEL()
@@ -51,18 +69,9 @@ loglevel = LOGLEVEL()
 def debugPrint(str, level=0):
 	cur_level = loglevel.INFO
 	if level >= cur_level:
-		print("[DataBase] " + str)
+		print(f"[DataBase] {str}")
 	if level >= loglevel.ERROR:
-		print("[DataBase] " + str)
-
-
-def prepareStringIN(txt):
-#	ret = ""
-#	try:
-#		ret = txt.decode("utf-8")
-#	except UnicodeDecodeError:
-#		ret = unicode(txt, "ISO-8859-1")
-	return txt
+		print(f"[DataBase] {str}")
 
 
 class globalThreads():
@@ -146,7 +155,7 @@ class databaseTask(Task):
 
 class DatabaseState(object):
 	def __init__(self, dbfile, boxid):
-		self.lockfile = dbfile + ".lock"
+		self.lockfile = f"{dbfile}.lock"
 		self.boxid = boxid
 		self.lockFileCleanUp()
 		self.check_remote_lock = False
@@ -233,13 +242,11 @@ class DatabaseState(object):
 
 class CommonDataBase():
 	def __init__(self, db_file=None):
-		db_path = config.misc.db_path.value
-		if not db_path.endswith("/"):
-			db_path += "/"
+		db_path = join(config.misc.db_path.value, "")
 		if not exists(db_path):
 			db_path = "/media/hdd/"
-		self.db_file = db_path + "moviedb.db" if not db_file else db_path + db_file
-		self.boxid = getUniqueID("e" + "t" + "h" + "0")
+		self.db_file = join(db_path, db_file or "moviedb.db")
+		self.boxid = getUniqueID()
 		self.dbstate = DatabaseState(self.db_file, self.boxid)
 		debugPrint(f"init database: {self.db_file}", LOGLEVEL.INFO)
 		self.c = None
@@ -346,11 +353,11 @@ class CommonDataBase():
 	def executeSQL(self, sqlcmd, args=[], readonly=False):
 		if self.connectDataBase(readonly):
 			ret = []
-			debugPrint("SQL cmd: " + sqlcmd.encode("utf-8"), LOGLEVEL.ALL)
+			debugPrint(f"SQL cmd: {sqlcmd}", LOGLEVEL.ALL)
 			txt = "\n"
 			for i in args:
-					txt += i.encode("utf-8") + "\n"
-			debugPrint("SQL arguments: " + txt, LOGLEVEL.ALL)
+				txt += f"{i}\n"
+			debugPrint(f"SQL arguments: {txt}", LOGLEVEL.ALL)
 			if not readonly:
 				self.locked = True
 			hasError = True
@@ -414,17 +421,16 @@ class CommonDataBase():
 
 	def doVacuum(self):
 		if self.connectDataBase():
-			sqlcmd = "VACUUM"
-			self.executeSQL(sqlcmd)
+			self.executeSQL("VACUUM")
 
 	def createTable(self, fields):
 		if self.table and self.connectDataBase():
 			field_str = "("
 			for name in fields:
-				field_str += name + " " + fields[name] + ","
+				field_str += f"{name} {fields[name]},"
 			if field_str.endswith(","):
 				field_str = field_str[:-1] + ")"
-			self.executeSQL("CREATE TABLE if not exists " + self.table + " " + field_str)
+			self.executeSQL(f"CREATE TABLE if not exists {self.table} {field_str}")
 			self.commitDB()
 
 	def checkTableColumns(self, fields, force_remove=False):
@@ -432,25 +438,25 @@ class CommonDataBase():
 			struc = self.getTableStructure()
 			for column in fields:
 				if column not in struc:
-					sqlcmd = 'ALTER TABLE ' + self.table + ' ADD COLUMN ' + column + ' ' + fields[column] + ';'
+					sqlcmd = f"ALTER TABLE {self.table} ADD COLUMN {column} {fields[column]};"
 					self.executeSQL(sqlcmd)
 			if force_remove:
-				columns_str = ''
+				columns_str = ""
 				for column in fields:
-					columns_str += column + ' ' + fields[column] + ','
-				if columns_str.endswith(','):
+					columns_str += f"{column} {fields[column]},"
+				if columns_str.endswith(","):
 					columns_str = columns_str[:-1]
-				b_table = self.table + '_backup'
-				sqlcmd = 'CREATE TEMPORARY TABLE ' + b_table + '(' + columns_str + ');'
+				b_table = f"{self.table}_backup"
+				sqlcmd = f"CREATE TEMPORARY TABLE {b_table}({columns_str});"
 				self.executeSQL(sqlcmd)
-				sqlcmd = 'INSERT INTO ' + b_table + ' SELECT ' + columns_str + ' FROM ' + self.table + ';'
+				sqlcmd = f"INSERT INTO {b_table} SELECT {columns_str} FROM {self.table};"
 				self.executeSQL(sqlcmd)
-				sqlcmd = 'DROP TABLE ' + self.table + ';'
+				sqlcmd = f"DROP TABLE {self.table};"
 				self.executeSQL(sqlcmd)
 				self.createTable(fields)
-				sqlcmd = 'INSERT INTO ' + self.table + ' SELECT ' + columns_str + ' FROM ' + b_table + ';'
+				sqlcmd = f"INSERT INTO {self.table} SELECT {columns_str} FROM {b_table};"
 				self.executeSQL(sqlcmd)
-				sqlcmd = 'DROP TABLE ' + b_table + ';'
+				sqlcmd = f"DROP TABLE {b_table};"
 				self.executeSQL(sqlcmd)
 				self.table_structure = None
 			self.commitDB()
@@ -458,24 +464,24 @@ class CommonDataBase():
 
 	def createTableIndex(self, idx_name, fields, unique=True):
 		if self.table and self.connectDataBase():
-			unique_txt = 'UNIQUE'
+			unique_txt = "UNIQUE"
 			if not unique:
-				unique_txt = ''
-			idx_fields = ''
+				unique_txt = ""
+			idx_fields = ""
 			if isinstance(fields, str):
 				idx_fields = fields
 			else:
 				for field in fields:
-					idx_fields += field + ', '
-			if idx_fields.endswith(', '):
+					idx_fields += f"{field}, "
+			if idx_fields.endswith(", "):
 				idx_fields = idx_fields[:-2]
-			sqlcmd = 'CREATE ' + unique_txt + ' INDEX IF NOT EXISTS ' + idx_name + ' ON ' + self.table + ' (' + idx_fields + ');'
+			sqlcmd = f"CREATE {unique_txt} INDEX IF NOT EXISTS {idx_name} ON {self.table} ({idx_fields});"
 			self.executeSQL(sqlcmd)
 
 	def dropTable(self):
 		if self.table and self.connectDataBase():
 			self.table_structure = None
-			self.executeSQL("drop table if exists " + self.table)
+			self.executeSQL(f"DROP TABLE IF EXISTS {self.table};")
 
 	def getTables(self):
 		tables = []
@@ -486,7 +492,7 @@ class CommonDataBase():
 			else:
 				return tables
 			for t in res:
-				debugPrint("found table: " + t[0], LOGLEVEL.ALL)
+				debugPrint(f"found table: {t[0]}", LOGLEVEL.ALL)
 				tables.append(t[0])
 		return tables
 
@@ -494,19 +500,19 @@ class CommonDataBase():
 		if self.table_structure is None or not len(self.table_structure):
 			structure = {}
 			if self.table and self.connectDataBase():
-				sqlret = self.executeSQL("PRAGMA table_info('" + self.table + "');")
+				sqlret = self.executeSQL(f"PRAGMA table_info('{self.table}');")
 				if sqlret and sqlret[0]:
 					rows = sqlret[1]
 				else:
 					return structure
 				for row in rows:
 					structure[str(row[1])] = str(row[2])
-				debugPrint("Data structure of table: " + self.table + "\n" + str(structure), LOGLEVEL.ALL)
+				debugPrint(f"Data structure of table: {self.table}\n{str(structure)}", LOGLEVEL.ALL)
 			self.table_structure = structure
 			if self.dbstate.check_remote_lock:
 				for x in structure:
-					if x.startswith('fp_'):
-						r_stb = str(x.lstrip('fp_'))
+					if x.startswith("fp_"):
+						r_stb = str(x.lstrip("fp_"))
 						if r_stb not in self.dbstate.available_stbs:
 							self.dbstate.available_stbs.append(r_stb)
 		return self.table_structure
@@ -515,7 +521,7 @@ class CommonDataBase():
 		if self.connectDataBase():
 			struc = self.getTableStructure()
 			if self.table and column not in struc:
-				sqlcmd = 'ALTER TABLE ' + self.table + ' ADD COLUMN ' + column + ' ' + c_type + ';'
+				sqlcmd = f"ALTER TABLE {self.table} ADD COLUMN {column} {c_type};"
 				self.executeSQL(sqlcmd)
 				self.table_structure = None
 
@@ -523,7 +529,7 @@ class CommonDataBase():
 		rows = []
 		content = []
 		if self.table and self.connectDataBase():
-			sqlret = self.executeSQL("SELECT * FROM " + self.table + ";")
+			sqlret = self.executeSQL(f"SELECT * FROM {self.table};")
 			if sqlret and sqlret[0]:
 				rows = sqlret[1]
 			else:
@@ -533,23 +539,23 @@ class CommonDataBase():
 				tmp_row = []
 				for field in row:
 					tmp_field = field
-					if field and isinstance(field.encode('utf-8'), str):
-						tmp_field = field.encode('utf-8')
+#					if field and isinstance(field.encode("utf-8"), str):
+#						tmp_field = field
 					tmp_row.append(tmp_field)
 				content.append(tmp_row)
-				debugPrint("Found row (" + str(i) + "):" + str(tmp_row), LOGLEVEL.ALL)
+				debugPrint(f"Found row ({str(i)}):{str(tmp_row)}", LOGLEVEL.ALL)
 				i += 1
 		return content
 
-	def searchDBContent(self, data, fields="*", query_type="AND", exactmatch=False, compareoperator=''):
+	def searchDBContent(self, data, fields="*", query_type="AND", exactmatch=False, compareoperator=""):
 		rows = []
 		content = []
-		if exactmatch or compareoperator in ('<', '<=', '>', '>='):
-			wildcard = ''
-			compare = compareoperator + ' ' if compareoperator in ('<', '<=', '>', '>=') else '='
+		if exactmatch or compareoperator in ("<", "<=", ">", ">="):
+			wildcard = ""
+			compare = compareoperator + " " if compareoperator in ("<", "<=", ">", ">=") else "="
 		else:
-			compare = 'LIKE '
-			wildcard = '%'
+			compare = "LIKE "
+			wildcard = "%"
 		if query_type not in ("AND", "OR"):
 			query_type = "AND"
 		if not isinstance(data, dict):
@@ -558,33 +564,33 @@ class CommonDataBase():
 		for field in data:
 			if field not in struc:
 				return content
-		return_fields = ''
-		if fields != '*':
+		return_fields = ""
+		if fields != "*":
 			if (isinstance(fields, tuple) or isinstance(fields, list)) and len(fields):
 				for field in fields:
 					if field in struc:
-						return_fields += field + ', '
+						return_fields += field + ", "
 			elif isinstance(fields, str):
 				if fields in struc:
 					return_fields = fields
-		if return_fields == '':
-			return_fields = '*'
-		if return_fields.endswith(', '):
+		if return_fields == "":
+			return_fields = "*"
+		if return_fields.endswith(", "):
 			return_fields = return_fields[:-2]
 		if self.table and self.connectDataBase():
-			sqlcmd = 'SELECT ' + return_fields + ' FROM ' + self.table + ' WHERE '
+			sqlcmd = f"SELECT {return_fields} FROM {self.table} WHERE "
 			args = []
 			for key in data:
-				sqlcmd += key + ' ' + compare + '? ' + query_type + ' '
-				args.append(wildcard + prepareStringIN(data[key]) + wildcard)
-			if sqlcmd.endswith(' ' + query_type + ' '):
-				sqlcmd = sqlcmd[:-(len(query_type) + 2)] + ';'
+				sqlcmd += f"{key} {compare}? {query_type} "
+				args.append(wildcard + data[key] + wildcard)
+			if sqlcmd.endswith(f" {query_type} "):
+				sqlcmd = sqlcmd[:-(len(query_type) + 2)] + ";"
 			if not exactmatch:
-				sqlpragmacmd = 'PRAGMA case_sensitive_like=OFF;'
+				sqlpragmacmd = "PRAGMA case_sensitive_like=OFF;"
 				self.executeSQL(sqlpragmacmd, readonly=True)
 			sqlret = self.executeSQL(sqlcmd, args, readonly=True)
 			if not exactmatch:
-				sqlpragmacmd = 'PRAGMA case_sensitive_like=ON;'
+				sqlpragmacmd = "PRAGMA case_sensitive_like=ON;"
 				self.executeSQL(sqlpragmacmd, readonly=True)
 			if sqlret and sqlret[0]:
 				rows = sqlret[1]
@@ -596,11 +602,11 @@ class CommonDataBase():
 				tmp_row = []
 				for field in row:
 					tmp_field = field
-					if field and isinstance(str(field).encode('utf-8'), str):
-						tmp_field = str(field).encode('utf-8')
+#					if field and isinstance(str(field).encode("utf-8"), str):
+#						tmp_field = str(field).encode("utf-8")
 					tmp_row.append(tmp_field)
 				content.append(tmp_row)
-				debugPrint("Found row (" + str(i) + "):" + str(tmp_row), LOGLEVEL.ALL)
+				debugPrint(f"Found row ({str(i)}):{str(tmp_row)}", LOGLEVEL.ALL)
 				i += 1
 		return content
 
@@ -615,35 +621,35 @@ class CommonDataBase():
 					break
 			if self.table and is_valid:
 				args = []
-				sqlcmd = 'INSERT INTO ' + self.table + '('
+				sqlcmd = f"INSERT INTO {self.table}("
 				for key in data:
-					sqlcmd += key + ','
-				if sqlcmd.endswith(','):
+					sqlcmd += f"{key},"
+				if sqlcmd.endswith(","):
 					sqlcmd = sqlcmd[:-1]
-				sqlcmd += ') SELECT '
+				sqlcmd += ") SELECT "
 				for key in data:
-					sqlcmd += '"' + prepareStringIN(data[key]) + '",'
-				if sqlcmd.endswith(','):
-					sqlcmd = sqlcmd[:-1] + ' '
+					sqlcmd += '"' + data[key] + '",'
+				if sqlcmd.endswith(","):
+					sqlcmd = sqlcmd[:-1] + " "
 				if unique_fields != "":
 					if isinstance(unique_fields, str) and unique_fields in data:
-						sqlcmd += 'WHERE NOT EXISTS(SELECT 1 FROM ' + self.table + ' WHERE ' + unique_fields + ' =?)'
-						args = [prepareStringIN(data[unique_fields]),]
+						sqlcmd += f"WHERE NOT EXISTS(SELECT 1 FROM {self.table} WHERE {unique_fields} =?)"
+						args = [data[unique_fields],]
 					elif isinstance(unique_fields, tuple) or isinstance(unique_fields, list):
 						if len(unique_fields) == 1:
 							if unique_fields[0] in data:
-								sqlcmd += 'WHERE NOT EXISTS(SELECT 1 FROM ' + self.table + ' WHERE ' + unique_fields[0] + ' =?)'
-								args = [prepareStringIN(data[unique_fields[0]]),]
+								sqlcmd += f"WHERE NOT EXISTS(SELECT 1 FROM {self.table} WHERE {unique_fields[0]} =?)"
+								args = [data[unique_fields[0]],]
 						elif len(unique_fields) > 1:
 							sql_limit = ""
 							for unique_field in unique_fields:
 								if unique_field in data:
-									sql_limit += unique_field + ' =? AND '
-									args.append(prepareStringIN(data[unique_field]))
-							if sql_limit.endswith(' AND '):
+									sql_limit += f"{unique_field} =? AND "
+									args.append(data[unique_field])
+							if sql_limit.endswith(" AND "):
 								sql_limit = sql_limit[:-5]
-							if sql_limit != '':
-								sqlcmd += 'WHERE NOT EXISTS(SELECT 1 FROM ' + self.table + ' WHERE ' + sql_limit + ')'
+							if sql_limit != "":
+								sqlcmd += f"WHERE NOT EXISTS(SELECT 1 FROM {self.table} WHERE {sql_limit})"
 				self.executeSQL(sqlcmd, args)
 
 	def insertUniqueRow(self, data, replace=False):
@@ -653,22 +659,22 @@ class CommonDataBase():
 				if field not in struc:
 					is_valid = False
 					return
-			method = 'IGNORE'
+			method = "IGNORE"
 			if replace:
-				method = 'REPLACE'
+				method = "REPLACE"
 			args = []
-			sqlcmd = 'INSERT OR ' + method + ' INTO ' + self.table + '('
+			sqlcmd = f"INSERT OR {method} INTO {self.table}("
 			for key in data:
-				sqlcmd += key + ','
-				args.append(prepareStringIN(data[key]))
-			if sqlcmd.endswith(','):
+				sqlcmd += f"{key},"
+				args.append(data[key])
+			if sqlcmd.endswith(","):
 				sqlcmd = sqlcmd[:-1]
-			sqlcmd += ') VALUES ('
+			sqlcmd += ") VALUES ("
 			for key in data:
-				sqlcmd += '?,'
-			if sqlcmd.endswith(','):
+				sqlcmd += "?,"
+			if sqlcmd.endswith(","):
 				sqlcmd = sqlcmd[:-1]
-			sqlcmd += ');'
+			sqlcmd += ");"
 			self.executeSQL(sqlcmd, args)
 
 	def updateUniqueData(self, data, idx_fields):
@@ -686,19 +692,19 @@ class CommonDataBase():
 			return
 		args = []
 		if self.table:
-			sqlcmd = 'UPDATE ' + self.table + ' SET '
+			sqlcmd = f"UPDATE {self.table} SET "
 			for key in data:
-				sqlcmd += key + ' = ?, '
-				args.append(prepareStringIN(data[key]))
-			if sqlcmd.endswith(', '):
+				sqlcmd += f"{key} = ?, "
+				args.append(data[key])
+			if sqlcmd.endswith(", "):
 				sqlcmd = sqlcmd[:-2]
-			sqlcmd += ' WHERE '
+			sqlcmd += " WHERE "
 			for key in idx_fields:
-				sqlcmd += key + ' = ? AND '
-				args.append(prepareStringIN(data[key]))
-			if sqlcmd.endswith('AND '):
+				sqlcmd += f"{key} = ? AND "
+				args.append(data[key])
+			if sqlcmd.endswith("AND "):
 				sqlcmd = sqlcmd[:-4]
-			sqlcmd += ';'
+			sqlcmd += ";"
 			self.executeSQL(sqlcmd, args)
 
 	def updateData(self, data, unique_fields):
@@ -720,52 +726,52 @@ class CommonDataBase():
 				if unique_fields not in struc:
 						return
 			args = []
-			sqlcmd = 'UPDATE ' + self.table + ' SET '
+			sqlcmd = f"UPDATE {self.table} SET "
 			for key in data:
-				sqlcmd += key + '=?, '
-				args.append(prepareStringIN(data[key]))
-			if sqlcmd.endswith(', '):
+				sqlcmd += f"{key}=?, "
+				args.append(data[key])
+			if sqlcmd.endswith(", "):
 				sqlcmd = sqlcmd[:-2]
-			if unique_fields is None or unique_fields == '':
+			if unique_fields is None or unique_fields == "":
 				return
 			if isinstance(unique_fields, str):
-				sqlcmd += ' WHERE ' + unique_fields + ' =?'
-				args.append(prepareStringIN(data[unique_fields]))
+				sqlcmd += f" WHERE {unique_fields} =?"
+				args.append(data[unique_fields])
 			elif isinstance(unique_fields, tuple) or isinstance(unique_fields, list):
 				if len(unique_fields) == 1:
 					if unique_fields[0] in data:
-						sqlcmd += ' WHERE ' + unique_fields[0] + ' =?'
-						args.append(prepareStringIN(data[unique_fields[0]]))
+						sqlcmd += f" WHERE {unique_fields[0]} =?"
+						args.append(data[unique_fields[0]])
 				elif len(unique_fields) > 1:
 					sql_limit = ""
 					for unique_field in unique_fields:
 						if unique_field in data:
-							sql_limit += unique_field + ' =? AND '
-							args.append(prepareStringIN(data[unique_field]))
-					if sql_limit.endswith(' AND '):
+							sql_limit += f"{unique_field} =? AND "
+							args.append(data[unique_field])
+					if sql_limit.endswith(" AND "):
 						sql_limit = sql_limit[:-5]
-					if sql_limit != '':
-						sqlcmd += ' WHERE ' + sql_limit
+					if sql_limit != "":
+						sqlcmd += f" WHERE {sql_limit}"
 			self.executeSQL(sqlcmd, args)
 
 	def deleteDataSet(self, fields, exactmatch=True):
 		if self.connectDataBase():
 			args = []
 			struc = self.getTableStructure()
-			wildcard = ''
-			operator = '='
+			wildcard = ""
+			operator = "="
 			if not exactmatch:
-				wildcard = '%'
-				operator = ' LIKE '
-			where_str = ' WHERE '
+				wildcard = "%"
+				operator = " LIKE "
+			where_str = " WHERE "
 			for column in fields:
 				if column not in struc:
 					return
-				where_str += column + operator + '? AND '
-				args.append(wildcard + prepareStringIN(fields[column]) + wildcard)
-			if where_str.endswith(' AND '):
-				where_str = where_str[:-5] + ';'
-			sqlcmd = 'DELETE FROM ' + self.table + where_str
+				where_str += f"{column}{operator}? AND "
+				args.append(f"{wildcard}{fields[column]}{wildcard}")
+			if where_str.endswith(" AND "):
+				where_str = f"{where_str[:-5]};"
+			sqlcmd = f"DELETE FROM {self.table}{where_str}"
 			self.executeSQL(sqlcmd, args)
 
 	def doActionInBackground(self, fnc, job_name, args=[]):
@@ -783,6 +789,8 @@ class CommonDataBase():
 				for job in joblist:
 					if job.name == self.dbthread_name:
 						job.stop()
+						if self.timerEntry:
+							self.timerEntry.state == 3  # END
 		self.dbthread_running = False
 		self.disconnectDataBase()
 		self.dbthread_id = None
@@ -791,46 +799,45 @@ class CommonDataBase():
 class MovieDataBase(CommonDataBase):
 
 	def __init__(self):
-		self.box_path = 'fp_' + getUniqueID('e' + 't' + 'h' + '0')
-		self.box_lpos = 'lpos_' + getUniqueID('e' + 't' + 'h' + '0')
-		db_id = ''
-		db_ver = '_v0001'
 		CommonDataBase.__init__(self)
+		self.box_path = f"fp_{self.boxid}"
+		self.box_lpos = f"lpos_{self.boxid}"
+		db_ver = "_v0001"
 		self.dbstate.check_remote_lock = True
 		self.ignore_thread_check = True
-		self.table = "moviedb" + db_id + db_ver
-		self.fields = {'path': 'TEXT',
-			self.box_path: 'TEXT',
-			'fname': 'TEXT',
-			'ref': 'TEXT',
-			'title': 'TEXT',
-			'shortDesc': 'TEXT',
-			'extDesc': 'TEXT',
-			'genre': 'TEXT',
-			'tags': 'TEXT',
-			'autotags': 'TEXT',
-			'duration': 'REAL',
-			'begin': 'REAL',
-			'lastpos': 'REAL',
-			self.box_lpos: 'REAL',
-			'fsize': 'INTEGER',
-			'progress': 'REAL',
-			'AudioChannels': 'INTEGER',
-			'ContentType': 'INTEGER',
-			'AudioFormat': 'TEXT',
-			'VideoFormat': 'TEXT',
-			'VideoResoltuion': 'TEXT',
-			'AspectRatio': 'TEXT',
-			'TmdbID': 'INTEGER',
-			'TvdbID': 'INTEGER',
-			'CollectionID': 'INTEGER',
-			'ListID': 'INTEGER',
-			'IsRecording': 'INTEGER DEFAULT 0',
-			'IsTrash': 'INTEGER DEFAULT 0',
-			'TrashTime': 'REAL',
-			'IsDir': 'INTEGER',
-			'Season': 'INTEGER',
-			'Episode': 'INTEGER',
+		self.table = f"moviedb{db_ver}"
+		self.fields = {"path": "TEXT",
+			self.box_path: "TEXT",
+			"fname": "TEXT",
+			"ref": "TEXT",
+			"title": "TEXT",
+			"shortDesc": "TEXT",
+			"extDesc": "TEXT",
+			"genre": "TEXT",
+			"tags": "TEXT",
+			"autotags": "TEXT",
+			"duration": "REAL",
+			"begin": "REAL",
+			"lastpos": "REAL",
+			self.box_lpos: "REAL",
+			"fsize": "INTEGER",
+			"progress": "REAL",
+			"AudioChannels": "INTEGER",
+			"ContentType": "INTEGER",
+			"AudioFormat": "TEXT",
+			"VideoFormat": "TEXT",
+			"VideoResoltuion": "TEXT",
+			"AspectRatio": "TEXT",
+			"TmdbID": "INTEGER",
+			"TvdbID": "INTEGER",
+			"CollectionID": "INTEGER",
+			"ListID": "INTEGER",
+			"IsRecording": "INTEGER DEFAULT 0",
+			"IsTrash": "INTEGER DEFAULT 0",
+			"TrashTime": "REAL",
+			"IsDir": "INTEGER",
+			"Season": "INTEGER",
+			"Episode": "INTEGER",
 		}
 		self.titlelist = {}
 		self.titlelist_list = []
@@ -840,9 +847,9 @@ class MovieDataBase(CommonDataBase):
 			self.is_initiated = True
 			self.createTable(self.fields)
 			self.checkTableColumns(self.fields, force_remove=False)
-			self.createTableIndex('idx_fname_fsize', ('fname', 'fsize'))
-			idx_name = 'idx_fname_fsize_' + getUniqueID('e' + 't' + 'h' + '0')
-			self.createTableIndex(idx_name, ('fname', 'fsize', self.box_path))
+			self.createTableIndex("idx_fname_fsize", ("fname", "fsize"))
+			idx_name = f"idx_fname_fsize_{self.boxid}"
+			self.createTableIndex(idx_name, ("fname", "fsize", self.box_path))
 			self.disconnectDataBase()
 
 	def reInitializeDB(self):
@@ -856,8 +863,9 @@ class MovieDataBase(CommonDataBase):
 		self.titlelist_list = []
 		self.__init__()
 
-	def BackgroundDBUpdate(self, fnc, fnc_args=[]):
+	def backgroundDBUpdate(self, fnc, fnc_args=[], timerEntry=None):
 		self.dbthread_name = _("Database Update")
+		self.timerEntry = timerEntry
 		self.doActionInBackground(fnc, self.dbthread_name, fnc_args)
 
 	def BackgroundDBCleanUp(self):
@@ -869,8 +877,7 @@ class MovieDataBase(CommonDataBase):
 		for x in config.movielist.videodirs.value:
 			if not exists(x):
 				continue
-			if not x.endswith('/'):
-				x += '/'
+			x = join(x, "")
 			dirs.append((len(x), x))
 		dirs.sort(reverse=True)
 		video_dirs = []
@@ -883,11 +890,11 @@ class MovieDataBase(CommonDataBase):
 		if not has_e2:
 			return
 		self.dbthread_id = current_thread().ident
-		items = self.searchDBContent({self.box_path: ''}, (self.box_path, 'fsize'))
+		items = self.searchDBContent({self.box_path: ""}, (self.box_path, "fsize"))
 		this_job = None
 		joblist = job_manager.getPendingJobs()
 		for job in joblist:
-			if job.name == self.dbthread_name and hasattr(job, 'database_job'):
+			if job.name == self.dbthread_name and hasattr(job, "database_job"):
 				this_job = job
 				break
 		i = 0
@@ -938,20 +945,20 @@ class MovieDataBase(CommonDataBase):
 			fsize = -1
 		return fsize
 
-	def inTitleList(self, mytitle, shortDesc='', extDesc='', ratio_short_desc=0.95, ratio_ext_desc=0.85):
-		if int(config.misc.timer_show_movie_available.value) > 1:
+	def inTitleList(self, mytitle, shortDesc="", extDesc="", ratio_short_desc=0.95, ratio_ext_desc=0.85):
+		if config.misc.timer_show_movie_available.value > 1:
 			if shortDesc is None:
-				shortDesc = ''
+				shortDesc = ""
 			if extDesc is None:
-				extDesc = ''
-			if shortDesc == '' and extDesc == '':
+				extDesc = ""
+			if shortDesc == "" and extDesc == "":
 				return 1 if mytitle in self.titlelist else None
 			else:
 				if mytitle in self.titlelist:
 					short_descs = self.titlelist[mytitle][0]
 					short_compared = False
 					movie_found = False
-					if shortDesc != '':
+					if shortDesc != "":
 						short_compared = True
 						for short_desc in short_descs:
 							sequenceMatcher = SequenceMatcher(" ".__eq__, shortDesc, short_desc)
@@ -961,7 +968,7 @@ class MovieDataBase(CommonDataBase):
 							if short_desc == shortDesc:
 								movie_found = True
 								break
-					if extDesc == '' and movie_found:
+					if extDesc == "" and movie_found:
 						return 1
 					if not movie_found and short_compared:
 						return None
@@ -973,7 +980,7 @@ class MovieDataBase(CommonDataBase):
 						if ext_desc == extDesc:
 							return 1
 				return None
-		elif int(config.misc.timer_show_movie_available.value) == 1:
+		elif config.misc.timer_show_movie_available.value == 1:
 			pos = bisect_left(self.titlelist_list, mytitle)
 			try:
 				return pos if self.titlelist_list[pos] == mytitle else None
@@ -982,8 +989,8 @@ class MovieDataBase(CommonDataBase):
 		else:
 			return None
 
-	def removeFromTitleList(self, mytitle, shortDesc='', extDesc=''):
-		if int(config.misc.timer_show_movie_available.value) > 1:
+	def removeFromTitleList(self, mytitle, shortDesc="", extDesc=""):
+		if config.misc.timer_show_movie_available.value > 1:
 			is_in_short_desc_list = False
 			is_in_ext_desc_list = False
 			if mytitle in self.titlelist:
@@ -1009,7 +1016,7 @@ class MovieDataBase(CommonDataBase):
 					self.titlelist[mytitle][1] = y
 				if not len(x) and not len(y):
 					del self.titlelist[mytitle]
-		elif int(config.misc.timer_show_movie_available.value) == 1:
+		elif config.misc.timer_show_movie_available.value == 1:
 			idx = self.inTitleList(mytitle)
 			if idx is not None:
 				try:
@@ -1017,8 +1024,8 @@ class MovieDataBase(CommonDataBase):
 				except Exception:
 					pass
 
-	def addToTitleList(self, mytitle, shortDesc='', extDesc=''):
-		if int(config.misc.timer_show_movie_available.value) > 1:
+	def addToTitleList(self, mytitle, shortDesc="", extDesc=""):
+		if config.misc.timer_show_movie_available.value > 1:
 			if mytitle in self.titlelist:
 				if isinstance(self.titlelist[mytitle][0], list) and shortDesc not in self.titlelist[mytitle][0]:
 					x = self.titlelist[mytitle][0]
@@ -1034,17 +1041,17 @@ class MovieDataBase(CommonDataBase):
 					self.titlelist[mytitle][1] = [extDesc]
 			else:
 				self.titlelist[mytitle] = [[shortDesc], [extDesc]]
-		elif int(config.misc.timer_show_movie_available.value) == 1:
+		elif config.misc.timer_show_movie_available.value == 1:
 			insort(self.titlelist_list, mytitle)
 
 	def BackgroundTitleListUpdate(self):
-		if int(config.misc.timer_show_movie_available.value) > 0:
+		if config.misc.timer_show_movie_available.value > 0:
 			t = Thread(target=self.getTitleList, args=[])
 			t.start()
 			globalthreads.registerThread(t)
 
 	def getTitleList(self):
-		sqlcmd = 'SELECT ref,title,shortDesc, extDesc FROM  ' + self.table + ' WHERE IsTrash != 1'
+		sqlcmd = f"SELECT ref,title,shortDesc, extDesc FROM {self.table} WHERE IsTrash != 1"
 		sqlret = self.executeSQL(sqlcmd, args=[], readonly=True)
 		if sqlret and sqlret[0]:
 			content = []
@@ -1054,19 +1061,19 @@ class MovieDataBase(CommonDataBase):
 				tmp_row = []
 				for field in row:
 					tmp_field = field
-					if field and isinstance(str(field).encode('utf-8'), str):
-						tmp_field = str(field).encode('utf-8')
+#					if field and isinstance(str(field).encode("utf-8"), str):
+#						tmp_field = str(field).encode("utf-8")
 					tmp_row.append(tmp_field)
 				content.append(tmp_row)
 			for x in content:
 				if x[0]:
 					orig_path = eServiceReference(x[0]).getPath()
 					real_path = realpath(orig_path)
-					if real_path[-3:] not in ('mp3', 'ogg', 'wav'):
+					if real_path[-3:] not in ("mp3", "ogg", "wav"):
 						self.addToTitleList(x[1], x[2], x[3])
 
-	def searchContent(self, data, fields="*", query_type="AND", exactmatch=False, compareoperator='', skipCheckExists=False):
-		s_fields = [self.box_path, 'path', 'fname', 'ref']
+	def searchContent(self, data, fields="*", query_type="AND", exactmatch=False, compareoperator="", skipCheckExists=False):
+		s_fields = [self.box_path, "path", "fname", "ref"]
 		if (isinstance(fields, tuple) or isinstance(fields, list)) and len(fields):
 			for field in fields:
 				s_fields.append(field)
@@ -1077,12 +1084,12 @@ class MovieDataBase(CommonDataBase):
 			s_fields.append(fields)
 		s_fields.append(self.box_path)
 		searchstr = None
-		if 'title' in data:
-			searchstr = data['title']
-		elif 'shortDesc' in data:
-			searchstr = data['shortDesc']
-		elif 'extDesc' in data:
-			searchstr = data['extDesc']
+		if "title" in data:
+			searchstr = data["title"]
+		elif "shortDesc" in data:
+			searchstr = data["shortDesc"]
+		elif "extDesc" in data:
+			searchstr = data["extDesc"]
 		if searchstr is not None:
 			data[self.box_path] = searchstr
 		res = self.searchDBContent(data, fields=s_fields, query_type=query_type, exactmatch=exactmatch, compareoperator=compareoperator)
@@ -1091,10 +1098,10 @@ class MovieDataBase(CommonDataBase):
 		ref_idx = False
 		video_dirs = self.getVideoDirs()
 		for x in range(4, fields_count):
-			if s_fields[x] == 'ref':
+			if s_fields[x] == "ref":
 				ref_idx = x
 				break
-		if len(res):
+		if res:
 			for movie in res:
 				ret = []
 				if skipCheckExists and movie[0] is not None:
@@ -1112,11 +1119,8 @@ class MovieDataBase(CommonDataBase):
 							if movie[3]:
 								ret.append(movie[3] + movie[0])
 							elif isdir(movie[0]):
-								m = eServiceReference(eServiceReference.idFile, eServiceReference.flagDirectory, '')
-								p = movie[0]
-								if not p.endswith('/'):
-									p += '/'
-								m.setPath(p)
+								m = eServiceReference(eServiceReference.idFile, eServiceReference.flagDirectory, "")
+								m.setPath(join(movie[0], ""))
 								ret.append(m.toString())
 						else:
 							ret.append(movie[x])
@@ -1129,11 +1133,10 @@ class MovieDataBase(CommonDataBase):
 							break
 						pp = y + movie[2]
 						p = y + movie[1]
-						if not p.endswith('/'):
-							p += '/'
+						p = join(p, "")
 						p += movie[2]
-						p = str(p.encode('utf-8'))
-						pp = str(pp.encode('utf-8'))
+#						p = str(p.encode("utf-8"))
+#						pp = str(pp.encode("utf-8"))
 						if exists(p):
 							do_update = True
 						elif exists(pp):
@@ -1152,8 +1155,8 @@ class MovieDataBase(CommonDataBase):
 		return checked_res
 
 	def getTrashEntries(self, as_ref=False):
-		fields = ['ref', 'fsize'] if as_ref else [self.box_path, 'fsize']
-		entries = self.searchContent({'IsTrash': '1'}, fields=fields)
+		fields = ["ref", "fsize"] if as_ref else [self.box_path, "fsize"]
+		entries = self.searchContent({"IsTrash": "1"}, fields=fields)
 		ret = []
 		fsize = 0.0
 		for entry in entries:
@@ -1169,12 +1172,12 @@ class MovieDataBase(CommonDataBase):
 		now = time()
 		diff_rec = config.usage.movielist_use_autodel_trash.value * 60.0 * 60.0 * 24.0
 		diff_trash = config.usage.movielist_use_autodel_in_trash.value * 60.0 * 60.0 * 24.0
-		fields = ['ref', 'begin', 'TrashTime'] if as_ref else [self.box_path, 'begin', 'TrashTime']
-		entries = self.searchContent({'IsTrash': '1'}, fields=fields)
+		fields = ["ref", "begin", "TrashTime"] if as_ref else [self.box_path, "begin", "TrashTime"]
+		entries = self.searchContent({"IsTrash": "1"}, fields=fields)
 		ret = []
 		rec_t = 0.0
 		trash_t = 0.0
-		link = config.usage.movielist_link_autodel_config.value == 'and' and True or False
+		link = config.usage.movielist_link_autodel_config.value == "and" and True or False
 		for entry in entries:
 			rec_t = entry[1]
 			trash_t = entry[2]
@@ -1210,7 +1213,7 @@ class MovieDataBase(CommonDataBase):
 		this_job = None
 		joblist = job_manager.getPendingJobs()
 		for job in joblist:
-			if job.name == self.dbthread_name and hasattr(job, 'database_job'):
+			if job.name == self.dbthread_name and hasattr(job, "database_job"):
 				this_job = job
 				break
 		for folder in config.movielist.videodirs.value:
@@ -1232,9 +1235,7 @@ class MovieDataBase(CommonDataBase):
 				if count and this_job:
 					progress = int(float(i) / float(count) * 100.0)
 					this_job.database_job.setProgress(progress)
-				path = folder
-				if not folder.endswith('/'):
-					path += '/'
+				path = join(folder, "")
 				debugPrint(f"Add items of folder : {path}", LOGLEVEL.ALL)
 				self.updateMovieDBPath(path, is_thread=True)
 		self.stopBackgroundAction()
@@ -1251,12 +1252,12 @@ class MovieDataBase(CommonDataBase):
 		if not has_e2:
 			return
 		m_list = []
-		root = eServiceReference(eServiceReference.idFile, eServiceReference.flagDirectory, path + '/')
+		root = eServiceReference(eServiceReference.idFile, eServiceReference.flagDirectory, join(path, ""))
 		serviceHandler = eServiceCenter.getInstance()
 		hidden_items = []
 
 		m_list = serviceHandler.list(root)
-		hidden_entries_file = realpath(root.getPath()) + "/.hidden_movielist_entries"
+		hidden_entries_file = join(realpath(root.getPath()), ".hidden_movielist_entries")
 		if exists(hidden_entries_file):
 			with open(hidden_entries_file, "r") as f:
 				for line in f:
@@ -1284,11 +1285,11 @@ class MovieDataBase(CommonDataBase):
 			if not exists(serviceref):
 				return
 			filepath = realpath(serviceref)
-			serviceref = eServiceReference(1, 0, filepath) if filepath.endswith('.ts') else eServiceReference(4097, 0, filepath)
+			serviceref = eServiceReference(1, 0, filepath) if filepath.endswith(".ts") else eServiceReference(4097, 0, filepath)
 		serviceHandler = eServiceCenter.getInstance()
 		filepath = realpath(serviceref.getPath())
-		trashfile = filepath + '.del'
-		if filepath.endswith('_pvrdesc.ts'):
+		trashfile = f"{filepath}.del"
+		if filepath.endswith("_pvrdesc.ts"):
 			return
 		if isTrash[0]:
 			if isTrash[1] == 1 and not exists(trashfile):
@@ -1311,23 +1312,23 @@ class MovieDataBase(CommonDataBase):
 					serviceref = eServiceReference(4097, 0, filepath)
 					break
 		if is_dvd is None and serviceref.flags & eServiceReference.mustDescent:
-			fields = {self.box_path: filepath, 'IsDir': '1', 'fname': filepath, 'fsize': '0', 'ref': '2:47:1:0:0:0:0:0:0:0:', }
+			fields = {self.box_path: filepath, "IsDir": "1", "fname": filepath, "fsize": "0", "ref": "2:47:1:0:0:0:0:0:0:0:", }
 			if isTrash[0]:
-				fields['IsTrash'] = str(isTrash[1])
-				fields['TrashTime'] = str(0) if isTrash[1] == 0 else str(time())
+				fields["IsTrash"] = str(isTrash[1])
+				fields["TrashTime"] = str(0) if isTrash[1] == 0 else str(time())
 			else:
 				if exists(trashfile):
-					fields['IsTrash'] = str(1)
+					fields["IsTrash"] = str(1)
 					try:
-						fields['TrashTime'] = str(stat(trashfile).st_mtime)
+						fields["TrashTime"] = str(stat(trashfile).st_mtime)
 					except OSError:
-						fields['TrashTime'] = str(time())
+						fields["TrashTime"] = str(time())
 				else:
 					return
 			if with_box_path:
 				self.updateUniqueData(fields, (self.box_path,))
 			else:
-				self.updateUniqueData(fields, ('fname', 'fsize'))
+				self.updateUniqueData(fields, ("fname", "fsize"))
 			if not is_thread:
 				self.disconnectDataBase()
 			return
@@ -1338,7 +1339,7 @@ class MovieDataBase(CommonDataBase):
 		if file_extension in ("dat",):
 			return
 		is_rec = 0
-		if exists(file_path + '.rec'):
+		if exists(f"{file_path}.rec"):
 			is_rec = 1
 		cur_item = basename(filepath)
 		if cur_item.lower().startswith("timeshift_"):
@@ -1352,17 +1353,17 @@ class MovieDataBase(CommonDataBase):
 		m_db_path, m_db_fname = split(filepath)
 		m_db_title = info.getName(serviceref)
 		m_db_evt = info.getEvent(serviceref)
-		m_db_shortDesc = ''
+		m_db_shortDesc = ""
 		if m_db_evt is not None:
 			m_db_shortDesc = m_db_evt.getShortDescription()
 			m_db_extDesc = m_db_evt.getExtendedDescription()
 		else:
 			m_db_title, m_db_extDesc = getExtendedMovieDescription(serviceref)
-		m_db_ref = serviceref.toString().replace(serviceref.getPath(), '')
+		m_db_ref = serviceref.toString().replace(serviceref.getPath(), "")
 		m_db_begin = info.getInfo(serviceref, iServiceInformation.sTimeCreate)
 		if is_rec:
 			rec_file_c = []
-			with open(file_path + '.rec') as f:
+			with open(f"{file_path}.rec") as f:
 				rec_file_c = f.readlines()
 			ret = str(rec_file_c[0]) if len(rec_file_c) >= 1 else ""
 			ret = ret.strip()
@@ -1377,60 +1378,60 @@ class MovieDataBase(CommonDataBase):
 				if m_db_path.startswith(x) or m_db_path == x[:-1]:
 					m_db_path = m_db_path.lstrip(x)
 					break
-		m_db_autotags = ''
-		autotags = config.movielist.autotags.value.split(';')
-		desc = m_db_shortDesc.lower() + m_db_extDesc.lower()
+		m_db_autotags = ""
+		autotags = []  # config.movielist.autotags.value.split(";") # TODO
+		desc = f"{m_db_shortDesc.lower()}{m_db_extDesc.lower()}"
 		for tag in autotags:
 			if desc[:80].find(tag.lower()) != -1 or desc[80:].find(tag.lower()) != -1:
-				m_db_autotags += tag + ';'
+				m_db_autotags += f"{tag};"
 		if m_db_duration < 0:
-			m_db_duration = self.calcMovieLen(m_db_fullpath + '.cuts')
+			m_db_duration = self.calcMovieLen(f"{m_db_fullpath}.cuts")
 		if m_db_duration >= 0:
-			m_db_lastpos, m_db_progress = self.getPlayProgress(m_db_fullpath + '.cuts', m_db_duration)
-		fields = {'path': m_db_path,
+			m_db_lastpos, m_db_progress = self.getPlayProgress(f"{m_db_fullpath}.cuts", m_db_duration)
+		fields = {"path": m_db_path,
 				self.box_path: m_db_fullpath,
-				'fname': m_db_fname,
-				'title': m_db_title,
-				'extDesc': m_db_extDesc,
-				'shortDesc': m_db_shortDesc,
-				'tags': m_db_tags,
-				'ref': m_db_ref,
-				'duration': str(m_db_duration),
-				'lastpos': str(m_db_lastpos),
+				"fname": m_db_fname,
+				"title": m_db_title,
+				"extDesc": m_db_extDesc,
+				"shortDesc": m_db_shortDesc,
+				"tags": m_db_tags,
+				"ref": m_db_ref,
+				"duration": str(m_db_duration),
+				"lastpos": str(m_db_lastpos),
 				self.box_lpos: str(m_db_lastpos),
-				'progress': str(m_db_progress),
-				'fsize': str(m_db_f_size),
-				'begin': str(m_db_begin),
-				'autotags': str(m_db_autotags),
-				'IsRecording': str(is_rec),
+				"progress": str(m_db_progress),
+				"fsize": str(m_db_f_size),
+				"begin": str(m_db_begin),
+				"autotags": str(m_db_autotags),
+				"IsRecording": str(is_rec),
 			}
 
-		search_fields = {self.box_path: m_db_fullpath, 'fname': m_db_fname, 'title': m_db_title, }
+		search_fields = {self.box_path: m_db_fullpath, "fname": m_db_fname, "title": m_db_title, }
 		is_in_db = self.searchContent(search_fields, fields=("fname",), query_type="AND", exactmatch=False, skipCheckExists=True)
 		if isTrash[0]:
-			fields['IsTrash'] = str(isTrash[1])
+			fields["IsTrash"] = str(isTrash[1])
 			if isTrash[1] == 0:
-				fields['TrashTime'] = str(0)
+				fields["TrashTime"] = str(0)
 				self.addToTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 			else:
-				fields['TrashTime'] = str(time())
+				fields["TrashTime"] = str(time())
 				if len(is_in_db):
 					self.removeFromTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 		else:
 			if exists(trashfile):
-				fields['IsTrash'] = str(1)
+				fields["IsTrash"] = str(1)
 				if len(is_in_db):
 					self.removeFromTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 				try:
-					fields['TrashTime'] = str(stat(trashfile).st_mtime)
+					fields["TrashTime"] = str(stat(trashfile).st_mtime)
 				except OSError:
-					fields['TrashTime'] = str(time())
+					fields["TrashTime"] = str(time())
 			else:
 				self.addToTitleList(m_db_title, m_db_shortDesc, m_db_extDesc)
 		if with_box_path:
 			self.updateUniqueData(fields, (self.box_path,))
 		else:
-			self.updateUniqueData(fields, ('fname', 'fsize'))
+			self.updateUniqueData(fields, ("fname", "fsize"))
 		if not is_thread:
 			self.disconnectDataBase()
 
@@ -1442,7 +1443,7 @@ class MovieDataBase(CommonDataBase):
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = unpack('>QI', packedCue)
+					cue = unpack(">QI", packedCue)
 					if cue[1] == 5:
 						movie_len = cue[0] / 90000
 						return movie_len
@@ -1461,7 +1462,7 @@ class MovieDataBase(CommonDataBase):
 				while len(packed) > 0:
 					packedCue = packed[:12]
 					packed = packed[12:]
-					cue = unpack('>QI', packedCue)
+					cue = unpack(">QI", packedCue)
 					cut_list.append(cue)
 			except Exception as ex:
 				debugPrint("failure at downloading cut list", LOGLEVEL.ERROR)
@@ -1492,14 +1493,14 @@ moviedb.BackgroundTitleListUpdate()
 def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_ratio=0.85):
 	movie = None
 	movie_found = False
-	s = {'title': str(title_name)}
+	s = {"title": str(title_name)}
 	trash_movies = []
 	if config.usage.movielist_use_moviedb_trash.value:
 		trash_movies = moviedb.getTrashEntries()[0]
-	print("[MovieDB] search for existing media file with title: ", str(title_name))
-	for x in moviedb.searchContent(s, ('title', 'shortDesc', 'extDesc'), query_type="OR", exactmatch=False):
+	print(f"[MovieDB] search for existing media file with title: {str(title_name)}")
+	for x in moviedb.searchContent(s, ("title", "shortDesc", "extDesc"), query_type="OR", exactmatch=False):
 		movie_found = False
-		if shortdesc and shortdesc != '' and x[1]:
+		if shortdesc and shortdesc != "" and x[1]:
 			sequenceMatcher = SequenceMatcher(" ".__eq__, shortdesc, str(x[1]))
 			ratio = sequenceMatcher.ratio()
 			print(f"[MovieDB] shortdesc movie ratio {ratio:f} - {len(shortdesc)} - {len(x[1])}")
@@ -1536,7 +1537,7 @@ def isMovieinDatabase(title_name, shortdesc, extdesc, short_ratio=0.95, ext_rati
 				break
 	if movie_found:
 		real_path = realpath(eServiceReference(movie[0]).getPath()) if movie else ""
-		movie_found = True if real_path not in trash_movies or exists(real_path + '.del') else False
+		movie_found = True if real_path not in trash_movies or exists(f"{real_path}.del") else False
 	return movie_found
 
 
@@ -1585,12 +1586,12 @@ class MovieDBUpdate(MovieDBUpdateBase):
 		jobs = (job_manager.getPendingJobs())
 		if jobs:
 			for job in jobs:
-				if job.name.lower().find('database') != -1:
+				if job.name.lower().find("database") != -1:
 					debugPrint("update cancelled - there is still a running  database job", LOGLEVEL.INFO)
 					return
 		if self.getInstandby():
 			debugPrint("start auto update of moviedb", LOGLEVEL.INFO)
-			moviedb.BackgroundDBUpdate(moviedb.updateMovieDB)
+			moviedb.backgroundDBUpdate(moviedb.updateMovieDB)
 		else:
 			debugPrint("update cancelled - not in Standby", LOGLEVEL.INFO)
 
@@ -1598,11 +1599,11 @@ class MovieDBUpdate(MovieDBUpdateBase):
 moviedbupdate = MovieDBUpdate()
 
 
-def backgroundDBUpdate():
-	moviedb.BackgroundDBUpdate(moviedb.updateMovieDB)
+def backgroundDBUpdate(timerEntry):
+	moviedb.backgroundDBUpdate(moviedb.updateMovieDB, timerEntry=timerEntry)
 
 
-functionTimer.add(("moviedbupdate", {"name": _("update movie database (full)"), "fnc": "backgroundDBUpdate"}))
+functionTimer.add(("moviedbupdate", {"name": _("Update movie database (full)"), "fnc": backgroundDBUpdate}))
 
 # TODO
 #functionTimer.add(("movietrashclean", {"name": _("clear movie trash"), "imports": "Components.MovieTrash", "fnc": "movietrash.cleanAll"}))
