@@ -685,8 +685,8 @@ class AELHelpers:
 		self.writeLog(f"load preview images is: {config.plugins.AdvancedEventLibrary.UsePreviewImages.value}")
 		self.writeLog(f"searchOptions {aelGlobals.SPDICT}")
 		db = self.getDB()
-		db.parameter(aelGlobals.PARAMETER_SET, "laststart", str(datetime.now().timestamp()))
-		db.parameter(aelGlobals.PARAMETER_SET, "currentVersion", aelGlobals.CURRENTVERSION)
+		db.parameter(DB_Functions.PARAMETER_SET, "laststart", str(datetime.now().timestamp()))
+		db.parameter(DB_Functions.PARAMETER_SET, "currentVersion", aelGlobals.CURRENTVERSION)
 		self.setStatus(_("check reserved disk space..."))
 		self.checkUsedSpace(db)
 		names = self.getAllRecords(db)
@@ -1213,8 +1213,8 @@ class AELHelpers:
 		self.writeLog(f"set {entrys} on eventInfo")
 		self.writeLog(f"set {blentrys} on Blacklist")
 		if db:
-			db.parameter(aelGlobals.PARAMETER_SET, "lastEventInfoCount", str(int(entrys + blentrys)))
-			db.parameter(aelGlobals.PARAMETER_SET, "lastEventInfoCountSuccsess", entrys)
+			db.parameter(DB_Functions.PARAMETER_SET, "lastEventInfoCount", str(int(entrys + blentrys)))
+			db.parameter(DB_Functions.PARAMETER_SET, "lastEventInfoCountSuccsess", entrys)
 		self.setStatus(_("remove old extra data..."))
 		if config.plugins.AdvancedEventLibrary.DelPreviewImages.value:
 			self.cleanPreviewImages(db)
@@ -1224,7 +1224,7 @@ class AELHelpers:
 			self.writeLog(f"try to insert {len(liveTVRecords)} pre-filled event entries into database")
 			self.setStatus(f"{_('try to insert')} {len(liveTVRecords)} {_('pre-filled event entries into database')}")
 			db.addliveTV(liveTVRecords)
-			db.parameter(aelGlobals.PARAMETER_SET, "lastAdditionalDataCount", str(db.getUpdateCount()))
+			db.parameter(DB_Functions.PARAMETER_SET, "lastAdditionalDataCount", str(db.getUpdateCount()))
 			# TVSpielfilm dataserver
 			if config.plugins.AdvancedEventLibrary.tvsUsage.value and not self.tooManyApiErrors("TVS") and not self.isScanStopped():
 				self.getTVSpielfilm(db)
@@ -1233,8 +1233,8 @@ class AELHelpers:
 				self.getTVMovie(db)
 			if not self.isScanStopped():
 				db.updateliveTVProgress()
-			db.parameter(aelGlobals.PARAMETER_SET, "lastPosterCount", posters)
-			db.parameter(aelGlobals.PARAMETER_SET, "lastCoverCount", covers)
+			db.parameter(DB_Functions.PARAMETER_SET, "lastPosterCount", posters)
+			db.parameter(DB_Functions.PARAMETER_SET, "lastCoverCount", covers)
 			self.writeLog(f"found {posters} posters")
 			self.writeLog(f"found {covers} covers")
 		self.reduceImagesSize(aelGlobals.COVERPATH, db)
@@ -1254,7 +1254,7 @@ class AELHelpers:
 		if config.plugins.AdvancedEventLibrary.Log.value:
 			self.writeTVStatistic(db)
 		if db:
-			db.parameter(aelGlobals.PARAMETER_SET, "laststop", str(datetime.now().timestamp()))
+			db.parameter(DB_Functions.PARAMETER_SET, "laststop", str(datetime.now().timestamp()))
 		self.writeLog("### ...update done ###")
 		self.setStatus()
 		self.clearMem("search: connected")
@@ -1342,7 +1342,7 @@ class AELHelpers:
 		self.writeLog(f"have updated {found} events from TV-Spielfilm")
 		self.writeLog(f"have downloaded {ccount} images from TV-Spielfilm")
 		self.writeLog(f"have found {tcount} trailers on TV-Spielfilm")
-		db.parameter(aelGlobals.PARAMETER_SET, f"lastPreviewImageCount {ccount}")
+		db.parameter(DB_Functions.PARAMETER_SET, f"lastPreviewImageCount {ccount}")
 
 	def getTVMovie(self, db, secondRun=False):
 		found, ccount = 0, 0
@@ -1431,9 +1431,9 @@ class AELHelpers:
 		self.writeLog(f"have updated {found} events from TV-Movie")
 		self.writeLog(f"have downloaded {ccount} images from TV-Movie")
 		if not secondRun:
-			tvsImages = db.parameter(aelGlobals.PARAMETER_GET, "lastPreviewImageCount", None, 0)
+			tvsImages = db.parameter(DB_Functions.PARAMETER_GET, "lastPreviewImageCount", None, 0)
 			ccount += int(tvsImages)
-			db.parameter(aelGlobals.PARAMETER_SET, "lastPreviewImageCount", str(ccount))
+			db.parameter(DB_Functions.PARAMETER_SET, "lastPreviewImageCount", str(ccount))
 			self.getTVMovie(db, True)
 		del tvnames
 
@@ -1788,14 +1788,14 @@ class AELHelpers:
 
 	def createStatistics(self, db):
 		inodes = check_output(["df", "-i", aelGlobals.HDDPATH]).decode().split()
-		db.parameter(aelGlobals.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if exists(join(aelGlobals.POSTERPATH, name))])))
-		db.parameter(aelGlobals.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if exists(join(aelGlobals.COVERPATH, name))])))
-		db.parameter(aelGlobals.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if exists(join(aelGlobals.PREVIEWPATH, name))])))
-		db.parameter(aelGlobals.PARAMETER_SET, "trailerCount", str(db.getTrailerCount()))
-		db.parameter(aelGlobals.PARAMETER_SET, "posterSize", str(check_output(["du", "-sh", aelGlobals.POSTERPATH]).decode().split()[0]))
-		db.parameter(aelGlobals.PARAMETER_SET, "coverSize", str(check_output(["du", "-sh", aelGlobals.COVERPATH]).decode().split()[0]))
-		db.parameter(aelGlobals.PARAMETER_SET, "previewSize", str(check_output(["du", "-sh", aelGlobals.PREVIEWPATH]).decode().split()[0]))
-		db.parameter(aelGlobals.PARAMETER_SET, "usedInodes", f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}")
+		db.parameter(DB_Functions.PARAMETER_SET, "posterCount", str(len([name for name in listdir(aelGlobals.POSTERPATH) if exists(join(aelGlobals.POSTERPATH, name))])))
+		db.parameter(DB_Functions.PARAMETER_SET, "coverCount", str(len([name for name in listdir(aelGlobals.COVERPATH) if exists(join(aelGlobals.COVERPATH, name))])))
+		db.parameter(DB_Functions.PARAMETER_SET, "previewCount", str(len([name for name in listdir(aelGlobals.PREVIEWPATH) if exists(join(aelGlobals.PREVIEWPATH, name))])))
+		db.parameter(DB_Functions.PARAMETER_SET, "trailerCount", str(db.getTrailerCount()))
+		db.parameter(DB_Functions.PARAMETER_SET, "posterSize", str(check_output(["du", "-sh", aelGlobals.POSTERPATH]).decode().split()[0]))
+		db.parameter(DB_Functions.PARAMETER_SET, "coverSize", str(check_output(["du", "-sh", aelGlobals.COVERPATH]).decode().split()[0]))
+		db.parameter(DB_Functions.PARAMETER_SET, "previewSize", str(check_output(["du", "-sh", aelGlobals.PREVIEWPATH]).decode().split()[0]))
+		db.parameter(DB_Functions.PARAMETER_SET, "usedInodes", f"{inodes[-4]} | {inodes[-5]} | {inodes[-2]}")
 
 	def getPictureList(self, title, what="Cover", count=20, lang="de", bingOption=""):
 		cq = config.plugins.AdvancedEventLibrary.coverResolution.value if config.plugins.AdvancedEventLibrary.coverResolution.value != "w1920" else "original"
@@ -2333,7 +2333,7 @@ class AELHelpers:
 
 
 class DB_Functions(AELGlobals, object):
-	@ staticmethod
+	@staticmethod
 	def dict_factory(cursor, row):
 		d = {}
 		for idx, col in enumerate(cursor.description):

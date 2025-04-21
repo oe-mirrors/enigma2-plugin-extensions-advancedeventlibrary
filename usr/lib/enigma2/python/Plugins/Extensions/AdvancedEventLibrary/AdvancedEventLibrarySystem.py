@@ -150,7 +150,7 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		confdir = join(aelGlobals.CONFIGPATH, "eventLibrary.db") if config.plugins.AdvancedEventLibrary.dbFolder.value == "Flash" else f"{config.plugins.AdvancedEventLibrary.Location.value}eventLibrary.db"
 		self.db = aelHelper.getDB()
 		if isfile(confdir):
-			GET = aelGlobals.PARAMETER_GET
+			GET = DB_Functions.PARAMETER_GET
 			posterCount = self.db.parameter(GET, 'posterCount', None, 0)
 			posterSize = str(self.db.parameter(GET, 'posterSize', None, 0))
 			coverCount = self.db.parameter(GET, 'coverCount', None, 0)
@@ -255,8 +255,8 @@ class AELMenu(Screen):  # Einstieg mit 'AEL-Übersicht'
 		return res
 
 	def getlastUpdateInfo(self, db):
-		lastUpdateStart = self.convertTimestamp(db.parameter(aelGlobals.PARAMETER_GET, "laststart", None, 0))
-		lastUpdateDuration = self.convertDuration(float(db.parameter(aelGlobals.PARAMETER_GET, "laststop", None, 0)) - float(db.parameter(aelGlobals.PARAMETER_GET, "laststart", None, 0)) - 3600)
+		lastUpdateStart = self.convertTimestamp(db.parameter(DB_Functions.PARAMETER_GET, "laststart", None, 0))
+		lastUpdateDuration = self.convertDuration(float(db.parameter(DB_Functions.PARAMETER_GET, "laststop", None, 0)) - float(db.parameter(DB_Functions.PARAMETER_GET, "laststart", None, 0)) - 3600)
 		return lastUpdateStart, lastUpdateDuration
 
 	def convertTimestamp(self, val):
