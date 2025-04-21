@@ -1427,9 +1427,9 @@ class AELHelper:
 		self.writeLog(f"have updated {found} events from TV-Movie")
 		self.writeLog(f"have downloaded {ccount} images from TV-Movie")
 		if not secondRun:
-			tvsImages = db.parameter(DB_Functions.PARAMETER_GET, "lastPreviewImageCount", None, 0)
+			tvsImages = db.parameter(db.PARAMETER_GET, "lastPreviewImageCount", None, 0)
 			ccount += int(tvsImages)
-			db.parameter(DB_Functions.PARAMETER_SET, "lastPreviewImageCount", str(ccount))
+			db.parameter(db.PARAMETER_SET, "lastPreviewImageCount", str(ccount))
 			self.getTVMovie(db, True)
 		del tvnames
 
