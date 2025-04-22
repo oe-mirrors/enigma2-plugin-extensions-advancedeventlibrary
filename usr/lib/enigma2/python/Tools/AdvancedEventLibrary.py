@@ -73,6 +73,10 @@ config.plugins.AdvancedEventLibrary.FavouritesMaxAge = ConfigInteger(default=14,
 config.plugins.AdvancedEventLibrary.SortType = ConfigSelection(default=0, choices=[(0, _("Date descending")), (1, _("Date ascending")), (2, _("Name ascending")), (3, _("Name descending")), (4, _("Day ascending")), (5, _("Day descending"))])
 config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigSelection(default=0, choices=[(0, _("Movies")), (1, _("Series")), (2, _("Documentaries")), (3, _("Music")), (4, _("Children")), (5, _("Shows")), (6, _("Sport"))])
 
+config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
+config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
+config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
+
 
 class AELGlobals():
 	CURRENTVERSION = 141
@@ -2548,9 +2552,9 @@ class DB_Functions():
 		self.conn.commit()
 		self.parameter(self.PARAMETER_SET, 'lastAdditionalDataCountSuccess', str(cur.rowcount))
 
-	def getTitleInfos(self, base64title):  # TODO: wird wahrscheinlich gar nicht benötigt
+	def getTitleInfo(self, base64title):  # TODO: wird wahrscheinlich gar nicht benötigt
 		cur = self.conn.cursor()
-		query = "SELECT base64title,title,genre,year,rating,fsk,country, trailer FROM eventInfo WHERE base64title = ?"
+		query = "SELECT title,title,genre,year,rating,fsk,country, trailer_url FROM eventInfo WHERE title = ?"
 		cur.execute(query, (str(base64title),))
 		row = cur.fetchall()
 		return [row[0][0], row[0][1], row[0][2], row[0][3], row[0][4], row[0][5], row[0][6], str(row[0][7])] if row else []
