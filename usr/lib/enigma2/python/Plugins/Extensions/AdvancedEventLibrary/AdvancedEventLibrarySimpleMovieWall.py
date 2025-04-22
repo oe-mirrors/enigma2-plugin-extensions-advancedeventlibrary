@@ -1132,7 +1132,7 @@ def saveList(imageType):
 		f.close()
 		moviedict = {}
 		paths = []
-		db = getDB()
+		db = aelHelper.getDB()
 		if os.path.isfile(os.path.join(pluginpath, 'movieplaces.data')):
 			with open(os.path.join(pluginpath, 'movieplaces.data'), 'r') as f:
 				lines = f.readlines()

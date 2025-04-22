@@ -21,7 +21,7 @@ from skin import parseColor
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.AdvancedEventLibrary import aelHelper, getDB, getImageFile, aelGlobals
+from Tools.AdvancedEventLibrary import aelHelper, getImageFile, aelGlobals
 from Tools.BoundFunction import boundFunction
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -58,7 +58,7 @@ class AdvancedEventLibraryImage(Renderer):
 			self.frameImage = filename
 		self.coverPath = aelGlobals.COVERPATH
 		self.posterPath = aelGlobals.POSTERPATH
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.ptr = None
 		self.ptr2 = None
 		#==== Hinzugefugt (#4/#5/#7) =====

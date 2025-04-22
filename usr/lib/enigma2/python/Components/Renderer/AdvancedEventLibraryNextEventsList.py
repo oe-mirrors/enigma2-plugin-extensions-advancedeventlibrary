@@ -5,7 +5,7 @@ from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HA
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import PicLoader, getDB, getImageFile, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import PicLoader, getImageFile, aelGlobals, aelHelper
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):
@@ -26,7 +26,7 @@ class AdvancedEventLibraryNextEventsList(Renderer):
 		self.l.setFont(0, gFont(ffont, fsize))
 		self.l.setFont(1, gFont(sfont, ssize))
 		self.l.setBuildFunc(self.buildSingleEntry)
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 
 	def applySkin(self, desktop, parent):
 		attribs = []
