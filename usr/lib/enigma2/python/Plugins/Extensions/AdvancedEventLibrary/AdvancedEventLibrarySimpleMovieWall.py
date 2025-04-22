@@ -24,7 +24,7 @@ from glob import glob
 from os.path import join
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime
@@ -942,7 +942,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 		return (name, extended_desc)
 
 	def key_red_handler(self):
-		clearMem("Simple-Movie-Lists")
+		aelHelper.clearMem("Simple-Movie-Lists")
 		self.close()
 
 	def key_green_handler(self):
@@ -1091,7 +1091,7 @@ class AdvancedEventLibrarySimpleMovieWall(Screen):
 			self.progressTimer.stop()
 		del self.progressTimer
 		del self.moviedict
-		clearMem("Simple-Movie-Lists")
+		aelHelper.clearMem("Simple-Movie-Lists")
 		self.close()
 
 	def correctweekdays(self, itm):

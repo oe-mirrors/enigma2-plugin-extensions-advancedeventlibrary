@@ -21,7 +21,7 @@ from skin import parseColor
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.AdvancedEventLibrary import write_log, getDB, convertDateInFileName, removeExtension, clearMem, getImageFile, aelGlobals
+from Tools.AdvancedEventLibrary import aelHelper, getDB, getImageFile, aelGlobals
 from Tools.BoundFunction import boundFunction
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
@@ -233,9 +233,9 @@ class AdvancedEventLibraryImage(Renderer):
 #						name += self.evt[0][2] + ' - '
 #					self.ptr = str(name[:-3])
 			if self.ptr:
-				self.ptr = convertDateInFileName(removeExtension(self.ptr))
+				self.ptr = aelHelper.convertDateInFileName(self.removeExtension(self.ptr))
 			if self.ptr2:
-				self.ptr2 = convertDateInFileName(removeExtension(self.ptr2))
+				self.ptr2 = aelHelper.convertDateInFileName(self.removeExtension(self.ptr2))
 			eventName = (self.ptr, self.ptr2)
 			if self.lastName != eventName:
 				callInThread(self.setthePixmap, (eventName,))
@@ -258,7 +258,7 @@ class AdvancedEventLibraryImage(Renderer):
 		self.imageframe = None
 		self.pixmap = None
 		self.instance = None
-		clearMem(self.screenName)
+		aelHelper.clearMem(self.screenName)
 
 	def showimage(self):
 		if self.instance:
@@ -641,7 +641,7 @@ class AdvancedEventLibraryImage(Renderer):
 					img.save(self.preferImgPath)
 					self.loadPic(self.preferImgPath)
 			except Exception as e:
-				write_log(f"========= AdvancedEventLibraryImage - Error - prepareImg: {e}", DEFAULT_MODULE_NAME)
+				aelHelper.writeLog(f"========= AdvancedEventLibraryImage - Error - prepareImg: {e}", DEFAULT_MODULE_NAME)
 		#II,PP
 		elif self.frameImage and self.instance and self.pixmap and self.imageframe:
 			if self.instance.size().width() != self.WCover or self.instance.size().height() != self.HCover:

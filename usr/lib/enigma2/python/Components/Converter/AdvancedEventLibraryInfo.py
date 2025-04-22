@@ -9,7 +9,7 @@ from Components.Converter.Converter import Converter
 from Components.Element import cached
 from Components.Sources.CurrentService import CurrentService
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import aelGlobals, getPictureDir, convertDateInFileName, convertTitle, convertTitle2, convert2base64, convertSearchName, getDB, getImageFile
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper, convert2base64, convertSearchName, getImageFile
 
 countrys = {
 	'USA': ['United States', 'US', 'USA'],
@@ -92,10 +92,8 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 		Converter.__init__(self, type)
 		self.inputString = type
 		self.types = str(type).split(",")
-		self.coverPath = f"{getPictureDir()}cover/"
-		self.posterPath = f"{getPictureDir()}poster/"
 		self.eventName = ""
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.sceenName = ""
 
 	@cached
@@ -189,7 +187,7 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					self.eventName = self.removeExtension(getline(f"{isMovieFile}.meta", 2).replace("\n", "").strip())
 				else:
 					self.eventName = self.removeExtension(((str(isMovieFile).split('/')[-1]).rsplit('.', 1)[0]).replace('_', ' '))
-			self.eventName = convertDateInFileName(convertSearchName(self.eventName))
+			self.eventName = aelHelper.convertDateInFileName(convertSearchName(self.eventName))
 			values = None
 			if not isMovieFile and event is not None:
 				eventid = None
@@ -219,16 +217,16 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 			try:
 				dbData = self.db.getTitleInfo(convert2base64(self.eventName))
 				if not dbData:
-					dbData = self.db.getTitleInfo(convert2base64(convertTitle(self.eventName)))
+					dbData = self.db.getTitleInfo(convert2base64(aelHelper.convertTitle(self.eventName)))
 					if not dbData:
-						dbData = self.db.getTitleInfo(convert2base64(convertTitle2(self.eventName)))
+						dbData = self.db.getTitleInfo(convert2base64(aelHelper.convertTitle2(self.eventName)))
 			except Exception:
 				if values:
 					dbData = self.db.getTitleInfo(convert2base64(str(values['title']).strip()))
 					if not dbData:
-						dbData = self.db.getTitleInfo(convert2base64(convertTitle(str(values['title']).strip())))
+						dbData = self.db.getTitleInfo(convert2base64(aelHelper.convertTitle(str(values['title']).strip())))
 						if not dbData:
-							dbData = self.db.getTitleInfo(convert2base64(convertTitle2(str(values['title']).strip())))
+							dbData = self.db.getTitleInfo(convert2base64(aelHelper.convertTitle2(str(values['title']).strip())))
 			for type in self.types:
 				type.strip()
 				if self.POWER_DESCRIPTION in type:
@@ -1122,12 +1120,12 @@ class AdvancedEventLibraryInfo(Converter, object):				# Input Parameter per Skin
 					return parser.group(1)
 
 	def isImageAvailable(self, event, values):
-		if getImageFile(self.coverPath, self.eventName):
+		if getImageFile(aelGlobals.COVERPATH, self.eventName):
 			return True
 		return False
 
 	def isPosterAvailable(self, event, values):
-		if getImageFile(self.posterPath, self.eventName):
+		if getImageFile(aelGlobals.POSTERPATH, self.eventName):
 			return True
 		return False
 

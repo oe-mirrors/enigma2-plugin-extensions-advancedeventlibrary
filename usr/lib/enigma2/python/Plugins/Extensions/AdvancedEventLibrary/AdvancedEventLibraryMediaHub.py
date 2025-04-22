@@ -635,7 +635,7 @@ class AdvancedEventLibraryMediaHub(Screen):
 					self.session.open(MoviePlayer, sRef)
 
 	def key_red_handler(self):
-		clearMem("MediaHub")
+		aelHelper.clearMem("MediaHub")
 		global active
 		active = False
 		self.close()

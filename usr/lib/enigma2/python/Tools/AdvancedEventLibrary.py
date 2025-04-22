@@ -144,6 +144,51 @@ class AELGlobals():
 aelGlobals = AELGlobals()
 
 
+def convertSearchName(eventName):  # TODO
+	try:
+		eventName = aelHelper.removeExtension(eventName)
+#		text = eventName.replace(u'\x86', u'').replace(u'\x87', u'')
+	except:
+#		eventName = aelHelper.removeExtension(eventName)
+#		text = eventName.decode('utf-8', 'ignore').replace(u'\x86', u'').replace(u'\x87', u'')
+		pass
+	return eventName
+	# ======================================================
+
+
+def convert2base64(title):  # TODO
+	return title
+#	if title.find('(') > 1:
+#		return b64encode(title.lower().split('(')[0].strip()).replace('/', '')
+#	return b64encode(title.lower().strip()).replace('/', '')
+
+
+def getImageFile(path, eventName):
+	name = eventName
+	pictureName = convert2base64(name) + '.jpg'
+	imageFileName = join(path, pictureName)
+	if (exists(imageFileName)):
+		return imageFileName
+	else:
+		name = aelHelper.convertTitle(eventName)
+		pictureName = convert2base64(name) + '.jpg'
+		imageFileName = join(path, pictureName)
+		if (exists(imageFileName)):
+			return imageFileName
+		else:
+			name = aelHelper.convertTitle2(eventName)
+			pictureName = convert2base64(name) + '.jpg'
+			imageFileName = join(path, pictureName)
+			if (exists(imageFileName)):
+				return imageFileName
+#	if 'cover' in path and previewImages:
+#		ppath = path.replace('cover', 'preview')
+#		imageFileName = getPreviewImageFile(ppath, eventName)
+#		if imageFileName:
+#			return imageFileName
+	return None
+
+
 class AELHelper:
 	def getDB(self):
 		dbpath = aelGlobals.CONFIGPATH if config.plugins.AdvancedEventLibrary.dbFolder.value == 1 else aelGlobals.HDDPATH
@@ -2603,9 +2648,9 @@ class DB_Functions():
 		eventcount = len(list(eventtrailers))
 		totalcount = len(list(livetrailers | eventtrailers))
 		if logging:
-			self.writeLog(f"found {livecount} different trailers on liveOnTV")
-			self.writeLog(f"found {eventcount} different trailers on eventInfo")
-			self.writeLog(f"found {totalcount} different trailers on liveOnTV and eventInfo")
+			aelHelper.writeLog(f"found {livecount} different trailers on liveOnTV")
+			aelHelper.writeLog(f"found {eventcount} different trailers on eventInfo")
+			aelHelper.writeLog(f"found {totalcount} different trailers on liveOnTV and eventInfo")
 		return totalcount
 
 	def getEventCount(self, sref):
@@ -2672,7 +2717,7 @@ class DB_Functions():
 		cur = self.conn.cursor()
 		query = "delete from liveOnTV where airtime < ?;"
 		cur.execute(query, (airtime,))
-		self.writeLog(f"have removed {cur.rowcount} events from liveOnTV")
+		aelHelper.writeLog(f"have removed {cur.rowcount} events from liveOnTV")
 		self.conn.commit()
 		self.vacuumDB()
 
@@ -2696,7 +2741,7 @@ class DB_Functions():
 		query = 'SELECT DISTINCT imagefile from liveOnTV where airtime < ? AND imagefile <> "";'
 		cur.execute(query, (airtime,))
 		rows = cur.fetchall()
-		self.writeLog(f"found old preview images {len(rows)}")
+		aelHelper.writeLog(f"found old preview images {len(rows)}")
 		if rows:
 			for row in rows:
 				titleList.append(row[0])

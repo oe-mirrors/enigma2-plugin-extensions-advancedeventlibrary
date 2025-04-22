@@ -391,7 +391,7 @@ class AdvancedEventLibraryPlanerScreens(Screen):
 			if val:
 				if str(val[0][11]) != "Spielfilm":
 					if str(val[0][2]) != "":
-						recname = convertTitle(recname) + ' - '
+						recname = aelHelper.convertTitle(recname) + ' - '
 					else:
 						recname += ' - '
 					if str(val[0][12]) != "":

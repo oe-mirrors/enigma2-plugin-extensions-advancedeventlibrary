@@ -6,7 +6,7 @@ from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import PicLoader, getImageFile, clearMem, aelGlobals
+from Tools.AdvancedEventLibrary import PicLoader, getImageFile, aelGlobals, aelHelper
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
@@ -41,17 +41,17 @@ class AEL_EPGList(GUIComponent):
 	def __init__(self, type=EPG_TYPE_SINGLE, selChangedCB=None, timer=None):
 		self.nameCache = {}
 		self.days = (_("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun"))
-		self.imageType = str(variables.get("EventLibraryEPGListsImageType", ("cover",))).replace(",", "").replace("(", "").replace(")", "").replace(""", "")
+		self.imageType = str(variables.get("EventLibraryEPGListsImageType", ("cover",))).replace(",", "").replace("(", "").replace(")", "").replace("\"", "")
 		self.imagePath = f"{aelGlobals.HDDPATH}{self.imageType}/thumbnails/"
 		self.timer = timer
-		self.db = getDB()
+		self.db = aelHelper.getDB()
 		self.onSelChanged = []
 		if selChangedCB is not None:
 			self.onSelChanged.append(selChangedCB)
 		GUIComponent.__init__(self)
 		self.type = type
 		self.l = eListboxPythonMultiContent()
-		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(",", "").replace("(", "").replace(")", "").replace(""", "")
+		self.defaultImage = str(variables.get("EventLibraryEPGListsDefaultImage", (join(aelGlobals.SHAREPATH, "AELImages/movies.png"),))).replace(",", "").replace("(", "").replace(")", "").replace("\"", "")
 		if type == EPG_TYPE_SINGLE or type == EPG_TYPE_INFOBAR:
 			ffont, fsize = parameters.get("EventLibraryEPGSingleListFirstFont", ("Regular", 26))
 			sfont, ssize = parameters.get("EventLibraryEPGSingleListSecondFont", ("Regular", 30))
@@ -129,7 +129,7 @@ class AEL_EPGList(GUIComponent):
 	def preWidgetRemove(self, instance):
 		instance.selectionChanged.get().remove(self.selectionChanged)
 		instance.setContent(None)
-		clearMem("AEL-EPG-List")
+		aelHelper.clearMem("AEL-EPG-List")
 		del self.nameCache
 
 	def recalcEntrySize(self):
