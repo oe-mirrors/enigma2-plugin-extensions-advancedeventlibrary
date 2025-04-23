@@ -84,7 +84,6 @@ config.plugins.AdvancedEventLibrary.MaxUsedInodes = ConfigInteger(default=90, li
 config.plugins.AdvancedEventLibrary.CreateMetaData = ConfigYesNo(default=False)
 config.plugins.AdvancedEventLibrary.UpdateAELMovieWall = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.Genres = ConfigSelection(default=0, choices=[(0, _("Movies")), (1, _("Series")), (2, _("Documentaries")), (3, _("Music")), (4, _("Children")), (5, _("Shows")), (6, _("Sport"))])
-# config.plugins.AdvancedEventLibrary.ExcludedGenres.value.split(',')
 config.plugins.AdvancedEventLibrary.StartBouquet = ConfigSelection(default=0, choices=[(0, _("Favorites")), (1, _("All Bouquets"))])
 config.plugins.AdvancedEventLibrary.HDonly = ConfigYesNo(default=True)
 config.plugins.AdvancedEventLibrary.StartTime = ConfigClock(default=69300)  # 20:15
@@ -96,6 +95,16 @@ config.plugins.AdvancedEventLibrary.omdbUsage = ConfigSelection(default=1, choic
 config.plugins.AdvancedEventLibrary.tvsUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.tvmovieUsage = ConfigSelection(default=1, choices=[(0, _("off")), (1, _("Data only"))])
 config.plugins.AdvancedEventLibrary.bingUsage = ConfigSelection(default=2, choices=[(0, _("off")), (2, _("Image only"))])
+
+config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
+config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
+config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
+config.plugins.AdvancedEventLibrary.SeriesType = ConfigSelection(default="Staffelstart", choices=["Staffelstart", "Serienstart"])
+
+config.plugins.AdvancedEventLibrary.FavouritesViewCount = ConfigInteger(default=2, limits=(0, 10))
+config.plugins.AdvancedEventLibrary.FavouritesPreviewDuration = ConfigInteger(default=12, limits=(2, 240))
+config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigText(default='Wetter,Dauerwerbesendung')
+
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 #not used
@@ -2788,6 +2797,10 @@ def getPreviewImageFile(path, eventName):
 			imageFileName = join(path, pictureName)
 			if (exists(imageFileName)):
 				return imageFileName
+
+
+def getPictureDir():
+	return aelGlobals.HDDPATH
 
 
 class AELGlobals:

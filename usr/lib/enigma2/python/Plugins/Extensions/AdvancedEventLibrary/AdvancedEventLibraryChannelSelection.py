@@ -108,10 +108,7 @@ class AdvancedEventLibraryChannelSelection(Screen):
 #		self.myBouquet = config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
 #		self.channelSelectionEventListDuration = config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
 #		self.epgViewType = config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
-		config.plugins.AdvancedEventLibrary = ConfigSubsection()
-		config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
-		config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
-		config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
+#		config.plugins.AdvancedEventLibrary = ConfigSubsection()
 		self.CHANSEL = InfoBar.instance.servicelist
 		ref = sRef if sRef else ServiceReference(self.session.nav.getCurrentlyPlayingServiceReference()).__str__()
 		for protocol in ("http", "rtmp", "rtsp", "mms", "rtp"):

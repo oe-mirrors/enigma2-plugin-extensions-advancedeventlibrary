@@ -8,7 +8,7 @@ from pickle import load, dump
 from time import time
 from enigma import eEPGCache, eTimer, eServiceReference, addFont
 from Components.config import config
-from Components.FunctionTimer import functionTimer  # TODO: später dann from Janitor import functionTimer
+from Scheduler import functionTimer  # TODO: später dann from Janitor import functionTimer
 from Plugins.Plugin import PluginDescriptor
 from Tools.Directories import fileExists
 
