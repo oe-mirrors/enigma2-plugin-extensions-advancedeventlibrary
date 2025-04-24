@@ -4,9 +4,10 @@ from time import localtime
 from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_VALIGN_TOP
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
+from Components.PicLoader import PicLoader
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import PicLoader, getImageFile, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import getImageFile, aelGlobals, aelHelper
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages

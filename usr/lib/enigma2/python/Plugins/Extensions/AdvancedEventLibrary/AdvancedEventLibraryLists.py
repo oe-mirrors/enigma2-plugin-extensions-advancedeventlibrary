@@ -5,10 +5,11 @@ from enigma import getDesktop, eListbox, eLabel, gFont, eListboxPythonMultiConte
 from skin import skin, fonts, parameters, variables, parseFont, parseColor
 from Components.config import config
 from Components.GUIComponent import GUIComponent
+from Components.PicLoader import PicLoader
 from Components.VariableText import VariableText
 from Tools.Alternatives import GetWithAlternative
 from Tools.LoadPixmap import LoadPixmap
-from Tools.AdvancedEventLibrary import PicLoader, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

@@ -15,7 +15,7 @@ from sqlite3 import connect
 from subprocess import check_output
 from twisted.internet.reactor import callInThread
 from urllib.parse import urlparse, urlunparse, urlencode
-from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop, ePicLoad
+from enigma import eEnv, eEPGCache, eServiceReference, eServiceCenter, getDesktop
 from skin import parameters
 from Components.config import config, ConfigText, ConfigSubsection, ConfigInteger, ConfigYesNo, ConfigSelection, ConfigClock
 from Screens.ChannelSelection import service_types_tv
@@ -2952,20 +2952,6 @@ class BingImageSearch():
 							break
 				self.page_counter += 1
 		return resultList
-
-
-class PicLoader:
-	def __init__(self, width, height):
-		self.picload = ePicLoad()
-		self.picload.setPara((width, height, 0, 0, False, 1, "#ff000000"))
-
-	def load(self, imgfile):
-		self.picload.startDecode(imgfile, 0, 0, False)
-		data = self.picload.getData()
-		return data
-
-	def destroy(self):
-		del self.picload
 
 
 class Auth:  # TVDbApiV4

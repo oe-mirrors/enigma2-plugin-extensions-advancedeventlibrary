@@ -5,7 +5,8 @@ from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HA
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import PicLoader, getImageFile, aelGlobals, aelHelper
+from Components.PicLoader import PicLoader
+from Tools.AdvancedEventLibrary import getImageFile, aelGlobals, aelHelper
 
 
 class AdvancedEventLibraryNextEventsList(Renderer):

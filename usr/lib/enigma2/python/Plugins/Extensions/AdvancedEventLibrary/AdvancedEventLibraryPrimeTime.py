@@ -6,6 +6,7 @@ from skin import loadSkin, variables, parseColor
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
 from Components.Label import Label
+from Components.PicLoader import PicLoader
 from Components.Pixmap import Pixmap
 from Components.Sources.Event import Event
 from Components.Sources.StaticText import StaticText
@@ -24,7 +25,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()

@@ -7,6 +7,7 @@ from Screens.InfoBar import MoviePlayer
 from Screens.LocationBox import MovieLocationBox
 from Screens.TaskList import TaskListScreen
 from Components.ActionMap import ActionMap
+from Components.PicLoader import PicLoader
 from Components.Pixmap import Pixmap
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
@@ -24,7 +25,7 @@ from glob import glob
 from os.path import join
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime

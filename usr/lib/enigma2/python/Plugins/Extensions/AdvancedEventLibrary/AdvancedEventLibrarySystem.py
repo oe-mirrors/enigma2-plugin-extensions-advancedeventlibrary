@@ -30,6 +30,7 @@ from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
 from Components.Sources.ServiceList import ServiceList
 from Components.Label import Label
+from Components.PicLoader import PicLoader
 from Components.Pixmap import Pixmap
 from Components.Sources.List import List
 from Components.Sources.StaticText import StaticText
@@ -44,8 +45,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper, PicLoader
-
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
 from . import _  # for localized messages
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

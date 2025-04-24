@@ -10,6 +10,7 @@ from Components.config import config
 from Components.Label import MultiColorLabel
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
+from Components.PicLoader import PicLoader
 from Components.Pixmap import Pixmap
 from Components.Sources.ServiceEvent import ServiceEvent
 from Screens.Screen import Screen
@@ -26,7 +27,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
 from Tools.LoadPixmap import LoadPixmap
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
