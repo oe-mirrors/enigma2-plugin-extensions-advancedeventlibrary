@@ -25,6 +25,7 @@ from re import match, compile, IGNORECASE
 from shutil import copy
 from twisted.internet.reactor import callInThread
 from enigma import eTimer, eServiceReference, eServiceCenter
+from Components.AELGlobals import aelGlobals
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigText, getConfigListEntry
 from Components.ConfigList import ConfigListScreen
@@ -45,7 +46,7 @@ from Screens.VirtualKeyBoard import VirtualKeyBoard
 from Tools.Directories import fileExists
 from Tools.LoadPixmap import LoadPixmap
 from .AdvancedEventLibraryLists import ImageList, SearchResultsList
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 from . import _  # for localized messages
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

@@ -1,7 +1,7 @@
 from Components.Converter.Converter import Converter
 from Components.Converter.Poll import Poll
 from Components.Element import cached
-from Tools.AdvancedEventLibrary import aelGlobals
+from Components.AELGlobals import aelGlobals
 
 
 class AdvancedEventLibraryUpdateInfo(Poll, Converter, object):

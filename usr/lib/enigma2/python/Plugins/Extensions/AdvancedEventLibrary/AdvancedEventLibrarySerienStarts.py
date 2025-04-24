@@ -5,10 +5,12 @@ from Screens.ChannelSelection import service_types_tv
 from Screens.TimerEntry import TimerEntry
 from Screens.InfoBar import MoviePlayer
 from Screens.Setup import Setup
+from Components.AELGlobals import aelGlobals
 from Components.Label import Label
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.Sources.StaticText import StaticText
 from Components.Pixmap import Pixmap
+from Components.PicLoader import PicLoader
 from time import localtime
 import os
 import skin
@@ -25,7 +27,7 @@ from Components.Sources.Event import Event
 
 from .AdvancedEventLibrarySystem import Editor
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 from Tools.LoadPixmap import LoadPixmap
 
 htmlParser = HTMLParser()

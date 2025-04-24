@@ -5,9 +5,10 @@ from enigma import eEPGCache, eListbox, eListboxPythonMultiContent, gFont, RT_HA
 from skin import skin, variables, parameters, parseColor
 from Components.config import config
 from Components.PicLoader import PicLoader
+from Components.AELGlobals import aelGlobals
 from GUIComponent import GUIComponent
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import getImageFile, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import getImageFile, aelHelper
 from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages

@@ -2,8 +2,8 @@ from os.path import isdir
 from glob import glob
 from random import randint
 from enigma import ePixmap, eTimer, loadJPG
+from Components.AELGlobals import aelGlobals
 from Components.Renderer.Renderer import Renderer
-from Tools.AdvancedEventLibrary import aelGlobals
 
 
 class AdvancedEventLibraryRandomPicture(Renderer):

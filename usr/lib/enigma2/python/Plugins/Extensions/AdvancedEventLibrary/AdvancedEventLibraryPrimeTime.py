@@ -3,6 +3,7 @@ from time import localtime, mktime
 from html.parser import HTMLParser
 from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import loadSkin, variables, parseColor
+from Components.AELGlobals import aelGlobals
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config
 from Components.Label import Label
@@ -25,7 +26,7 @@ from Tools.LoadPixmap import LoadPixmap
 import NavigationInstance
 from . import AdvancedEventLibrarySystem
 from . import AdvancedEventLibraryLists
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 
 pluginpath = '/usr/lib/enigma2/python/Plugins/Extensions/AdvancedEventLibrary/'
 desktopSize = getDesktop(0).size()

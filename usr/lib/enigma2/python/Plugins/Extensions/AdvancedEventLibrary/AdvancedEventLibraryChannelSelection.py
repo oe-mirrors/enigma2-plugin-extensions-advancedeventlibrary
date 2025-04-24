@@ -6,11 +6,13 @@ import NavigationInstance
 
 from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import variables
+from Components.AELGlobals import aelGlobals
 from Components.ActionMap import ActionMap, HelpableActionMap
 from Components.config import config, ConfigSelection, ConfigSubsection, ConfigInteger
 from Components.Label import MultiColorLabel
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress, MultiContentEntryPixmapAlphaBlend
 from Components.Pixmap import Pixmap
+from Components.PicLoader import PicLoader
 from Components.Sources.Event import Event
 from Components.Sources.ServiceEvent import ServiceEvent
 from Components.Sources.StaticText import StaticText
@@ -30,7 +32,7 @@ from Tools.LoadPixmap import LoadPixmap
 
 from . import AdvancedEventLibrarySystem, _  # for localized messages
 from . AdvancedEventLibraryLists import AELBaseWall
-from Tools.AdvancedEventLibrary import PicLoader, aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]
 

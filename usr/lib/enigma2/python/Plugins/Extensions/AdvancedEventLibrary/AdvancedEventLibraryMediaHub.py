@@ -6,6 +6,7 @@ from pickle import load
 from struct import unpack
 from enigma import getDesktop, eEPGCache, eServiceReference, eServiceCenter, eListboxPythonMultiContent, RT_HALIGN_LEFT, RT_HALIGN_RIGHT, RT_HALIGN_CENTER, RT_VALIGN_CENTER, RT_VALIGN_TOP, RT_VALIGN_BOTTOM, RT_WRAP, BT_SCALE
 from skin import variables, parseColor
+from Components.AELGlobals import aelGlobals
 from Components.config import config
 from Components.Label import MultiColorLabel
 from Components.ActionMap import ActionMap, HelpableActionMap
@@ -27,7 +28,7 @@ import NavigationInstance
 
 from . import AdvancedEventLibrarySystem, AdvancedEventLibrarySimpleMovieWall, AdvancedEventLibraryChannelSelection
 from . AdvancedEventLibraryLists import AELBaseWall, MultiColorNTextLabel
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 from Tools.LoadPixmap import LoadPixmap
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

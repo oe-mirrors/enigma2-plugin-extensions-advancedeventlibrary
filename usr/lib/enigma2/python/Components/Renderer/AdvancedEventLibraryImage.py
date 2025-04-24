@@ -18,10 +18,11 @@ from PIL import Image
 from twisted.internet.reactor import callInThread
 from enigma import ePixmap, ePicLoad, ePoint, eSize, eWidget, loadPNG, iPlayableServicePtr, eServiceCenter
 from skin import parseColor
+from Components.AELGlobals import aelGlobals
 from Components.Renderer.Renderer import Renderer
 from Components.Sources.CurrentService import CurrentService
 from Components.Sources.ServiceEvent import ServiceEvent
-from Tools.AdvancedEventLibrary import aelHelper, getImageFile, aelGlobals
+from Tools.AdvancedEventLibrary import aelHelper, getImageFile
 from Tools.BoundFunction import boundFunction
 
 DEFAULT_MODULE_NAME = __name__.split(".")[-1]

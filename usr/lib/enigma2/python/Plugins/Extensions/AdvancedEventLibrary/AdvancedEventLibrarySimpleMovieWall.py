@@ -6,6 +6,7 @@ from Screens.Standby import TryQuitMainloop
 from Screens.InfoBar import MoviePlayer
 from Screens.LocationBox import MovieLocationBox
 from Screens.TaskList import TaskListScreen
+from Components.AELGlobals import aelGlobals
 from Components.ActionMap import ActionMap
 from Components.PicLoader import PicLoader
 from Components.Pixmap import Pixmap
@@ -25,7 +26,7 @@ from glob import glob
 from os.path import join
 
 from .AdvancedEventLibrarySystem import Editor
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper
+from Tools.AdvancedEventLibrary import aelHelper
 from .AdvancedEventLibraryLists import MovieList
 from Tools.LoadPixmap import LoadPixmap
 import datetime

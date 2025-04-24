@@ -5,11 +5,12 @@ from os.path import join, isfile
 from re import findall, sub, search, compile, match, MULTILINE, DOTALL
 from time import localtime
 from enigma import iPlayableServicePtr, eServiceCenter, eServiceReference, eEPGCache
+from Components.AELGlobals import aelGlobals
 from Components.Converter.Converter import Converter
 from Components.Element import cached
 from Components.Sources.CurrentService import CurrentService
 from ServiceReference import ServiceReference
-from Tools.AdvancedEventLibrary import aelGlobals, aelHelper, convert2base64, convertSearchName, getImageFile
+from Tools.AdvancedEventLibrary import aelHelper, convert2base64, convertSearchName, getImageFile
 
 countrys = {
 	'USA': ['United States', 'US', 'USA'],
