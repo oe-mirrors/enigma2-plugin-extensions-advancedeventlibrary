@@ -20,7 +20,6 @@ from Components.config import config, ConfigText, ConfigSubsection, ConfigIntege
 from Components.DBFunctions import DB_Functions
 from Components.TVDbApiV4 import TVDB
 from Screens.ChannelSelection import service_types_tv
-from Tools.Bytes2Human import bytes2human
 from Tools.Directories import defaultRecordingLocation
 from Plugins.Extensions.AdvancedEventLibrary import _  # for localized messages
 import tmdbsimple as tmdb
@@ -77,6 +76,18 @@ config.plugins.AdvancedEventLibrary.ExcludedGenres = ConfigSelection(default=0, 
 config.plugins.AdvancedEventLibrary.ChannelSelectionStartBouquet = ConfigSelection(default="Alle Bouquets", choices=['Alle Bouquets', 'aktuelles Bouquet'])
 config.plugins.AdvancedEventLibrary.ChannelSelectionEventListDuration = ConfigInteger(default=12, limits=(1, 240))
 config.plugins.AdvancedEventLibrary.EPGViewType = ConfigSelection(default="EventView", choices=['EPGSelection', 'EventView'])
+
+
+def bytes2human(number, digits=2):  # TODO use enigma function
+	symbols = ("KB", "MB", "GB", "TB", "PB")
+	prefix = {}
+	for idx, symbol in enumerate(symbols):
+		prefix[symbol] = 1 << (idx + 1) * 10
+	for s in reversed(symbols):
+		if number >= prefix[s]:
+			value = round(float(number) / prefix[s], digits) if digits > 0 else number / prefix[s]
+			return f"{value} {s}"
+	return f"{number} B"
 
 
 def convertSearchName(eventName):  # TODO
