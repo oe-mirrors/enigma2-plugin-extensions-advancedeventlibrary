@@ -1,4 +1,4 @@
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from datetime import datetime
 from difflib import get_close_matches
 from glob import glob
@@ -102,11 +102,10 @@ def convertSearchName(eventName):  # TODO
 	# ======================================================
 
 
-def convert2base64(title):  # TODO
-	return title
-#	if title.find('(') > 1:
-#		return b64encode(title.lower().split('(')[0].strip()).replace('/', '')
-#	return b64encode(title.lower().strip()).replace('/', '')
+def convert2base64(title):
+	if title.find('(') > 1:
+		return b64encode(title.lower().split("(")[0].strip().replace("/", "").encode()).decode()
+	return b64encode(title.lower().strip().replace("/", "").encode()).decode()
 
 
 def getImageFile(path, eventName):
